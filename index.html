@@ -314,16 +314,26 @@ footer{border-top:1px solid var(--line);background:#fff;padding:18px 0 30px;colo
         </div>
 
         <div class="field" style="grid-column:1/-1">
-          <span>代理地址（Cloudflare Worker 的 URL）</span>
-          <input id="proxyInput" type="text" placeholder="https://你的worker名.你的子域.workers.dev" autocomplete="off" spellcheck="false">
-          <div class="hint">部署 <code>cloudflare-proxy.js</code> 后把生成的地址填在这里；也可填自定义域名，例如 <code>https://api.你的域名.com</code>。</div>
+          <span>代理地址（三选一，遇到网络问题优先用前两种）</span>
+          <input id="proxyInput" type="text" placeholder="推荐 /api/chat（同源 Pages Functions）｜或 https://api.你的域名.com｜或 http://127.0.0.1:8787" autocomplete="off" spellcheck="false">
+          <div class="hint">
+            <b>① 同源 <code>/api/chat</code></b>（最稳，推荐）：把 <code>functions/api/chat.js</code> 放进 Pages 项目，用 <code>wrangler pages deploy</code> 或 Git 集成部署 ——
+            与网站同域，<b>没有 CORS，也不依赖 workers.dev</b>，不怕被墙。<br>
+            <b>② 自定义域名</b>，如 <code>https://api.你的域名.com</code>：给 Worker 绑定自定义域，绕开 <code>*.workers.dev</code> 的 DNS 污染与 SNI 阻断。<br>
+            <b>③ <code>https://xxx.workers.dev</code></b>：默认方式，但国内网络经常连不上（解析被污染 / TLS 握手被重置）。<br>
+            <b>④ 本机 <code>http://127.0.0.1:8787</code></b>：运行 <code>local-proxy.mjs</code>，仅自己用、无需任何云服务（浏览器允许 https 页面访问 localhost）。
+          </div>
         </div>
       </div>
 
       <div class="btn-row" style="margin-top:14px">
-        <button class="btn primary" id="testApiBtn">测试连接</button>
+        <button class="btn primary" id="testApiBtn">测试连接（含代理自检）</button>
         <button class="btn" id="saveSettingsBtn">保存设置（不含 Key）</button>
         <button class="btn danger" id="clearKeyBtn">清空内存中的 Key</button>
+      </div>
+      <div class="hint" style="margin-top:8px;font-size:12.5px;color:var(--muted)">
+        测试分两步：<b>① 代理自检</b>——GET 一次代理地址，确认它返回 <code>{"ok":true,"service":"codelearn-proxy"}</code>
+        （对不上就说明该地址上跑的不是本项目的 Worker，与你的 Key 无关）；<b>② 模型连通性</b>——真实调用一次大模型。
       </div>
       <div id="apiTestResult" style="margin-top:12px"></div>
     </div>
@@ -1043,13 +1053,48 @@ function createEditor(textareaId, counterIds) {
  * 6. AI 调用层
  * ========================================================================== */
 
+/**
+ * 解析代理地址为可 fetch 的 URL。
+ * 支持三种写法：
+ *   ① https://xxx.workers.dev        自建 Worker（推荐自定义域名，见 README「网络被墙怎么办」）
+ *   ② /api/chat                       同源路径 → Pages Functions（最稳：同域，无 CORS、无 workers.dev DNS 依赖）
+ *   ③ http://127.0.0.1:8787           本机 local-proxy.mjs（浏览器允许 https 页面访问 localhost）
+ */
+function proxyTarget() {
+  const p = (state.proxyUrl || '').trim();
+  if (/^https?:\/\//i.test(p)) return p;
+  if (p.charAt(0) === '/') return location.origin + p;
+  return p;
+}
+
+/** 是否为同源路径（同源时不会有 CORS 问题） */
+function isSameOriginProxy() {
+  return (state.proxyUrl || '').trim().charAt(0) === '/' ;
+}
+
 /** 校验配置是否完整，返回错误文案或 null */
 function configError() {
   if (!state.apiKey) return '还没有填写 API Key，请先到【API 设置】页填写。';
-  if (!state.proxyUrl) return '还没有配置代理地址，请先到【API 设置】页填写你的 Cloudflare Worker 地址。';
-  if (/your[-_]?worker|你的worker|xxxx|example\.com/i.test(state.proxyUrl)) return '代理地址看起来还是示例占位符，请替换成你真实部署的 Worker 地址。';
-  if (!/^https?:\/\//i.test(state.proxyUrl)) return '代理地址必须以 http:// 或 https:// 开头。';
+  if (!state.proxyUrl) return '还没有配置代理地址，请先到【API 设置】页填写：Cloudflare Worker 的完整地址，或同源路径 /api/chat，或本机 http://127.0.0.1:8787。';
+  if (/your[-_]?worker|你的worker|xxxx|example\.com/i.test(state.proxyUrl)) return '代理地址看起来还是示例占位符，请替换成你真实的地址。';
+  if (!/^https?:\/\//i.test(state.proxyUrl) && state.proxyUrl.charAt(0) !== '/') {
+    return '代理地址要么是 https:// 开头的完整地址，要么是以 / 开头的同源路径（例如 /api/chat），要么是 http://127.0.0.1:8787 这样的本机地址。';
+  }
   return null;
+}
+
+/**
+ * 用 no-cors 模式探一次"网络层是否可达"。
+ * cors 请求失败时浏览器只会给一句 "Failed to fetch"，看不出是"网络不通"还是"CORS 头不对"。
+ * no-cors 请求不校验 CORS：能发出去就说明域名能解析、TCP/TLS 能连上。
+ */
+async function probeReachable() {
+  try {
+    await fetch(proxyTarget(), { method: 'GET', mode: 'no-cors', cache: 'no-store' });
+    return true;
+  } catch (e) {
+    return false;
+  }
 }
 
 /** 把 HTTP 错误翻译成人话 */
@@ -1057,13 +1102,19 @@ function friendlyHttpError(status, bodyText) {
   let detail = '';
   try {
     const j = JSON.parse(bodyText);
-    detail = (j.error && (j.error.message || j.error.code)) || j.message || '';
+    // 优先展示本项目 Worker 给出的结构化提示（含 stage / hint）
+    if (j.error && j.error.message) {
+      detail = j.error.message;
+      if (j.error.hint) detail += ' ｜ 提示：' + j.error.hint;
+    } else {
+      detail = (j.error && j.error.code) || j.message || '';
+    }
   } catch (e) {
     detail = (bodyText || '').slice(0, 300);
   }
   const map = {
     400: '请求格式有误（400）。可能是模型名不受支持，或提示词过长。',
-    401: '认证失败（401）。API Key 不正确、已过期或该服务商不匹配。',
+    401: '认证失败（401）。三种常见原因：① Key 不正确 / 已过期 / 复制时带了空格换行；② Key 与服务商不匹配（DeepSeek 的 Key 不能用于通义千问，反之亦然）；③ 这个代理地址上运行的不是本项目的 Worker —— 点上方「测试连接」可一键自检。',
     402: '账户余额不足（402）。请到服务商控制台充值。',
     403: '无权限（403）。Key 可能没有访问该模型的权限，或 Worker 的 Origin 白名单拦截了本站域名。',
     404: '接口不存在（404）。请检查 Worker 代理地址是否写全（例如是否漏了路径）。',
@@ -1076,6 +1127,43 @@ function friendlyHttpError(status, bodyText) {
     504: '网关超时（504）。题目或代码可能过长。'
   };
   return (map[status] || ('请求失败（HTTP ' + status + '）。')) + (detail ? ' 服务商返回：' + detail : '');
+}
+
+/**
+ * 代理身份自检
+ * GET 代理地址，确认返回的 JSON 里 service === 'codelearn-proxy'。
+ * 这一步能一次性区分「Key 有问题」与「地址上跑的不是我们的 Worker」。
+ */
+async function checkProxyIdentity() {
+  let res;
+  try {
+    res = await fetch(proxyTarget(), {
+      method: 'GET',
+      headers: { 'Accept': 'application/json' },
+      cache: 'no-store'
+    });
+  } catch (e) {
+    // 关键诊断：再发一个 no-cors 请求，区分"网络根本不通"与"服务器可达但 CORS 头不对"
+    const reachable = await probeReachable();
+    return {
+      ok: false,
+      kind: reachable ? 'cors' : 'network',
+      detail: (e && e.message) ? e.message : String(e)
+    };
+  }
+  const text = await res.text().catch(function () { return ''; });
+  let data = null;
+  try { data = JSON.parse(text); } catch (e) { /* 不是 JSON */ }
+  if (data && data.service === 'codelearn-proxy') {
+    return {
+      ok: true,
+      version: data.version || '未知',
+      deploy: data.deploy || 'worker',          // worker / pages-function / local-node
+      providers: data.providers || [],
+      data: data
+    };
+  }
+  return { ok: false, kind: 'not-ours', status: res.status, sample: text.slice(0, 200), data: data };
 }
 
 /**
@@ -1112,7 +1200,7 @@ async function callAI(opt) {
 
   let res;
   try {
-    res = await fetch(state.proxyUrl, {
+    res = await fetch(proxyTarget(), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -1120,12 +1208,32 @@ async function callAI(opt) {
     });
   } catch (e) {
     if (e && e.name === 'AbortError') throw e;
-    throw new Error('无法连接代理 Worker。请确认：1) 地址填写正确且已部署；2) Worker 的 CORS 允许本站域名；3) 网络可访问 workers.dev。原始错误：' + (e && e.message ? e.message : e));
+    // 用 no-cors 探一次，把"网络不通"和"CORS 被拦"分开报，不再只丢一句 Failed to fetch
+    const reachable = await probeReachable();
+    let why;
+    if (reachable) {
+      why = '地址能连通，但浏览器读不到响应 —— 这是典型的 CORS 被拦：\n' +
+            '· 若用自建 Worker：检查它的 ALLOWED_ORIGINS 是否包含当前站点 ' + location.origin + '（多个用英文逗号分隔，或先设为 * 验证）。\n' +
+            '· 若走同源 /api/chat：检查 Pages Functions 是否部署成功。';
+    } else {
+      why = '连服务器都连不上（域名没解析、连接被重置或超时）：\n' +
+            '· 若地址是 *.workers.dev：国内网络经常对它做 DNS 污染 + SNI 阻断，实测会解析到 Facebook/Dropbox 等无关 IP 并报 ECONNRESET。\n' +
+            '· 解决方案见 README「网络被墙怎么办」：改用同源 /api/chat（Pages Functions，推荐）或本机 http://127.0.0.1:8787。\n' +
+            '· 也可能是地址写错、Worker 已删除。';
+    }
+    throw new Error('无法连接代理。原始错误：' + (e && e.message ? e.message : e) + '\n\n' + why);
   }
 
   if (!res.ok) {
     const txt = await res.text().catch(function () { return ''; });
-    throw new Error(friendlyHttpError(res.status, txt));
+    let isJson = false;
+    try { JSON.parse(txt); isJson = true; } catch (e) { isJson = false; }
+    let msg = friendlyHttpError(res.status, txt);
+    if (!isJson) {
+      // 本项目 Worker 永远返回 JSON；返回纯文本说明该地址上跑的是别的脚本
+      msg += '\n⚠️ 该代理返回的是纯文本而不是 JSON，通常意味着这个地址上运行的不是本项目的 cloudflare-proxy.js。请到【API 设置】点「测试连接」执行代理自检。';
+    }
+    throw new Error(msg);
   }
 
   // 非流式：直接取 JSON
@@ -1294,8 +1402,42 @@ function bindApiPanel() {
 
     btn.disabled = true;
     const old = btn.textContent;
-    btn.textContent = '测试中…';
-    out.innerHTML = '<div class="loading"><span class="spinner"></span><span>正在向 ' + esc(PROVIDERS[state.provider].name) + ' 发送一条测试请求…</span></div>';
+    const parts = [];
+
+    // ---------- 第 1 步：代理身份自检（能区分「Key 问题」和「Worker 装错」）----------
+    btn.textContent = '第 1/2 步：校验代理…';
+    out.innerHTML = '<div class="loading"><span class="spinner"></span><span>正在校验代理地址（确认它是不是本项目的 Cloudflare Worker）…</span></div>';
+    const idc = await checkProxyIdentity();
+    if (idc.ok) {
+      parts.push('<div class="note ok"><b>&#10004; 第 1 步 · 代理自检通过</b>：该地址上运行的确实是本项目的代理 ' +
+        '（<code>codelearn-proxy</code> v' + esc(idc.version) + ' · ' + esc(idc.deploy) +
+        (isSameOriginProxy() ? ' · 同源，无 CORS 风险' : '') +
+        '，支持 ' + esc((idc.providers || []).join(' / ') || 'deepseek / qwen') + '）。</div>');
+    } else if (idc.kind === 'cors') {
+      parts.push('<div class="note err"><b>&#10008; 第 1 步 · 代理自检失败：地址能连通，但浏览器读不到响应（CORS 被拦）</b><br>' +
+        '原始错误：' + esc(idc.detail) + '<br>说明服务器是活的，但响应里缺少 <code>Access-Control-Allow-Origin</code>。检查：<br>' +
+        '&nbsp;&nbsp;a) 自建 Worker：它的 <b>ALLOWED_ORIGINS</b> 是否包含当前站点 <code>' + esc(location.origin) + '</code>（多个用英文逗号分隔，或先设为 <code>*</code> 验证）；<br>' +
+        '&nbsp;&nbsp;b) 走同源 <code>/api/chat</code>：Pages Functions 是否部署成功；<br>' +
+        '&nbsp;&nbsp;c) 返回的其实是 5xx/error 1101 之类的 HTML 错误页（也会缺 CORS 头）——请到 Cloudflare 控制台看 Worker 的实时日志。</div>');
+    } else if (idc.kind === 'network') {
+      parts.push('<div class="note err"><b>&#10008; 第 1 步 · 代理自检失败：连服务器都连不上</b><br>' +
+        '原始错误：' + esc(idc.detail) + '<br>通常意味着域名解析不到、连接被重置/超时，或地址写错。判断技巧：<br>' +
+        '&nbsp;&nbsp;· 用 <code>nslookup ' + esc((state.proxyUrl || '').replace(/^https?:\/\//, '').split('/')[0]) + '</code> 看解析结果——' +
+        '若解析到 <b>Facebook / Twitter / Dropbox</b> 等无关 IP，就是被 <b>DNS 污染</b>了（国内网络访问 <code>*.workers.dev</code> 常见）；<br>' +
+        '&nbsp;&nbsp;· 即使解析正确，<code>*.workers.dev</code> 也可能被 <b>SNI 阻断</b>（TCP 能连、TLS 握手被 RST）；<br>' +
+        '&nbsp;&nbsp;· 这两种情况都<b>不是代码问题</b>，请改用同源 <code>/api/chat</code>（Pages Functions）或本机 <code>http://127.0.0.1:8787</code>，详见 README「网络被墙怎么办」。</div>');
+    } else {
+      parts.push('<div class="note err"><b>&#10008; 第 1 步 · 代理自检失败：这个地址上跑的不是本项目的 Worker</b><br>' +
+        '它返回了 HTTP ' + esc(String(idc.status)) + '，内容为：<code>' + esc(idc.sample || '(空)') + '</code><br>' +
+        '正常情况应当返回 <code>{"ok":true,"service":"codelearn-proxy",...}</code>。请依次检查：<br>' +
+        '&nbsp;&nbsp;a) Cloudflare 里那个 Worker 的代码，是否已把 <b>cloudflare-proxy.js</b> 全文粘进去并 Deploy；<br>' +
+        '&nbsp;&nbsp;b) 上面的地址，与 Cloudflare 控制台里那个 Worker 的地址是否<b>完全一致</b>（很容易建了两个 Worker，填了另一个的地址）；<br>' +
+        '&nbsp;&nbsp;c) 自检方法：浏览器新标签页直接打开该地址，应看到 <code>{"ok":true,"service":"codelearn-proxy",...}</code>。</div>');
+    }
+
+    // ---------- 第 2 步：真实调用一次模型（无论第 1 步成败都跑，便于看到完整错误链）----------
+    btn.textContent = '第 2/2 步：测试模型…';
+    out.innerHTML = parts.join('') + '<div class="loading"><span class="spinner"></span><span>正在向 ' + esc(PROVIDERS[state.provider].name) + ' 发送一条测试请求…</span></div>';
     const t0 = Date.now();
     try {
       const reply = await callAI({
@@ -1305,14 +1447,15 @@ function bindApiPanel() {
         ],
         stream: false, temperature: 0, maxTokens: 32
       });
-      out.innerHTML = '<div class="note ok"><b>&#10004; 连接成功</b>（' + (Date.now() - t0) + ' ms，模型：' + esc(state.model) + '）<br>模型回复：' + esc(reply.trim().slice(0, 120)) + '</div>';
+      parts.push('<div class="note ok"><b>&#10004; 第 2 步 · 模型连通性正常</b>（' + (Date.now() - t0) + ' ms，模型：' +
+        esc(state.model) + '）<br>模型回复：' + esc(reply.trim().slice(0, 120)) + '</div>');
       saveSettings(true);
     } catch (e) {
-      out.innerHTML = '<div class="note err"><b>&#10008; 连接失败</b><br>' + esc(e.message) + '</div>';
-    } finally {
-      btn.disabled = false;
-      btn.textContent = old;
+      parts.push('<div class="note err"><b>&#10008; 第 2 步 · 模型调用失败</b><br>' + esc(e.message) + '</div>');
     }
+    out.innerHTML = parts.join('');
+    btn.disabled = false;
+    btn.textContent = old;
   });
 }
 
@@ -1920,6 +2063,30 @@ function switchTab(name) {
   try { location.hash = name; } catch (e) {}
 }
 
+/**
+ * 自动探测本站是否部署了同源代理（functions/api/chat.js）。
+ * 目的：让**任何访客**打开网站就能用，不用自己去翻文档填 /api/chat。
+ * 只在用户从未配置过代理地址时生效，不会覆盖用户自己的设置。
+ */
+async function autoDetectProxy() {
+  if (state.proxyUrl) return;                          // 用户已配置，尊重用户
+  if (!/^https?:$/.test(location.protocol)) return;    // file:// 打开时没有同源后端，跳过
+  try {
+    const res = await fetch('/api/chat', { method: 'GET', cache: 'no-store' });
+    const data = await res.json();
+    if (data && data.service === 'codelearn-proxy') {
+      state.proxyUrl = '/api/chat';
+      const inp = $('#proxyInput');
+      if (inp) inp.value = '/api/chat';
+      saveSettings(true);
+      refreshApiStatus();
+      toast('已自动启用本站同源代理 /api/chat，填入你自己的 API Key 即可使用', 'ok');
+    }
+  } catch (e) {
+    /* 本站没有部署同源函数（或未连网），保持默认空值，用户可手动填 */
+  }
+}
+
 function init() {
   loadSettings();
 
@@ -1967,6 +2134,9 @@ function init() {
   });
 
   console.log('%cCodeTutor 已就绪', 'color:#2563eb;font-weight:700', '｜纯静态前端，API Key 仅存内存。');
+
+  // 最后：自动探测本站是否带同源代理（让访客零配置即可使用）
+  autoDetectProxy();
 }
 
 // DOM 就绪后启动
