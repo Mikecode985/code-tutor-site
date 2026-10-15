@@ -1,0 +1,1979 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#2563eb">
+<title>CodeTutor · 多语言编程学习助手（Python / C / C++）</title>
+<meta name="description" content="纯静态多语言编程学习网站：AI 代码 Bug 诊断、习题生成、在线代码批改，支持 Python、C、C++。API Key 仅存浏览器内存，绝不落盘。">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='88'>&#128187;</text></svg>">
+
+<!-- CodeMirror 5 由 CDN 加载；若加载失败，脚本会自动降级为原生 textarea，网站仍可用 -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+
+<style>
+/* ============================================================
+ * 1. 设计变量与基础样式
+ * ============================================================ */
+:root{
+  --bg:#f4f6fb;            /* 页面底色 */
+  --card:#ffffff;          /* 卡片底色 */
+  --line:#e4e8f0;          /* 分隔线 */
+  --line-2:#eef1f7;
+  --text:#1f2937;          /* 主文字 */
+  --muted:#6b7280;         /* 次要文字 */
+  --brand:#2563eb;         /* 主色 */
+  --brand-deep:#1d4ed8;
+  --brand-soft:#eff4ff;    /* 主色浅底 */
+  --ok:#16a34a; --ok-soft:#eafaf0;
+  --warn:#d97706; --warn-soft:#fff7e8;
+  --err:#dc2626; --err-soft:#fdeeee;
+  --radius:14px;
+  --shadow:0 1px 2px rgba(16,24,40,.04), 0 10px 26px -14px rgba(16,24,40,.18);
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono","Courier New",monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg); color:var(--text); overflow-x:hidden;
+  font:15px/1.68 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  -webkit-text-size-adjust:100%;
+}
+a{color:var(--brand);text-decoration:none}
+a:hover{text-decoration:underline}
+code,kbd,pre{font-family:var(--mono)}
+.wrap{max-width:1180px;margin:0 auto;padding:0 16px}
+
+/* ============================================================
+ * 2. 顶部栏 + 标签页导航
+ * ============================================================ */
+.topbar{
+  position:sticky;top:0;z-index:40;
+  background:rgba(255,255,255,.92);backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--line);
+}
+.topbar-inner{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:10px 0}
+.brand{display:flex;align-items:center;gap:9px;font-weight:700;font-size:17px;letter-spacing:.2px;white-space:nowrap}
+.brand .logo{
+  width:30px;height:30px;border-radius:9px;display:grid;place-items:center;font-size:16px;
+  background:linear-gradient(135deg,#2563eb,#38bdf8);color:#fff;box-shadow:0 6px 14px -6px rgba(37,99,235,.8)
+}
+.brand small{display:block;font-weight:400;font-size:11px;color:var(--muted);letter-spacing:0}
+.spacer{flex:1 1 auto}
+.top-ctl{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.top-ctl label{font-size:12.5px;color:var(--muted);white-space:nowrap}
+
+.tabs{display:flex;gap:6px;overflow-x:auto;padding:0 0 10px;-webkit-overflow-scrolling:touch}
+.tabs::-webkit-scrollbar{height:0}
+.tab{
+  flex:0 0 auto;border:1px solid var(--line);background:#fff;color:var(--muted);
+  padding:8px 15px;border-radius:999px;font-size:14px;cursor:pointer;white-space:nowrap;
+  transition:.15s;font-weight:500
+}
+.tab:hover{color:var(--brand);border-color:#c7d7fb}
+.tab.active{background:var(--brand);border-color:var(--brand);color:#fff;box-shadow:0 8px 18px -10px rgba(37,99,235,.9)}
+.tab .dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--ok);margin-left:6px;vertical-align:middle}
+
+/* ============================================================
+ * 3. 通用组件：卡片 / 按钮 / 表单 / 徽标 / 提示
+ * ============================================================ */
+main{padding:18px 0 40px}
+.panel{display:none;animation:fade .18s ease}
+.panel.active{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px 18px;margin-bottom:16px}
+.card + .card{margin-top:0}
+.card h2{margin:0 0 4px;font-size:16px;display:flex;align-items:center;gap:8px}
+.card h3{margin:16px 0 8px;font-size:14.5px}
+.card > p.sub{margin:0 0 14px;color:var(--muted);font-size:13px}
+.grid{display:grid;gap:12px}
+.grid.c2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.grid.c3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.grid.c4{grid-template-columns:repeat(4,minmax(0,1fr))}
+@media (max-width:820px){.grid.c3,.grid.c4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:560px){.grid.c2,.grid.c3,.grid.c4{grid-template-columns:1fr}}
+.field{display:flex;flex-direction:column;gap:5px;min-width:0}
+.field > span{font-size:12.5px;color:var(--muted);font-weight:600}
+.field .hint{font-size:12px;color:var(--muted);font-weight:400;line-height:1.5}
+
+input[type=text],input[type=password],input[type=number],select,textarea{
+  width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:10px;background:#fcfdff;
+  font-size:14px;color:var(--text);font-family:inherit;outline:none;transition:.15s
+}
+input:focus,select:focus,textarea:focus{border-color:var(--brand);background:#fff;box-shadow:0 0 0 3px rgba(37,99,235,.12)}
+textarea{resize:vertical;line-height:1.6}
+textarea.code-ish{font-family:var(--mono);font-size:13px}
+select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2 4l4 4 4-4' fill='none' stroke='%236b7280' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 10px center;padding-right:30px}
+select.compact{width:auto;min-width:120px;padding:6px 28px 6px 10px;font-size:13.5px;border-radius:9px}
+
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  border:1px solid var(--line);background:#fff;color:var(--text);border-radius:10px;
+  padding:9px 14px;font-size:14px;font-weight:600;cursor:pointer;transition:.15s;white-space:nowrap;font-family:inherit
+}
+.btn:hover{border-color:#c7d7fb;background:#f8faff}
+.btn:active{transform:translateY(1px)}
+.btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.btn.primary{background:var(--brand);border-color:var(--brand);color:#fff;box-shadow:0 8px 18px -10px rgba(37,99,235,.9)}
+.btn.primary:hover{background:var(--brand-deep);border-color:var(--brand-deep)}
+.btn.ghost{background:transparent;border-color:transparent;color:var(--muted)}
+.btn.ghost:hover{background:var(--brand-soft);color:var(--brand)}
+.btn.danger{color:var(--err);border-color:#f6cccc}
+.btn.danger:hover{background:var(--err-soft);border-color:var(--err)}
+.btn.sm{padding:6px 11px;font-size:13px;border-radius:9px}
+.btn-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+
+.badge{display:inline-flex;align-items:center;gap:5px;padding:2.5px 9px;border-radius:999px;font-size:12px;font-weight:600;background:var(--brand-soft);color:var(--brand-deep)}
+.badge.lang{background:#eef7ee;color:#166534}
+.badge.gray{background:#f1f3f7;color:var(--muted)}
+.badge.ok{background:var(--ok-soft);color:var(--ok)}
+.badge.warn{background:var(--warn-soft);color:var(--warn)}
+.badge.err{background:var(--err-soft);color:var(--err)}
+.badge.line{background:#fff;border:1px solid var(--line);color:var(--muted)}
+
+.note{border-radius:12px;padding:11px 13px;font-size:13px;line-height:1.65;border:1px solid}
+.note.info{background:var(--brand-soft);border-color:#d3e0fd;color:#1e3a8a}
+.note.warn{background:var(--warn-soft);border-color:#f6e0b8;color:#8a5a08}
+.note.err{background:var(--err-soft);border-color:#f6cccc;color:#8f1d1d}
+.note.ok{background:var(--ok-soft);border-color:#c4ecd4;color:#14532d}
+.note b{font-weight:700}
+.note ol,.note ul{margin:6px 0 0;padding-left:20px}
+
+.stat{display:flex;align-items:baseline;gap:6px;font-size:12.5px;color:var(--muted)}
+.stat b{font-size:15px;color:var(--text);font-variant-numeric:tabular-nums}
+
+/* ============================================================
+ * 4. 代码编辑器（CodeMirror / 降级 textarea）
+ * ============================================================ */
+.editor-card{padding:0;overflow:hidden}
+.editor-bar{
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  padding:9px 13px;border-bottom:1px solid var(--line);background:#fafbfe
+}
+.editor-bar .spacer{flex:1 1 auto}
+.editor-host{position:relative}
+.editor-host.drag{outline:2px dashed var(--brand);outline-offset:-4px;background:var(--brand-soft)}
+.CodeMirror{
+  height:auto;min-height:260px;font-family:var(--mono);font-size:13.5px;line-height:1.62;
+  background:#fff;color:var(--text)
+}
+.CodeMirror-scroll{min-height:260px}
+.CodeMirror-gutters{background:#fafbfe;border-right:1px solid var(--line)}
+.CodeMirror-linenumber{color:#a3adbd}
+.CodeMirror-cursor{border-left:2px solid var(--brand)}
+.CodeMirror-selected{background:#dbe6ff !important}
+.CodeMirror-activeline-background{background:#f7f9ff}
+.CodeMirror-matchingbracket{color:var(--brand-deep) !important;font-weight:700;background:#e2ebff}
+textarea.fallback-editor{
+  width:100%;min-height:260px;border:0;border-radius:0;background:#fff;padding:12px 14px;
+  font-family:var(--mono);font-size:13.5px;line-height:1.62;resize:vertical
+}
+textarea.fallback-editor:focus{box-shadow:none}
+
+/* ============================================================
+ * 5. AI 输出区 + Markdown 渲染样式
+ * ============================================================ */
+.output{min-height:120px}
+.output.empty{display:grid;place-items:center;color:var(--muted);font-size:13.5px;text-align:center;padding:30px 10px}
+.md{font-size:14.5px;word-wrap:break-word;overflow-wrap:anywhere}
+.md > *:first-child{margin-top:0}
+.md h2,.md h3,.md h4,.md h5{margin:18px 0 8px;line-height:1.4;font-size:16px}
+.md h3{font-size:15.5px}.md h4{font-size:14.8px}.md h5{font-size:14.2px}
+.md h2{padding-bottom:6px;border-bottom:1px solid var(--line-2)}
+.md p{margin:8px 0}
+.md ul,.md ol{margin:8px 0;padding-left:22px}
+.md li{margin:4px 0}
+.md hr{border:0;border-top:1px solid var(--line);margin:16px 0}
+.md blockquote{margin:10px 0;padding:6px 12px;border-left:3px solid #c7d7fb;background:#f8faff;color:#374151;border-radius:0 8px 8px 0}
+.md strong{font-weight:700;color:#111827}
+.md code.inline{background:#f1f4f9;border:1px solid var(--line);border-radius:6px;padding:1px 5px;font-size:.9em;color:#b91c1c;word-break:break-all}
+.md table{border-collapse:collapse;width:100%;margin:10px 0;font-size:13.5px;display:block;overflow-x:auto}
+.md th,.md td{border:1px solid var(--line);padding:7px 9px;text-align:left;vertical-align:top}
+.md th{background:#f7f9fd;font-weight:600;white-space:nowrap}
+.md tbody tr:nth-child(even){background:#fcfdff}
+
+/* 代码块：独立展示 + 一键复制 */
+.code-block{border:1px solid var(--line);border-radius:11px;overflow:hidden;margin:12px 0;background:#fbfcfe}
+.code-head{display:flex;align-items:center;gap:8px;padding:6px 10px;background:#f4f7fc;border-bottom:1px solid var(--line);font-size:12px;color:var(--muted)}
+.code-head .code-lang{font-family:var(--mono);font-weight:700;color:#475467;text-transform:lowercase}
+.code-block pre{margin:0;padding:12px 13px;overflow-x:auto;background:#fbfcfe}
+.code-block pre code{font-size:13px;line-height:1.62;color:#111827;white-space:pre;display:block;min-width:min-content}
+.code-block.streaming .code-head::after{content:"生成中…";color:var(--brand);font-weight:600}
+
+/* 批改评分卡 */
+.score-card{display:flex;gap:18px;align-items:center;flex-wrap:wrap;padding:16px;border:1px solid var(--line);border-radius:13px;background:linear-gradient(135deg,#f8fbff,#ffffff);margin-bottom:14px}
+.score-ring{
+  width:112px;height:112px;border-radius:50%;flex:0 0 auto;display:grid;place-items:center;
+  background:conic-gradient(var(--ring) calc(var(--pct)*1%),#e9edf5 0);position:relative
+}
+/* 白心圆用 ::after 画在中间，必须给它下方的数字更高的层级，否则数字会被白圆盖住 */
+.score-ring::after{content:"";position:absolute;inset:9px;background:#fff;border-radius:50%;z-index:1}
+.score-ring .inner{position:relative;z-index:2;text-align:center;line-height:1.15}
+.score-ring .inner b{font-size:29px;font-variant-numeric:tabular-nums}
+.score-ring .inner span{display:block;font-size:11px;color:var(--muted)}
+.score-meta{flex:1 1 240px;min-width:200px}
+.score-meta .verdict{font-size:17px;font-weight:700;margin-bottom:6px}
+.bars{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+.bar-row{display:grid;grid-template-columns:minmax(96px,150px) 1fr auto;gap:10px;align-items:center;font-size:13px}
+.bar-track{display:block;height:8px;border-radius:99px;background:#eceff6;overflow:hidden}
+.bar-fill{display:block;height:100%;border-radius:99px;background:var(--brand);transition:width .35s ease}
+.bar-row .num{font-variant-numeric:tabular-nums;color:var(--muted);white-space:nowrap;font-size:12.5px}
+.bar-reason{grid-column:2 / -1;font-size:12.5px;color:var(--muted);margin-top:-2px}
+@media (max-width:560px){.bar-row{grid-template-columns:1fr auto}.bar-reason{grid-column:1 / -1}}
+
+/* 加载动画 */
+.loading{display:flex;align-items:center;gap:9px;color:var(--muted);font-size:13.5px;padding:8px 0}
+.spinner{width:16px;height:16px;border:2px solid #cfd9ea;border-top-color:var(--brand);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.caret::after{content:"▍";color:var(--brand);animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+
+/* Toast */
+#toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);z-index:99;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none}
+#toast .t{background:#111827;color:#fff;padding:9px 15px;border-radius:10px;font-size:13.5px;box-shadow:0 12px 28px -10px rgba(0,0,0,.5);animation:pop .2s ease}
+#toast .t.ok{background:#15803d}#toast .t.err{background:#b91c1c}
+@keyframes pop{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+footer{border-top:1px solid var(--line);background:#fff;padding:18px 0 30px;color:var(--muted);font-size:12.5px;line-height:1.75}
+.hidden{display:none !important}
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     顶部栏：品牌 + 全局编程语言选择 + API 状态
+     ============================================================ -->
+<header class="topbar">
+  <div class="wrap topbar-inner">
+    <div class="brand">
+      <span class="logo">&#128187;</span>
+      <span>CodeTutor<small>多语言编程学习助手</small></span>
+    </div>
+
+    <div class="spacer"></div>
+
+    <div class="top-ctl">
+      <!-- 【全局编程语言选择】整个网站的出题 / 诊断 / 批改都跟随这里 -->
+      <label for="langSelect">编程语言</label>
+      <select id="langSelect" class="compact" title="切换后：编辑器语法高亮、出题语言、诊断与批改语言全部自动适配">
+        <option value="python">Python</option>
+        <option value="c">C</option>
+        <option value="cpp">C++</option>
+      </select>
+      <span id="apiStatus" class="badge gray" title="配置 API 后此处变绿">未配置 API</span>
+    </div>
+  </div>
+
+  <!-- 标签页导航 -->
+  <div class="wrap">
+    <nav class="tabs" id="tabs" role="tablist" aria-label="功能切换">
+      <button class="tab" role="tab" data-panel="api"      aria-selected="false">&#9881;&#65039; API 设置</button>
+      <button class="tab active" role="tab" data-panel="assistant" aria-selected="true">&#128295; 代码助手</button>
+      <button class="tab" role="tab" data-panel="quiz"     aria-selected="false">&#128221; 习题生成</button>
+      <button class="tab" role="tab" data-panel="grade"    aria-selected="false">&#127919; 代码批改</button>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- ============================================================
+       面板 1：API 设置
+       ============================================================ -->
+  <section class="panel" id="panel-api" role="tabpanel" aria-labelledby="tab-api">
+    <div class="card">
+      <h2>&#9881;&#65039; AI 服务配置</h2>
+      <p class="sub">选择服务商并填入<b>你自己的</b> API Key。所有 AI 功能都通过你部署的 Cloudflare Worker 代理转发，浏览器不直连大模型官方接口（可避免 CORS 拦截）。</p>
+
+      <div class="grid c2">
+        <div class="field">
+          <span>AI 服务商</span>
+          <select id="providerSelect">
+            <option value="deepseek">DeepSeek（深度求索）</option>
+            <option value="qwen">通义千问（阿里云百炼 / DashScope）</option>
+          </select>
+          <div class="hint" id="providerHint"></div>
+        </div>
+
+        <div class="field">
+          <span>模型名称</span>
+          <input id="modelInput" list="modelList" placeholder="deepseek-chat" autocomplete="off" spellcheck="false">
+          <datalist id="modelList"></datalist>
+          <div class="hint">可直接输入任意兼容 OpenAI 协议的模型名；不确定就用默认值。</div>
+        </div>
+
+        <div class="field" style="grid-column:1/-1">
+          <span>API Key（仅保存在浏览器内存，绝不写入 localStorage / Cookie / 服务器）</span>
+          <div style="display:flex;gap:8px">
+            <input id="apiKeyInput" type="password" placeholder="sk-xxxxxxxxxxxxxxxx（刷新或关闭页面即自动清除）"
+                   autocomplete="off" spellcheck="false" data-lpignore="true">
+            <button class="btn" id="toggleKeyBtn" type="button" title="显示 / 隐藏">&#128065;</button>
+          </div>
+        </div>
+
+        <div class="field" style="grid-column:1/-1">
+          <span>代理地址（Cloudflare Worker 的 URL）</span>
+          <input id="proxyInput" type="text" placeholder="https://你的worker名.你的子域.workers.dev" autocomplete="off" spellcheck="false">
+          <div class="hint">部署 <code>cloudflare-proxy.js</code> 后把生成的地址填在这里；也可填自定义域名，例如 <code>https://api.你的域名.com</code>。</div>
+        </div>
+      </div>
+
+      <div class="btn-row" style="margin-top:14px">
+        <button class="btn primary" id="testApiBtn">测试连接</button>
+        <button class="btn" id="saveSettingsBtn">保存设置（不含 Key）</button>
+        <button class="btn danger" id="clearKeyBtn">清空内存中的 Key</button>
+      </div>
+      <div id="apiTestResult" style="margin-top:12px"></div>
+    </div>
+
+    <div class="card">
+      <h2>&#128274; 安全说明与免责声明</h2>
+      <div class="note warn">
+        <b>请务必阅读，使用本网站即表示你已知悉并接受以下内容：</b>
+        <ol>
+          <li><b>密钥零存储</b>：API Key 只存在于当前页面的 JavaScript 内存中，<b>不会</b>写入 localStorage、sessionStorage、Cookie、IndexedDB，也<b>不会</b>上传到本站的任何服务器。刷新或关闭页面后密钥立即消失，需要重新粘贴。</li>
+          <li><b>密钥会随请求转发</b>：每次 AI 调用时，Key 会作为请求头经<b>你配置的 Cloudflare Worker</b> 转发给对应服务商。<b>请不要使用他人提供的代理地址</b>——代理方理论上可以看到该 Key。不知道来源的 Worker 地址一律不要填。</li>
+          <li><b>建议使用独立/限额 Key</b>：请在服务商控制台设置消费限额、并在用完后及时销毁或轮换密钥；不要使用主账号的高权限密钥。</li>
+          <li><b>生成内容需自行核对</b>：AI 输出可能存在错误、过时的语法或与题目要求不一致的解法，请以编译器运行结果和教材/考试大纲为准，切勿直接照搬用于正式考试提交。</li>
+          <li><b>隐私</b>：你粘贴的代码与题目会发送给 AI 服务商，请勿提交含个人隐私、商业机密或涉及保密的代码。</li>
+          <li><b>费用与可用性</b>：AI 接口调用产生的费用由你的账号承担；本网站为纯静态教学演示项目，不提供任何形式的可用性、准确性担保，因使用本网站造成的任何损失（包括但不限于 API 费用、成绩影响）由使用者自行承担。</li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       面板 2：代码助手
+       ============================================================ -->
+  <section class="panel active" id="panel-assistant" role="tabpanel" aria-labelledby="tab-assistant">
+    <div class="card">
+      <h2>&#128295; 代码助手 <span class="badge lang" id="assistantLangBadge">Python</span></h2>
+      <p class="sub">上传或粘贴代码，让 AI 帮你查 Bug、讲原理、给出修复后的完整代码，并指出考试/练习中的常见扣分陷阱。</p>
+
+      <div class="btn-row">
+        <button class="btn sm" id="assistantPickBtn">&#128193; 选择源码文件</button>
+        <input type="file" id="assistantFile" class="hidden" accept=".py,.c,.cpp,.cc,.cxx,.h,.hpp,.txt">
+        <button class="btn sm" id="assistantDemoBtn">载入示例代码</button>
+        <button class="btn sm" id="assistantClearBtn">清空代码</button>
+        <span class="hint" style="font-size:12px;color:var(--muted)">支持 .py / .c / .cpp，也可直接把文件拖到编辑区</span>
+      </div>
+    </div>
+
+    <div class="card editor-card">
+      <div class="editor-bar">
+        <span class="badge gray" id="assistantFileTag">未选择文件</span>
+        <span class="stat"><b id="assistantLines">0</b> 行 · <b id="assistantChars">0</b> 字符</span>
+        <div class="spacer"></div>
+        <button class="btn sm ghost" id="assistantCopyBtn">复制全部代码</button>
+        <button class="btn sm ghost" id="assistantFormatHintBtn" title="查看该语言的书写规范提醒">书写规范</button>
+      </div>
+      <div class="editor-host" id="assistantEditorHost">
+        <textarea id="assistantEditor" spellcheck="false"></textarea>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3 style="margin-top:0">选择要 AI 做的事</h3>
+      <div class="btn-row" id="assistantActions">
+        <button class="btn primary" data-mode="diagnose">&#128269; Bug 诊断</button>
+        <button class="btn" data-mode="explain">&#128214; 代码讲解</button>
+        <button class="btn" data-mode="fix">&#128736;&#65039; 修复后的完整代码</button>
+        <button class="btn" data-mode="trap">&#9888;&#65039; 考试扣分陷阱</button>
+      </div>
+
+      <div class="field" style="margin-top:14px">
+        <span>补充问题（可选）：针对这段代码你还想问什么？</span>
+        <textarea id="assistantQuestion" rows="2" placeholder="例如：这段代码的时间复杂度是多少？为什么我的 for 循环少跑一次？"></textarea>
+      </div>
+      <div class="btn-row" style="margin-top:10px">
+        <button class="btn primary" id="assistantAskBtn">提问</button>
+        <button class="btn" id="assistantStopBtn" disabled>&#9632; 停止生成</button>
+        <button class="btn ghost" id="assistantResetConvBtn" title="清空多轮对话上下文">清空上下文</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>&#129302; AI 分析结果</h2>
+      <div class="output empty" id="assistantOutput">选择上方按钮或直接提问，结果会显示在这里。<br>输出中的代码块右上角可一键复制。</div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       面板 3：习题生成
+       ============================================================ -->
+  <section class="panel" id="panel-quiz" role="tabpanel" aria-labelledby="tab-quiz">
+    <div class="card">
+      <h2>&#128221; 习题生成 <span class="badge lang" id="quizLangBadge">Python</span></h2>
+      <p class="sub">按你选择的编程语言自动出题，题型、难度、输入输出样例、数据范围一并生成，附参考答案与解析。</p>
+
+      <div class="grid c4">
+        <div class="field">
+          <span>难度</span>
+          <select id="quizLevel">
+            <option value="basic">基础（入门 / 课后练习）</option>
+            <option value="exam" selected>考试真题难度</option>
+            <option value="advanced">进阶（竞赛 / 拔高）</option>
+          </select>
+        </div>
+        <div class="field">
+          <span>题型</span>
+          <select id="quizType">
+            <option value="choice">选择题</option>
+            <option value="fill">程序填空题</option>
+            <option value="fix">改错题</option>
+            <option value="coding" selected>编程大题</option>
+          </select>
+        </div>
+        <div class="field">
+          <span>题目数量</span>
+          <select id="quizCount">
+            <option value="1" selected>1 题</option>
+            <option value="2">2 题</option>
+            <option value="3">3 题</option>
+            <option value="5">5 题</option>
+          </select>
+        </div>
+        <div class="field">
+          <span>知识点 / 范围（可选）</span>
+          <input id="quizTopic" type="text" placeholder="如：循环与数组、指针、递归、结构体" autocomplete="off">
+        </div>
+      </div>
+
+      <div class="field" style="margin-top:12px">
+        <span>额外要求（可选）</span>
+        <textarea id="quizExtra" rows="2" placeholder="例如：数据范围控制在 n ≤ 1000；只考一维数组；样例要有易错边界"></textarea>
+      </div>
+
+      <div class="btn-row" style="margin-top:12px">
+        <button class="btn primary" id="quizGenBtn">&#10024; 生成习题</button>
+        <button class="btn" id="quizStopBtn" disabled>&#9632; 停止生成</button>
+        <button class="btn ghost" id="quizRegenBtn">换一批</button>
+        <button class="btn" id="quizToGradeBtn" title="把生成的题目送到【代码批改】标签页">&#10145;&#65039; 送去批改</button>
+      </div>
+      <div id="quizMeta" class="hint" style="margin-top:10px;font-size:12.5px;color:var(--muted)"></div>
+    </div>
+
+    <div class="card">
+      <h2>&#128209; 题目</h2>
+      <div class="output empty" id="quizOutput">点击「生成习题」，AI 会按当前语言与难度出题。</div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       面板 4：在线代码批改
+       ============================================================ -->
+  <section class="panel" id="panel-grade" role="tabpanel" aria-labelledby="tab-grade">
+    <div class="card">
+      <h2>&#127919; 在线代码批改 <span class="badge lang" id="gradeLangBadge">Python</span></h2>
+      <p class="sub">粘贴或自动带入题目，写下你的解答，AI 按机考规则逐项打分（满分 100），给出扣分原因、样例通过情况、漏洞清单与参考标准代码。</p>
+
+      <div class="field">
+        <span>题目（题目描述 / 输入输出格式 / 样例 / 数据范围）</span>
+        <textarea id="gradeProblem" rows="5" class="code-ish" placeholder="把题目原文粘贴到这里；也可以从【习题生成】页点「送去批改」自动带入。"></textarea>
+      </div>
+
+      <div class="grid c2" style="margin-top:12px">
+        <div class="field">
+          <span>评分标准 / 额外要求（可选）</span>
+          <textarea id="gradeRubric" rows="2" placeholder="例如：函数题按函数签名给分；要求 O(n log n)；必须使用指针；不允许使用 STL"></textarea>
+        </div>
+        <div class="field">
+          <span>快捷操作</span>
+          <div class="btn-row">
+            <button class="btn sm" id="gradeDemoBtn">载入示例题目</button>
+            <button class="btn sm" id="gradeClearProblemBtn">清空题目</button>
+          </div>
+          <div class="hint">批改严格程度默认按考试标准；勾选下方选项可调整。</div>
+          <label style="display:flex;gap:7px;align-items:center;font-size:13px;color:var(--text);margin-top:8px">
+            <input type="checkbox" id="gradeStrict" checked style="width:16px;height:16px"> 严格模式（逐项扣分，扣分理由必须引用具体行号）
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <div class="card editor-card">
+      <div class="editor-bar">
+        <span class="badge lang" id="gradeEditorLang">Python</span>
+        <span class="stat"><b id="gradeLines">0</b> 行 · <b id="gradeChars">0</b> 字符</span>
+        <div class="spacer"></div>
+        <button class="btn sm ghost" id="gradeCopyBtn">复制全部代码</button>
+        <button class="btn sm ghost" id="gradeClearCodeBtn">清空代码</button>
+      </div>
+      <div class="editor-host" id="gradeEditorHost">
+        <textarea id="gradeEditor" spellcheck="false"></textarea>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="btn-row">
+        <button class="btn primary" id="gradeSubmitBtn">&#128221; 开始批改（满分 100）</button>
+        <button class="btn" id="gradeStopBtn" disabled>&#9632; 停止生成</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>&#128202; 批改结果</h2>
+      <div id="gradeScoreArea"></div>
+      <div class="output empty" id="gradeOutput">提交后这里会显示总分、逐项扣分、样例通过情况、代码漏洞、参考标准代码与学习总结。</div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <b>CodeTutor</b> · 纯静态多语言编程学习网站（HTML + CSS + JavaScript，无后端、无数据库）。<br>
+    AI 能力由 DeepSeek / 通义千问 提供，经 Cloudflare Worker 代理转发。API Key 仅存于浏览器内存，刷新即消失，本站不收集、不存储、不上传任何密钥或代码。<br>
+    AI 生成内容仅供参考，请以编译器运行结果与教材 / 考试大纲为准。使用本网站即表示你已阅读并同意「API 设置」页的完整免责声明。
+  </div>
+</footer>
+
+<div id="toast"></div>
+
+<!-- ============================================================
+     CodeMirror 5 依赖（CDN）
+     ============================================================ -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/clike/clike.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchbrackets.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closebrackets.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/selection/active-line.min.js"></script>
+
+<script>
+/* ============================================================================
+ * CodeTutor 前端主逻辑（单文件，无构建、无依赖打包）
+ * 阅读顺序：
+ *   1. 常量：语言元数据 / 服务商元数据 / 系统提示词
+ *   2. 状态与本地存储（只存非敏感设置，Key 永不落盘）
+ *   3. 通用工具函数
+ *   4. Markdown 渲染器（含代码块一键复制）
+ *   5. 代码编辑器封装（CodeMirror，失败时降级 textarea）
+ *   6. AI 调用层（fetch 代理 / SSE 流式解析 / 友好报错）
+ *   7. API 设置面板
+ *   8. 代码助手模块
+ *   9. 习题生成模块
+ *  10. 代码批改模块
+ *  11. 标签页切换与初始化
+ * ========================================================================== */
+(function () {
+'use strict';
+
+/* ==========================================================================
+ * 1. 常量
+ * ========================================================================== */
+
+/** 三种编程语言的元数据：决定语法高亮模式、代码围栏标记、可上传后缀、示例代码 */
+const LANGS = {
+  python: {
+    id: 'python',
+    name: 'Python',
+    fence: 'python',                     // 提示 AI 使用的代码围栏标记
+    cmMode: 'python',                    // CodeMirror 语法模式
+    exts: ['.py', '.pyw', '.txt'],
+    defaultFile: 'main.py',
+    demo:
+      '# 示例：统计字符串中每个字符出现的次数并输出出现最多的字符\n' +
+      'def count_chars(text):\n' +
+      '    result = {}\n' +
+      '    for ch in text:\n' +
+      '        if ch in result:\n' +
+      '            result[ch] += 1\n' +
+      '        else:\n' +
+      '            result[ch] = 1\n' +
+      '    return result\n' +
+      '\n' +
+      'if __name__ == "__main__":\n' +
+      '    s = input("请输入字符串: ")\n' +
+      '    counts = count_chars(s)\n' +
+      '    best = max(counts, key=counts.get)\n' +
+      '    print("出现最多的字符:", best, "次数:", counts[best])\n',
+    style: '缩进必须统一（4 个空格）；注意:行尾冒号、==与=的区别；input() 读入的是字符串，参与运算前要 int()/float() 转换；列表下标从 0 开始，切片右端不含。'
+  },
+  c: {
+    id: 'c',
+    name: 'C',
+    fence: 'c',
+    cmMode: 'text/x-csrc',
+    exts: ['.c', '.h', '.txt'],
+    defaultFile: 'main.c',
+    demo:
+      '/* 示例：读入 n 个整数，输出最大值与最小值 */\n' +
+      '#include <stdio.h>\n' +
+      '\n' +
+      'int main(void) {\n' +
+      '    int n, x, i;\n' +
+      '    int max, min;\n' +
+      '    if (scanf("%d", &n) != 1 || n <= 0) {\n' +
+      '        return 0;\n' +
+      '    }\n' +
+      '    for (i = 0; i < n; i++) {\n' +
+      '        scanf("%d", &x);\n' +
+      '        if (i == 0) { max = min = x; }\n' +
+      '        if (x > max) max = x;\n' +
+      '        if (x < min) min = x;\n' +
+      '    }\n' +
+      '    printf("%d %d\\n", max, min);\n' +
+      '    return 0;\n' +
+      '}\n',
+    style: 'scanf 的取地址符 & 不能漏；数组下标越界是 UB；循环变量、局部变量必须初始化；printf/scanf 的格式符要与类型一致（int→%d, long long→%lld, double→%lf/%f）；main 要 return 0。'
+  },
+  cpp: {
+    id: 'cpp',
+    name: 'C++',
+    fence: 'cpp',
+    cmMode: 'text/x-c++src',
+    exts: ['.cpp', '.cc', '.cxx', '.hpp', '.h', '.txt'],
+    defaultFile: 'main.cpp',
+    demo:
+      '// 示例：读入 n 个整数并升序输出（使用 vector 与 sort）\n' +
+      '#include <bits/stdc++.h>\n' +
+      'using namespace std;\n' +
+      '\n' +
+      'int main() {\n' +
+      '    ios::sync_with_stdio(false);\n' +
+      '    cin.tie(nullptr);\n' +
+      '\n' +
+      '    int n;\n' +
+      '    if (!(cin >> n) || n <= 0) return 0;\n' +
+      '    vector<int> a(n);\n' +
+      '    for (int i = 0; i < n; ++i) {\n' +
+      '        cin >> a[i];\n' +
+      '    }\n' +
+      '    sort(a.begin(), a.end());\n' +
+      '    for (int i = 0; i < n; ++i) {\n' +
+      '        cout << a[i] << (i + 1 == n ? \'\\n\' : \' \');\n' +
+      '    }\n' +
+      '    return 0;\n' +
+      '}\n',
+    style: '注意 using namespace std 的写法；vector 越界不会报错但会崩；sort 默认升序、自定义比较器要严格弱序；&引用传参可避免拷贝；long long 防溢出。'
+  }
+};
+
+/** 语言名 -> 元数据，兼容中文/简称写法 */
+function langOf(id) { return LANGS[id] || LANGS.python; }
+
+/** AI 服务商元数据（前端只用名字与默认模型，真实接口地址在 Worker 里配置） */
+const PROVIDERS = {
+  deepseek: {
+    name: 'DeepSeek',
+    defaultModel: 'deepseek-chat',
+    models: ['deepseek-chat', 'deepseek-reasoner'],
+    hint: '在 platform.deepseek.com 创建 API Key，形如 sk-xxxxxxxx。deepseek-chat 通用；deepseek-reasoner 偏推理，速度较慢。'
+  },
+  qwen: {
+    name: '通义千问',
+    defaultModel: 'qwen-plus',
+    models: ['qwen-plus', 'qwen-turbo', 'qwen-max', 'qwen2.5-coder-32b-instruct'],
+    hint: '在阿里云百炼（bailian.console.aliyun.com）创建 API Key，形如 sk-xxxxxxxx。qwen-plus 性价比高；qwen2.5-coder-32b-instruct 更擅长代码。'
+  }
+};
+
+/**
+ * 内置系统提示词（按需求原样内置，禁止随意改动语义）
+ * 注意：这是整个网站角色的“宪法”，所有模块都会带上它。
+ */
+const BASE_SYSTEM_PROMPT =
+'你是编程助教，支持Python、C、C++三种编程语言。\n' +
+'能力：代码查错、代码优化、生成习题、代码批改打分（满分100）。\n' +
+'规则：\n' +
+'1. 代码使用```语言标记包裹，讲解通俗易懂，重点标注练习/考试常见扣分细节。\n' +
+'2. 代码批改模拟机考规则，按步骤给分，区分语法错误、逻辑错误。\n' +
+'3. 根据选定语言出题；难度可选：基础、真题难度、进阶；题型：选择、填空、改错、编程大题。\n' +
+'4. 严禁编造不存在的语法，不要给出无法运行的错误代码。';
+
+/** 组装最终 system 消息：内置提示词 + 本次会话的语言上下文 + 模块附加要求 */
+function buildSystemPrompt(extra) {
+  const L = langOf(state.lang);
+  return [
+    BASE_SYSTEM_PROMPT,
+    '【本次会话上下文】当前选定的编程语言是 ' + L.name + '。所有代码、题目、批改都必须使用 ' + L.name +
+      '，代码围栏统一使用 ```' + L.fence + ' 标记；不要混用其它语言，除非我明确要求对比。',
+    extra || ''
+  ].filter(Boolean).join('\n');
+}
+
+/** 本地存储键名（只保存非敏感设置） */
+const STORE_KEY = 'codetutor.settings.v1';
+
+/* ==========================================================================
+ * 2. 状态（apiKey 只在这里，永不写盘）
+ * ========================================================================== */
+const state = {
+  lang: 'python',
+  provider: 'deepseek',
+  model: PROVIDERS.deepseek.defaultModel,
+  proxyUrl: '',
+  apiKey: ''            // ⚠️ 仅内存：不写 localStorage / sessionStorage / Cookie
+};
+
+/** 各面板的多轮对话上下文 */
+const conv = { assistant: [], quiz: [], grade: [] };
+
+/** 当前正在进行的请求控制器，用于「停止生成」 */
+const running = { assistant: null, quiz: null, grade: null };
+
+/** 最近一次生成的题目文本，供「送去批改」使用 */
+let lastQuizText = '';
+
+/* ==========================================================================
+ * 3. 通用工具
+ * ========================================================================== */
+const $  = function (sel, root) { return (root || document).querySelector(sel); };
+const $$ = function (sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); };
+
+/** 轻提示 */
+function toast(msg, type) {
+  const box = $('#toast');
+  const el = document.createElement('div');
+  el.className = 't' + (type ? ' ' + type : '');
+  el.textContent = msg;
+  box.appendChild(el);
+  setTimeout(function () { el.style.opacity = '0'; el.style.transition = 'opacity .3s'; }, 1900);
+  setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 2300);
+}
+
+/** HTML 转义（所有 AI 输出都先转义再渲染，防 XSS） */
+function esc(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+/** 复制文本：优先 Clipboard API，非 HTTPS 环境回退到 execCommand */
+async function copyText(text) {
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+    throw new Error('fallback');
+  } catch (e) {
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.setAttribute('readonly', '');
+      ta.style.position = 'fixed';
+      ta.style.left = '-9999px';
+      document.body.appendChild(ta);
+      ta.select();
+      const ok = document.execCommand('copy');
+      document.body.removeChild(ta);
+      return ok;
+    } catch (e2) { return false; }
+  }
+}
+
+/** 事件委托：所有 .copy-btn 一键复制所在代码块 */
+document.addEventListener('click', function (e) {
+  const btn = e.target.closest ? e.target.closest('.copy-btn') : null;
+  if (!btn) return;
+  const block = btn.closest('.code-block');
+  if (!block) return;
+  const codeEl = block.querySelector('code');
+  copyText(codeEl ? codeEl.textContent : '').then(function (ok) {
+    toast(ok ? '代码已复制到剪贴板' : '复制失败，请手动选择复制', ok ? 'ok' : 'err');
+  });
+});
+
+/** 打字机式滚动到底 */
+function scrollBottom(el) {
+  try { el.scrollIntoView({ block: 'nearest' }); } catch (e) { /* 忽略 */ }
+}
+
+/* ==========================================================================
+ * 4. Markdown 渲染器
+ *    支持：标题 / 段落 / 有序无序列表（含一层嵌套）/ 引用 / 分割线 / 表格 /
+ *          行内代码 / 粗体 / 斜体 / 链接 / 代码围栏（独立卡片 + 一键复制）
+ *    说明：先整体转义，再把代码块「寄存」成占位符，最后按行做块级解析，
+ *          因此 AI 输出里的任何 HTML 都不会被当成标签执行。
+ * ========================================================================== */
+function renderInline(s) {
+  const codes = [];
+  // 行内代码先寄存，避免内部内容被后续规则误伤
+  let t = s.replace(/`([^`\n]+)`/g, function (m, c) {
+    codes.push(c);
+    return '\u0001' + (codes.length - 1) + '\u0001';
+  });
+  t = t
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/(^|[^*\w])\*([^*\n]+)\*/g, '$1<em>$2</em>')
+    .replace(/~~([^~]+)~~/g, '<del>$1</del>')
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+  // 还原行内代码
+  t = t.replace(/\u0001(\d+)\u0001/g, function (m, i) {
+    return '<code class="inline">' + codes[Number(i)] + '</code>';
+  });
+  return t;
+}
+
+/** 生成一个代码块卡片（含语言标签与复制按钮） */
+function codeBlockHtml(lang, code, streaming) {
+  const label = (lang || 'text').toLowerCase();
+  return '' +
+    '<div class="code-block' + (streaming ? ' streaming' : '') + '">' +
+      '<div class="code-head">' +
+        '<span class="code-lang">' + esc(label) + '</span>' +
+        '<span style="flex:1"></span>' +
+        '<button class="btn sm ghost copy-btn" type="button" title="复制这段代码">&#128203; 复制</button>' +
+      '</div>' +
+      '<pre><code>' + code + '</code></pre>' +
+    '</div>';
+}
+
+function renderMarkdown(src) {
+  if (!src) return '';
+  const blocks = [];                       // 寄存的代码块
+  let text = esc(src);
+
+  // 4.1 完整的 ``` 围栏
+  text = text.replace(/```([A-Za-z0-9+#._-]*)[ \t]*\r?\n([\s\S]*?)```/g, function (m, lang, code) {
+    blocks.push({ lang: lang, code: code.replace(/\s+$/, '') });
+    return '\u0000' + (blocks.length - 1) + '\u0000';
+  });
+  // 4.2 流式输出中尚未闭合的围栏（保证边生成边高亮）
+  text = text.replace(/```([A-Za-z0-9+#._-]*)[ \t]*\r?\n([\s\S]*)$/, function (m, lang, code) {
+    blocks.push({ lang: lang, code: code.replace(/\s+$/, ''), open: true });
+    return '\u0000' + (blocks.length - 1) + '\u0000';
+  });
+
+  // 占位符单独成行，方便逐行解析
+  text = text.replace(/\u0000(\d+)\u0000/g, function (m) { return '\n' + m + '\n'; });
+
+  const lines = text.split(/\r?\n/);
+  const html = [];
+  const isTok = function (s) { return /^\u0000\d+\u0000$/.test(s); };
+
+  /** 收集连续的列表项，返回 {html, next} */
+  function parseList(start) {
+    const items = [];
+    let i = start;
+    while (i < lines.length) {
+      const raw = lines[i];
+      if (!raw.trim()) {
+        // 列表项之间允许一个空行，但空行后若不再是列表项则结束
+        if (i + 1 < lines.length && /^(\s*)([-*+]|\d+[.)])\s+/.test(lines[i + 1])) { i++; continue; }
+        break;
+      }
+      const m = raw.match(/^(\s*)([-*+]|\d+[.)])\s+(.*)$/);
+      if (!m) break;
+      items.push({ indent: m[1].replace(/\t/g, '  ').length, text: m[3], ordered: /\d/.test(m[2]) });
+      i++;
+    }
+    if (!items.length) return { html: '', next: start };
+    const ordered = items[0].ordered;
+    const base = items[0].indent;
+    let out = '', depth = -1;
+    for (let k = 0; k < items.length; k++) {
+      const lv = items[k].indent >= base + 2 ? 1 : 0;
+      if (lv > depth) { out += ordered ? '<ol>' : '<ul>'; depth = lv; }
+      else if (lv < depth) { out += ordered ? '</ol>' : '</ul>'; depth = lv; }
+      out += '<li>' + renderInline(items[k].text) + '</li>';
+    }
+    while (depth >= 0) { out += ordered ? '</ol>' : '</ul>'; depth--; }
+    return { html: out, next: i };
+  }
+
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i];
+    const t = line.trim();
+
+    if (!t) { i++; continue; }
+
+    // 代码块占位符
+    if (isTok(t)) { html.push(t); i++; continue; }
+
+    // 分割线
+    if (/^(-{3,}|\*{3,}|_{3,})$/.test(t)) { html.push('<hr>'); i++; continue; }
+
+    // 标题
+    let m = t.match(/^(#{1,6})\s+(.*)$/);
+    if (m) {
+      const lv = Math.min(m[1].length + 1, 6);
+      html.push('<h' + lv + '>' + renderInline(m[2]) + '</h' + lv + '>');
+      i++; continue;
+    }
+
+    // 引用（可多行）
+    // 注意：源码里的 `>` 在 esc() 阶段已变成 `&gt;`，所以此处必须同时匹配两种写法
+    if (/^(?:&gt;|>)\s?/.test(t)) {
+      const buf = [];
+      while (i < lines.length && /^\s*(?:&gt;|>)\s?/.test(lines[i])) {
+        buf.push(lines[i].replace(/^\s*(?:&gt;|>)\s?/, ''));
+        i++;
+      }
+      html.push('<blockquote>' + buf.map(function (x) { return renderInline(x); }).join('<br>') + '</blockquote>');
+      continue;
+    }
+
+    // 表格：| a | b |  紧跟 | --- | --- |
+    if (t.indexOf('|') === 0 && i + 1 < lines.length && /^\|[\s:|-]+\|$/.test(lines[i + 1].trim())) {
+      const rows = [];
+      while (i < lines.length && lines[i].trim().indexOf('|') === 0) { rows.push(lines[i].trim()); i++; }
+      const split = function (r) {
+        return r.replace(/^\|/, '').replace(/\|$/, '').split('|').map(function (c) { return c.trim(); });
+      };
+      const head = split(rows[0]);
+      let tb = '<table><thead><tr>';
+      head.forEach(function (c) { tb += '<th>' + renderInline(c) + '</th>'; });
+      tb += '</tr></thead><tbody>';
+      for (let r = 2; r < rows.length; r++) {
+        tb += '<tr>';
+        split(rows[r]).forEach(function (c) { tb += '<td>' + renderInline(c) + '</td>'; });
+        tb += '</tr>';
+      }
+      tb += '</tbody></table>';
+      html.push(tb);
+      continue;
+    }
+
+    // 列表
+    if (/^(\s*)([-*+]|\d+[.)])\s+/.test(line)) {
+      const r = parseList(i);
+      html.push(r.html);
+      i = r.next;
+      continue;
+    }
+
+    // 段落：收集直到遇到空行或另一个块级元素
+    const buf = [t];
+    i++;
+    while (i < lines.length) {
+      const nx = lines[i];
+      const nt = nx.trim();
+      if (!nt) break;
+      if (isTok(nt)) break;
+      if (/^(#{1,6})\s+/.test(nt)) break;
+      if (/^(-{3,}|\*{3,}|_{3,})$/.test(nt)) break;
+      if (/^(?:&gt;|>)\s?/.test(nt)) break;   // 引用块起始，结束当前段落
+      if (/^(\s*)([-*+]|\d+[.)])\s+/.test(nx)) break;
+      if (nt.indexOf('|') === 0 && i + 1 < lines.length && /^\|[\s:|-]+\|$/.test(lines[i + 1].trim())) break;
+      buf.push(nt);
+      i++;
+    }
+    html.push('<p>' + renderInline(buf.join('<br>')) + '</p>');
+  }
+
+  // 还原代码块
+  let out = html.join('\n');
+  out = out.replace(/\u0000(\d+)\u0000/g, function (m, idx) {
+    const b = blocks[Number(idx)];
+    return b ? codeBlockHtml(b.lang || 'text', b.code, b.open) : '';
+  });
+  return out;
+}
+
+/** 把 Markdown 写入某个输出容器 */
+function paint(el, text, streaming) {
+  el.classList.remove('empty');
+  el.innerHTML = '<div class="md' + (streaming ? ' caret' : '') + '">' + renderMarkdown(text) + '</div>';
+}
+
+/** 显示加载中 */
+function showLoading(el, text) {
+  el.classList.remove('empty');
+  el.innerHTML = '<div class="loading"><span class="spinner"></span><span>' + esc(text || 'AI 正在思考…') + '</span></div>';
+}
+
+/** 显示错误 */
+function showError(el, msg) {
+  el.classList.remove('empty');
+  el.innerHTML = '<div class="note err"><b>出错了：</b>' + esc(msg) + '</div>';
+}
+
+/* ==========================================================================
+ * 5. 代码编辑器封装
+ *    优先 CodeMirror 5；如果 CDN 被墙 / 加载失败，自动降级为原生 textarea。
+ *    统一暴露：getValue / setValue / setLang / focus / refresh / onChange
+ * ========================================================================== */
+function createEditor(textareaId, counterIds) {
+  const ta = document.getElementById(textareaId);
+  const api = {
+    mode: 'cm', cm: null, ta: ta,
+    getValue: function () { return this.cm ? this.cm.getValue() : ta.value; },
+    setValue: function (v) { if (this.cm) this.cm.setValue(v == null ? '' : v); else ta.value = v == null ? '' : v; this.update(); },
+    getLang: function () { return ta.dataset.lang || state.lang; },
+    setLang: function (langId) {
+      const L = langOf(langId);
+      ta.dataset.lang = L.id;
+      if (this.cm) this.cm.setOption('mode', L.cmMode);
+    },
+    focus: function () { if (this.cm) this.cm.focus(); else ta.focus(); },
+    refresh: function () { if (this.cm) setTimeout(function () { api.cm.refresh(); }, 30); },
+    update: updateCounter
+  };
+
+  function updateCounter() {
+    const v = api.getValue();
+    if (counterIds && counterIds.lines) document.getElementById(counterIds.lines).textContent = v ? v.split('\n').length : 0;
+    if (counterIds && counterIds.chars) document.getElementById(counterIds.chars).textContent = v.length;
+  }
+
+  if (window.CodeMirror) {
+    // 用 CodeMirror 接管原有 textarea（CM 会把自己的 DOM 插在 textarea 之后）
+    api.cm = CodeMirror.fromTextArea(ta, {
+      mode: 'python',
+      lineNumbers: true,
+      indentUnit: 4,
+      tabSize: 4,
+      indentWithTabs: false,
+      smartIndent: true,
+      lineWrapping: false,
+      matchBrackets: true,
+      autoCloseBrackets: true,
+      styleActiveLine: true,
+      viewportMargin: Infinity
+    });
+    api.cm.on('change', updateCounter);
+    ta.style.display = 'none';   // 双保险：确保原始 textarea 不重复显示
+  } else {
+    // 降级模式：原样使用 textarea
+    api.mode = 'textarea';
+    ta.classList.add('fallback-editor');
+    ta.addEventListener('input', updateCounter);
+  }
+  updateCounter();
+  return api;
+}
+
+/* ==========================================================================
+ * 6. AI 调用层
+ * ========================================================================== */
+
+/** 校验配置是否完整，返回错误文案或 null */
+function configError() {
+  if (!state.apiKey) return '还没有填写 API Key，请先到【API 设置】页填写。';
+  if (!state.proxyUrl) return '还没有配置代理地址，请先到【API 设置】页填写你的 Cloudflare Worker 地址。';
+  if (/your[-_]?worker|你的worker|xxxx|example\.com/i.test(state.proxyUrl)) return '代理地址看起来还是示例占位符，请替换成你真实部署的 Worker 地址。';
+  if (!/^https?:\/\//i.test(state.proxyUrl)) return '代理地址必须以 http:// 或 https:// 开头。';
+  return null;
+}
+
+/** 把 HTTP 错误翻译成人话 */
+function friendlyHttpError(status, bodyText) {
+  let detail = '';
+  try {
+    const j = JSON.parse(bodyText);
+    detail = (j.error && (j.error.message || j.error.code)) || j.message || '';
+  } catch (e) {
+    detail = (bodyText || '').slice(0, 300);
+  }
+  const map = {
+    400: '请求格式有误（400）。可能是模型名不受支持，或提示词过长。',
+    401: '认证失败（401）。API Key 不正确、已过期或该服务商不匹配。',
+    402: '账户余额不足（402）。请到服务商控制台充值。',
+    403: '无权限（403）。Key 可能没有访问该模型的权限，或 Worker 的 Origin 白名单拦截了本站域名。',
+    404: '接口不存在（404）。请检查 Worker 代理地址是否写全（例如是否漏了路径）。',
+    408: '请求超时（408）。',
+    413: '请求体过大（413）。请把代码/题目缩短一些。',
+    429: '触发限流或额度用尽（429）。稍等片刻再试，或到服务商控制台查看配额。',
+    500: '服务商或 Worker 内部错误（500）。',
+    502: '网关错误（502）。请检查 Worker 里的接口地址是否正确。',
+    503: '服务暂时不可用（503）。稍后重试。',
+    504: '网关超时（504）。题目或代码可能过长。'
+  };
+  return (map[status] || ('请求失败（HTTP ' + status + '）。')) + (detail ? ' 服务商返回：' + detail : '');
+}
+
+/**
+ * 统一调用入口
+ * @param {Object} opt
+ *   messages    {Array}  OpenAI 格式消息数组
+ *   stream      {Boolean} 是否流式（默认 true）
+ *   onDelta     {Function} (chunk, fullText) 每个增量片段回调
+ *   temperature {Number}
+ *   maxTokens   {Number}
+ *   which       {String} 'assistant' | 'quiz' | 'grade'，用于停止按钮
+ * @returns {Promise<String>} 完整文本
+ */
+async function callAI(opt) {
+  const cfgErr = configError();
+  if (cfgErr) throw new Error(cfgErr);
+
+  const useStream = opt.stream !== false && typeof opt.onDelta === 'function';
+  const controller = new AbortController();
+  if (opt.which) {
+    if (running[opt.which]) running[opt.which].abort();
+    running[opt.which] = controller;
+  }
+
+  const payload = {
+    provider: state.provider,
+    model: state.model,
+    apiKey: state.apiKey,              // 经 Worker 转发，Worker 不会记录
+    messages: opt.messages,
+    temperature: typeof opt.temperature === 'number' ? opt.temperature : 0.3,
+    max_tokens: opt.maxTokens || 4096,
+    stream: useStream
+  };
+
+  let res;
+  try {
+    res = await fetch(state.proxyUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      signal: controller.signal
+    });
+  } catch (e) {
+    if (e && e.name === 'AbortError') throw e;
+    throw new Error('无法连接代理 Worker。请确认：1) 地址填写正确且已部署；2) Worker 的 CORS 允许本站域名；3) 网络可访问 workers.dev。原始错误：' + (e && e.message ? e.message : e));
+  }
+
+  if (!res.ok) {
+    const txt = await res.text().catch(function () { return ''; });
+    throw new Error(friendlyHttpError(res.status, txt));
+  }
+
+  // 非流式：直接取 JSON
+  if (!useStream) {
+    const data = await res.json();
+    const content = data && data.choices && data.choices[0] && data.choices[0].message
+      ? data.choices[0].message.content : '';
+    if (!content) throw new Error('接口返回内容为空，可能是模型名错误或触发了内容安全策略。');
+    return content;
+  }
+
+  // 流式：解析 SSE（Server-Sent Events）
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder('utf-8');
+  let buffer = '';
+  let full = '';
+  try {
+    while (true) {
+      const r = await reader.read();
+      if (r.done) break;
+      buffer += decoder.decode(r.value, { stream: true });
+      let nl;
+      while ((nl = buffer.indexOf('\n')) >= 0) {
+        const line = buffer.slice(0, nl).trim();
+        buffer = buffer.slice(nl + 1);
+        if (!line || line.charAt(0) === ':') continue;      // 注释/心跳
+        if (line.indexOf('data:') !== 0) continue;
+        const data = line.slice(5).trim();
+        if (data === '[DONE]') return full;
+        try {
+          const j = JSON.parse(data);
+          const delta = j.choices && j.choices[0] && j.choices[0].delta ? j.choices[0].delta.content : '';
+          if (delta) { full += delta; opt.onDelta(delta, full); }
+        } catch (e) { /* 忽略半包 JSON */ }
+      }
+    }
+  } finally {
+    try { reader.releaseLock(); } catch (e) {}
+  }
+  if (!full) throw new Error('流式响应为空，可尝试改用非流式模型或稍后重试。');
+  return full;
+}
+
+/* ==========================================================================
+ * 7. API 设置面板
+ * ========================================================================== */
+function refreshApiStatus() {
+  const badge = $('#apiStatus');
+  if (state.apiKey && state.proxyUrl) {
+    badge.className = 'badge ok';
+    badge.textContent = 'API 已就绪 · ' + PROVIDERS[state.provider].name;
+  } else if (state.apiKey || state.proxyUrl) {
+    badge.className = 'badge warn';
+    badge.textContent = '配置不完整';
+  } else {
+    badge.className = 'badge gray';
+    badge.textContent = '未配置 API';
+  }
+}
+
+function loadSettings() {
+  // 只读取非敏感字段；apiKey 永远不读盘
+  try {
+    const raw = localStorage.getItem(STORE_KEY);
+    if (!raw) return;
+    const s = JSON.parse(raw);
+    if (s.lang && LANGS[s.lang]) state.lang = s.lang;
+    if (s.provider && PROVIDERS[s.provider]) state.provider = s.provider;
+    if (s.model) state.model = s.model;
+    if (s.proxyUrl) state.proxyUrl = s.proxyUrl;
+  } catch (e) { /* 忽略损坏的本地数据 */ }
+}
+
+function saveSettings(silent) {
+  try {
+    localStorage.setItem(STORE_KEY, JSON.stringify({
+      lang: state.lang, provider: state.provider, model: state.model, proxyUrl: state.proxyUrl
+      // 注意：绝不包含 apiKey
+    }));
+    if (!silent) toast('设置已保存（不含 API Key）', 'ok');
+  } catch (e) {
+    if (!silent) toast('本地保存失败，可能处于隐私模式', 'err');
+  }
+}
+
+function bindApiPanel() {
+  const providerSel = $('#providerSelect');
+  const modelInput = $('#modelInput');
+  const keyInput = $('#apiKeyInput');
+  const proxyInput = $('#proxyInput');
+
+  function applyProvider(keepModel) {
+    const p = PROVIDERS[state.provider];
+    $('#providerHint').textContent = p.hint;
+    const dl = $('#modelList');
+    dl.innerHTML = p.models.map(function (m) { return '<option value="' + esc(m) + '"></option>'; }).join('');
+    if (!keepModel || !modelInput.value.trim()) {
+      state.model = p.defaultModel;
+      modelInput.value = p.defaultModel;
+    }
+    modelInput.placeholder = p.defaultModel;
+  }
+
+  providerSel.value = state.provider;
+  modelInput.value = state.model;
+  proxyInput.value = state.proxyUrl;
+  applyProvider(true);
+
+  providerSel.addEventListener('change', function () {
+    state.provider = providerSel.value;
+    state.model = PROVIDERS[state.provider].defaultModel;
+    applyProvider(false);
+    refreshApiStatus();
+    saveSettings(true);
+  });
+
+  modelInput.addEventListener('input', function () {
+    state.model = modelInput.value.trim() || PROVIDERS[state.provider].defaultModel;
+    saveSettings(true);
+  });
+
+  keyInput.addEventListener('input', function () {
+    state.apiKey = keyInput.value.trim();
+    refreshApiStatus();
+  });
+  // 防止浏览器把 Key 存进自动填充
+  keyInput.addEventListener('blur', function () { keyInput.setAttribute('autocomplete', 'new-password'); });
+
+  proxyInput.addEventListener('change', function () {
+    state.proxyUrl = proxyInput.value.trim().replace(/\/+$/, '');
+    saveSettings(true);
+    refreshApiStatus();
+  });
+  proxyInput.addEventListener('input', function () {
+    state.proxyUrl = proxyInput.value.trim();
+    refreshApiStatus();
+  });
+
+  $('#toggleKeyBtn').addEventListener('click', function () {
+    keyInput.type = keyInput.type === 'password' ? 'text' : 'password';
+    keyInput.focus();
+  });
+
+  $('#clearKeyBtn').addEventListener('click', function () {
+    state.apiKey = '';
+    keyInput.value = '';
+    refreshApiStatus();
+    toast('已清空内存中的 API Key', 'ok');
+  });
+
+  $('#saveSettingsBtn').addEventListener('click', function () {
+    state.proxyUrl = proxyInput.value.trim().replace(/\/+$/, '');
+    state.model = modelInput.value.trim() || PROVIDERS[state.provider].defaultModel;
+    saveSettings(false);
+  });
+
+  $('#testApiBtn').addEventListener('click', async function () {
+    const btn = this;
+    const out = $('#apiTestResult');
+    state.apiKey = keyInput.value.trim();
+    state.proxyUrl = proxyInput.value.trim().replace(/\/+$/, '');
+    refreshApiStatus();
+
+    const cfgErr = configError();
+    if (cfgErr) { out.innerHTML = '<div class="note err">' + esc(cfgErr) + '</div>'; return; }
+
+    btn.disabled = true;
+    const old = btn.textContent;
+    btn.textContent = '测试中…';
+    out.innerHTML = '<div class="loading"><span class="spinner"></span><span>正在向 ' + esc(PROVIDERS[state.provider].name) + ' 发送一条测试请求…</span></div>';
+    const t0 = Date.now();
+    try {
+      const reply = await callAI({
+        messages: [
+          { role: 'system', content: buildSystemPrompt() },
+          { role: 'user', content: '这是一次连通性测试。请只回复四个字：连接成功' }
+        ],
+        stream: false, temperature: 0, maxTokens: 32
+      });
+      out.innerHTML = '<div class="note ok"><b>&#10004; 连接成功</b>（' + (Date.now() - t0) + ' ms，模型：' + esc(state.model) + '）<br>模型回复：' + esc(reply.trim().slice(0, 120)) + '</div>';
+      saveSettings(true);
+    } catch (e) {
+      out.innerHTML = '<div class="note err"><b>&#10008; 连接失败</b><br>' + esc(e.message) + '</div>';
+    } finally {
+      btn.disabled = false;
+      btn.textContent = old;
+    }
+  });
+}
+
+/* ==========================================================================
+ * 8. 代码助手模块
+ * ========================================================================== */
+const assistantEditor = { api: null };
+
+/** 四种快捷动作对应的任务描述 */
+const ASSISTANT_MODES = {
+  diagnose: {
+    title: 'Bug 诊断',
+    task:
+      '请对上面的代码做 **Bug 诊断**，严格按以下结构输出（用 Markdown 标题分节）：\n' +
+      '## 一、总体结论\n（能否正常运行？问题属于哪一类：语法错误 / 编译错误 / 逻辑错误 / 边界问题 / 规范问题；给出严重程度。）\n' +
+      '## 二、问题清单\n逐条列出，每条包含：`序号` + `出错位置（行号或原代码片段）` + `为什么错` + `会造成什么后果` + `怎么改`。按严重程度从高到低排序。\n' +
+      '## 三、修正后的完整代码\n给出一个**完整、可直接编译/运行**的代码块（保留原有功能，不要只给片段）。\n' +
+      '## 四、自测用例\n给出 2~4 组输入与预期输出（必须包含 1 组边界数据），说明如何验证已经修好。\n' +
+      '## 五、考试/练习扣分点\n列出这道题最容易丢分的地方（例如变量未初始化、越界、格式不匹配、样例输出多空格等）。'
+  },
+  explain: {
+    title: '代码讲解',
+    task:
+      '请对上面的代码做 **通俗讲解**，按以下结构输出：\n' +
+      '## 一、这段代码整体在做什么\n（一句话概括 + 适用场景）\n' +
+      '## 二、逐段拆解\n按执行顺序分段讲解（含行号区间），说明每一段的作用、用到的语法点。\n' +
+      '## 三、关键语法点\n把这段代码涉及的语法单独拎出来讲清楚（易混点用对比表格呈现）。\n' +
+      '## 四、执行过程跟踪\n用一组具体输入，逐步写出变量变化过程（可用表格）。\n' +
+      '## 五、改进建议\n在可读性、效率、健壮性上各给 1~2 条建议，并给出改进后的完整代码块。'
+  },
+  fix: {
+    title: '修复后的完整代码',
+    task:
+      '请直接给出 **修复并优化后的完整代码**，按以下结构输出：\n' +
+      '## 一、修改摘要\n用表格列出「改了什么 / 为什么改」3~8 条。\n' +
+      '## 二、完整代码\n一个完整、可直接编译/运行的代码块（不要省略任何部分，包含必要的头文件/导入、main 或入口、输入输出）。\n' +
+      '## 三、编译/运行方式\n给出具体命令（如 `python main.py`、`gcc main.c -o main -std=c11 -Wall`、`g++ main.cpp -o main -std=c++17 -Wall`）。\n' +
+      '## 四、测试验证\n至少 2 组样例输入与对应输出。\n' +
+      '## 五、还能更好\n指出可选的进一步优化方向（时间复杂度、内存、代码风格）。'
+  },
+  trap: {
+    title: '考试扣分陷阱',
+    task:
+      '请专门针对这段代码，做一次 **考试/机考扣分陷阱排查**，按以下结构输出：\n' +
+      '## 一、风险等级评估\n（高 / 中 / 低，并说明理由）\n' +
+      '## 二、陷阱清单（表格）\n列：序号 | 陷阱类型（语法/边界/输入输出格式/精度/性能/规范）| 代码中的具体位置 | 典型后果 | 规避写法\n' +
+      '## 三、本语言高频扣分点\n结合该语言的特性，列出 6~10 条学生最常踩的坑（每条给错误写法 vs 正确写法对比代码块）。\n' +
+      '## 四、提交前自检清单\n给出一份可直接照着检查的清单（8~12 条）。'
+  }
+};
+
+/** 读取上传文件并载入编辑器 */
+function loadFileIntoAssistant(file) {
+  if (!file) return;
+  const name = (file.name || '').toLowerCase();
+  const dot = name.lastIndexOf('.');
+  const ext = dot >= 0 ? name.slice(dot) : '';
+
+  let matchedLang = null;
+  Object.keys(LANGS).forEach(function (id) {
+    if (LANGS[id].exts.indexOf(ext) >= 0 && ext !== '.txt') matchedLang = id;
+  });
+
+  const reader = new FileReader();
+  reader.onload = function () {
+    const text = String(reader.result || '');
+    if (!text.trim()) { toast('文件内容为空', 'err'); return; }
+
+    // 若扩展名明确指向另一种语言，自动切换全局语言，保证出题/批改一致
+    if (matchedLang && matchedLang !== state.lang) {
+      state.lang = matchedLang;
+      $('#langSelect').value = matchedLang;
+      onLangChanged();
+      toast('已根据文件扩展名切换到 ' + langOf(matchedLang).name, 'ok');
+    }
+    assistantEditor.api.setValue(text);
+    assistantEditor.api.setLang(state.lang);
+    $('#assistantFileTag').textContent = file.name + ' · ' + (text.length / 1024).toFixed(1) + ' KB';
+    toast('已载入 ' + file.name + '（' + text.split('\n').length + ' 行）', 'ok');
+  };
+  reader.onerror = function () { toast('读取文件失败，请重试或直接粘贴代码', 'err'); };
+  reader.readAsText(file, 'utf-8');
+}
+
+function bindAssistantPanel() {
+  assistantEditor.api = createEditor('assistantEditor', { lines: 'assistantLines', chars: 'assistantChars' });
+  assistantEditor.api.setValue(langOf(state.lang).demo);
+  assistantEditor.api.setLang(state.lang);
+
+  const out = $('#assistantOutput');
+
+  $('#assistantPickBtn').addEventListener('click', function () { $('#assistantFile').click(); });
+  $('#assistantFile').addEventListener('change', function (e) {
+    loadFileIntoAssistant(e.target.files && e.target.files[0]);
+    e.target.value = '';   // 允许重复选择同一个文件
+  });
+
+  // 拖拽上传
+  const host = $('#assistantEditorHost');
+  ['dragenter', 'dragover'].forEach(function (ev) {
+    host.addEventListener(ev, function (e) { e.preventDefault(); host.classList.add('drag'); });
+  });
+  ['dragleave', 'drop'].forEach(function (ev) {
+    host.addEventListener(ev, function (e) { e.preventDefault(); host.classList.remove('drag'); });
+  });
+  host.addEventListener('drop', function (e) {
+    const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+    loadFileIntoAssistant(f);
+  });
+
+  $('#assistantDemoBtn').addEventListener('click', function () {
+    assistantEditor.api.setValue(langOf(state.lang).demo);
+    toast('已载入 ' + langOf(state.lang).name + ' 示例代码', 'ok');
+  });
+  $('#assistantClearBtn').addEventListener('click', function () {
+    assistantEditor.api.setValue('');
+    $('#assistantFileTag').textContent = '未选择文件';
+    assistantEditor.api.focus();
+  });
+  $('#assistantCopyBtn').addEventListener('click', function () {
+    copyText(assistantEditor.api.getValue()).then(function (ok) { toast(ok ? '代码已复制' : '复制失败', ok ? 'ok' : 'err'); });
+  });
+  $('#assistantFormatHintBtn').addEventListener('click', function () {
+    // 追加在最前面，避免覆盖已有的 AI 分析结果
+    const tip = '<div class="note info" style="margin-bottom:12px"><b>' + esc(langOf(state.lang).name) +
+      ' 书写规范与易错点：</b><br>' + esc(langOf(state.lang).style) + '</div>';
+    if (out.classList.contains('empty')) { out.classList.remove('empty'); out.innerHTML = tip; }
+    else { out.innerHTML = tip + out.innerHTML; }
+  });
+  $('#assistantResetConvBtn').addEventListener('click', function () {
+    conv.assistant = [];
+    out.classList.add('empty');
+    out.innerHTML = '已清空对话上下文，下一次提问将重新开始。';
+    toast('上下文已清空', 'ok');
+  });
+
+  // 四个快捷动作
+  $$('#assistantActions .btn').forEach(function (btn) {
+    btn.addEventListener('click', function () { runAssistant(btn.dataset.mode); });
+  });
+  $('#assistantAskBtn').addEventListener('click', function () { runAssistant('ask'); });
+  $('#assistantQuestion').addEventListener('keydown', function (e) {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); runAssistant('ask'); }
+  });
+  $('#assistantStopBtn').addEventListener('click', function () { stopRun('assistant'); });
+
+  /** 执行一次 AI 分析 */
+  async function runAssistant(mode) {
+    const code = assistantEditor.api.getValue();
+    const L = langOf(state.lang);
+    if (!code.trim()) { toast('请先粘贴或上传代码', 'err'); assistantEditor.api.focus(); return; }
+
+    const cfgErr = configError();
+    if (cfgErr) { showError(out, cfgErr); switchTab('api'); return; }
+
+    let userText;
+    if (mode === 'ask') {
+      const q = $('#assistantQuestion').value.trim();
+      if (!q) { toast('请先输入你的问题', 'err'); return; }
+      userText = '【当前语言】' + L.name + '\n【我上传的代码】\n```' + L.fence + '\n' + code + '\n```\n\n【我的问题】\n' + q;
+    } else {
+      const m = ASSISTANT_MODES[mode];
+      userText = '【当前语言】' + L.name + '\n【学生代码】\n```' + L.fence + '\n' + code + '\n```\n\n【任务：' + m.title + '】\n' + m.task;
+    }
+
+    conv.assistant.push({ role: 'user', content: userText });
+    // 只保留最近 6 轮，避免上下文超长
+    if (conv.assistant.length > 12) conv.assistant = conv.assistant.slice(-12);
+
+    const messages = [{ role: 'system', content: buildSystemPrompt() }].concat(conv.assistant);
+
+    startRunUI('assistant', mode === 'ask' ? 'AI 正在回答…' : ('AI 正在执行：' + ASSISTANT_MODES[mode].title));
+    showLoading(out, mode === 'ask' ? 'AI 正在回答你的问题…' : ('AI 正在执行「' + ASSISTANT_MODES[mode].title + '」，内容较长请稍候…'));
+
+    let acc = '';
+    try {
+      const finalText = await callAI({
+        messages: messages,
+        which: 'assistant',
+        temperature: mode === 'explain' || mode === 'fix' ? 0.2 : 0.3,
+        maxTokens: 6000,
+        onDelta: function (chunk, full) {
+          acc = full;
+          paint(out, full, true);
+          scrollBottom(out);
+        }
+      });
+      paint(out, finalText, false);
+      conv.assistant.push({ role: 'assistant', content: finalText });
+    } catch (e) {
+      if (e && e.name === 'AbortError') {
+        if (acc) { paint(out, acc, false); toast('已停止生成（保留已生成内容）'); }
+        else out.innerHTML = '<div class="note warn">已停止生成。</div>';
+      } else {
+        showError(out, e.message);
+        conv.assistant.pop();   // 失败时回滚，保持上下文干净
+      }
+    } finally {
+      endRunUI('assistant');
+    }
+  }
+}
+
+/* ==========================================================================
+ * 9. 习题生成模块
+ * ========================================================================== */
+const QUIZ_LEVELS = {
+  basic: '基础（入门/课后练习）',
+  exam: '考试真题难度',
+  advanced: '进阶（竞赛/拔高）'
+};
+const QUIZ_TYPES = {
+  choice: '选择题',
+  fill: '程序填空题',
+  fix: '改错题',
+  coding: '编程大题'
+};
+
+function buildQuizPrompt(levelKey, typeKey, count, topic, extra) {
+  const L = langOf(state.lang);
+  const levelText = QUIZ_LEVELS[levelKey];
+  const typeText = QUIZ_TYPES[typeKey];
+
+  let head =
+    '请为学习 ' + L.name + ' 的学生出 ' + count + ' 道题。\n' +
+    '【编程语言】' + L.name + '（所有代码必须使用 ```' + L.fence + ' 围栏，且保证能通过编译/运行）\n' +
+    '【难度】' + levelText + '\n' +
+    '【题型】' + typeText + '\n' +
+    (topic ? '【知识点范围】' + topic + '\n' : '') +
+    (extra ? '【额外要求】' + extra + '\n' : '') +
+    '\n';
+
+  let body = '';
+  if (typeKey === 'choice') {
+    body =
+      '每道题按以下格式输出：\n' +
+      '### 第 N 题（' + L.name + ' · ' + levelText + '）\n' +
+      '**题目**：……（可含一个短代码片段）\n' +
+      'A. ……\nB. ……\nC. ……\nD. ……\n' +
+      '**答案**：X\n' +
+      '**解析**：为什么对、其余选项错在哪（要具体到语法与运行结果）。\n' +
+      '**易错点**：这道题最容易误选的选项及原因。\n\n' +
+      '要求：选项之间要有迷惑性（针对真实错误认知设计），不要出现「以上都对」这类凑数选项。全部题目输出完后，用 `## 参考答案汇总` 小表列出题号与答案。';
+  } else if (typeKey === 'fill') {
+    body =
+      '每道题按以下格式输出：\n' +
+      '### 第 N 题（程序填空 · ' + L.name + '）\n' +
+      '**题面**：说明程序要实现什么功能。\n' +
+      '**程序代码**：完整代码，需填空处统一写成 `____(1)____`、`____(2)____` …\n' +
+      '**输入输出样例**：给出 2 组样例。\n' +
+      '**数据范围**：说明取值上限（如 1 ≤ n ≤ 1000）。\n' +
+      '**答案**：逐空给出答案与说明。\n' +
+      '**易错点**：每一空常见的错误填法与后果。';
+  } else if (typeKey === 'fix') {
+    body =
+      '每道题按以下格式输出：\n' +
+      '### 第 N 题（改错题 · ' + L.name + '）\n' +
+      '**题面**：说明程序本应实现的功能。\n' +
+      '**有错误的代码**：完整可提交的代码，内嵌 2~5 处错误（语法错误 + 逻辑错误都要有，不要过于明显）。\n' +
+      '**输入输出样例**：给出正确程序的预期样例。\n' +
+      '**错误清单**：逐条给出「位置（行号/片段）→ 错误类型 → 为什么错 → 正确写法」。\n' +
+      '**正确代码**：完整的修正后代码。\n' +
+      '**易错点**：学生自查时容易漏掉的地方。';
+  } else {
+    body =
+      '每道题按以下格式输出：\n' +
+      '### 第 N 题（编程大题 · ' + L.name + ' · ' + levelText + '）\n' +
+      '**题目描述**：完整可读的题面，包含故事背景与任务要求。\n' +
+      '**输入格式**：逐行说明输入内容与类型。\n' +
+      '**输出格式**：逐行说明输出内容（注意大小写、空格、换行等格式细节）。\n' +
+      '**输入输出样例**：至少 2 组，用 ```text 围栏给出「输入」与「输出」，另外给 1 组易错边界样例。\n' +
+      '**数据范围与提示**：给出变量取值范围、时间/空间限制建议、算法复杂度要求。\n' +
+      '**评分点**：列出本题按步骤给分的点（如：读入正确 20 分、核心算法 50 分、格式正确 20 分、边界处理 10 分，合计 100 分）。\n' +
+      '**参考答案**：完整、可直接编译/运行的 ' + L.name + ' 代码（```' + L.fence + ' 围栏）。\n' +
+      '**解题思路**：分步骤讲解算法与关键实现细节。\n' +
+      '**易错点**：本题最典型的 WA/TLE/RE 原因。';
+  }
+
+  return head + body + '\n\n注意：题号连续、题目之间用 `---` 分隔；不要输出与题目无关的寒暄。';
+}
+
+function bindQuizPanel() {
+  const out = $('#quizOutput');
+
+  async function generate() {
+    const cfgErr = configError();
+    if (cfgErr) { showError(out, cfgErr); switchTab('api'); return; }
+
+    const levelKey = $('#quizLevel').value;
+    const typeKey = $('#quizType').value;
+    const count = parseInt($('#quizCount').value, 10) || 1;
+    const topic = $('#quizTopic').value.trim();
+    const extra = $('#quizExtra').value.trim();
+    const L = langOf(state.lang);
+
+    const userText = buildQuizPrompt(levelKey, typeKey, count, topic, extra);
+    const messages = [
+      { role: 'system', content: buildSystemPrompt('出题时请严格遵守我给出的输出格式，题目要完整、可直接用于练习或考试。') },
+      { role: 'user', content: userText }
+    ];
+
+    $('#quizMeta').textContent = '正在生成：' + L.name + ' · ' + QUIZ_TYPES[typeKey] + ' · ' + QUIZ_LEVELS[levelKey] + ' · ' + count + ' 题';
+    startRunUI('quiz', 'AI 正在出题…');
+    showLoading(out, 'AI 正在出题（' + L.name + ' · ' + QUIZ_TYPES[typeKey] + '），内容较长请稍候…');
+
+    let acc = '';
+    try {
+      const finalText = await callAI({
+        messages: messages,
+        which: 'quiz',
+        temperature: levelKey === 'advanced' ? 0.6 : 0.5,
+        maxTokens: 7000,
+        onDelta: function (chunk, full) { acc = full; paint(out, full, true); scrollBottom(out); }
+      });
+      paint(out, finalText, false);
+      lastQuizText = finalText;
+      $('#quizMeta').textContent = '生成完成：' + L.name + ' · ' + QUIZ_TYPES[typeKey] + ' · ' + QUIZ_LEVELS[levelKey] +
+        ' · ' + finalText.length + ' 字。可直接点「送去批改」开始作答。';
+    } catch (e) {
+      if (e && e.name === 'AbortError') {
+        if (acc) { paint(out, acc, false); lastQuizText = acc; toast('已停止生成'); }
+        else out.innerHTML = '<div class="note warn">已停止生成。</div>';
+      } else {
+        showError(out, e.message);
+      }
+    } finally {
+      endRunUI('quiz');
+    }
+  }
+
+  $('#quizGenBtn').addEventListener('click', generate);
+  $('#quizRegenBtn').addEventListener('click', function () {
+    // 换一批：临时追加「不重复」要求，不污染用户输入框
+    const old = $('#quizExtra').value;
+    if (old.indexOf('请与上一次的题目完全不同') < 0) {
+      $('#quizExtra').value = (old + ' 请与上一次的题目完全不同（换题型角度、换数据范围）。').trim();
+    }
+    generate().then(function () { $('#quizExtra').value = old; });
+  });
+  $('#quizStopBtn').addEventListener('click', function () { stopRun('quiz'); });
+
+  $('#quizToGradeBtn').addEventListener('click', function () {
+    if (!lastQuizText) { toast('还没有生成题目，请先点「生成习题」', 'err'); return; }
+    // 取正文里第一道题（到第一个 --- 分隔线）之外的全部内容更稳妥，这里简单取全文
+    $('#gradeProblem').value = lastQuizText;
+    switchTab('grade');
+    toast('题目已带入【代码批改】页', 'ok');
+    setTimeout(function () { $('#gradeEditorHost').scrollIntoView({ block: 'center' }); }, 60);
+  });
+}
+
+/* ==========================================================================
+ * 10. 代码批改模块
+ * ========================================================================== */
+const gradeEditor = { api: null };
+
+function buildGradePrompt(problem, code, rubric, strict) {
+  const L = langOf(state.lang);
+  return '' +
+    '请批改下面这份 ' + L.name + ' 代码，满分 100 分，模拟机考/期末考试评分规则。\n\n' +
+    '【题目】\n' + problem + '\n\n' +
+    '【学生提交的代码】\n```' + L.fence + '\n' + code + '\n```\n\n' +
+    (rubric ? '【评分标准 / 额外要求】\n' + rubric + '\n\n' : '') +
+    (strict
+      ? '【批改模式】严格模式：逐项扣分，每个扣分点必须引用具体行号或原代码片段，不允许含糊其辞。\n\n'
+      : '【批改模式】常规模式：给出主要问题与整体评价即可。\n\n') +
+    '请严格按以下结构输出：\n' +
+    '## 一、总分\n给出 `XX / 100`，并给一句话总评（不要客套）。\n' +
+    '## 二、逐项得分表\n用 Markdown 表格输出：| 评分项 | 分值 | 得分 | 扣分原因（引用具体行号/代码片段） |\n' +
+    '评分项必须覆盖：语法与编译正确性、输入输出格式、核心算法/逻辑正确性、边界与特殊情况、代码规范与可读性，各项分值合计 100。\n' +
+    '## 三、样例测试结果\n逐组列出题目样例（若无样例则自行构造 3 组），说明：输入 → 期望输出 → 你的代码实际输出/推断输出 → 是否通过。\n' +
+    '## 四、代码漏洞清单\n编号列出所有问题，标注类型（语法错误 / 编译错误 / 逻辑错误 / 边界问题 / 性能问题 / 规范问题）与严重程度（致命/严重/一般/建议）。\n' +
+    '## 五、参考标准代码\n给出满分做法的完整 ' + L.name + ' 代码（```' + L.fence + ' 围栏，可直接编译运行），并在代码后简要说明关键点。\n' +
+    '## 六、学习总结\n1) 这份代码暴露出的 2~4 个知识薄弱点；2) 针对性练习建议；3) 下次做题前应检查的 3 条要点。\n\n' +
+    '最后必须附加一个 ```json 代码块，内容严格为如下 JSON（不要写注释、不要用多余字段，score 为 0-100 的整数，items 内 max 之和为 100，got ≤ max）：\n' +
+    '```json\n' +
+    '{"score":85,"verdict":"通过","items":[{"name":"语法与编译","max":20,"got":20,"reason":"无语法错误，编译通过"},' +
+    '{"name":"输入输出格式","max":20,"got":16,"reason":"第 12 行输出多了一个空格"}],' +
+    '"samplesPassed":true,"sampleNote":"2/2 组样例通过","bugs":["第 7 行循环边界少一次"],"summary":"基础扎实，注意边界与格式"}\n' +
+    '```';
+}
+
+/** 从 AI 输出中解析评分 JSON（优先取最后一个 json 代码块） */
+function parseGradeJson(text) {
+  const blocks = [];
+  const re = /```json\s*([\s\S]*?)```/gi;
+  let m;
+  while ((m = re.exec(text)) !== null) blocks.push(m[1]);
+  for (let i = blocks.length - 1; i >= 0; i--) {
+    try {
+      const j = JSON.parse(blocks[i].trim());
+      if (j && typeof j.score !== 'undefined') return j;
+    } catch (e) { /* 继续试上一个 */ }
+  }
+  // 兜底：用正则抓分数
+  const s = text.match(/(?:总分|得分|Score)\D{0,8}(\d{1,3})/i) || text.match(/(\d{1,3})\s*\/\s*100/);
+  if (s) {
+    return { score: Math.min(100, parseInt(s[1], 10)), verdict: '', items: [], samplesPassed: null, sampleNote: '', bugs: [], summary: '', _partial: true };
+  }
+  return null;
+}
+
+/** 从批改报告里去掉机器解析用的 JSON 块（内容已在评分卡中可视化，避免用户看到裸 JSON） */
+function stripGradeJson(text) {
+  const cleaned = text
+    .replace(/```json\s*\{[\s\S]*?"score"[\s\S]*?```/g, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+  if (!cleaned) return text;
+  return cleaned + '\n\n> 评分明细已在上方评分卡中可视化展示。';
+}
+
+/** 渲染评分卡 */
+function renderScoreCard(data) {
+  if (!data) return '';
+  const score = Math.max(0, Math.min(100, Number(data.score) || 0));
+  const color = score >= 85 ? '#16a34a' : (score >= 60 ? '#d97706' : '#dc2626');
+  const c = color;   // 圆环与文字同色
+  const verdict = data.verdict || (score >= 85 ? '优秀，可以提交' : (score >= 60 ? '及格，仍需修改' : '未达标，建议重做'));
+
+  let html = '<div class="score-card" style="--ring:' + c + ';--pct:' + score + '">' +
+    '<div class="score-ring"><div class="inner"><b style="color:' + color + '">' + score + '</b><span>/ 100</span></div></div>' +
+    '<div class="score-meta">' +
+      '<div class="verdict" style="color:' + color + '">' + esc(verdict) + '</div>' +
+      (data.sampleNote ? '<div class="badge ' + (data.samplesPassed === false ? 'err' : (data.samplesPassed ? 'ok' : 'gray')) + '">样例：' + esc(data.sampleNote) + '</div>' : '') +
+      (data.summary ? '<div style="margin-top:8px;font-size:13.5px;color:#374151">' + esc(data.summary) + '</div>' : '') +
+    '</div></div>';
+
+  if (Array.isArray(data.items) && data.items.length) {
+    html += '<div class="bars">';
+    data.items.forEach(function (it) {
+      const max = Number(it.max) || 0;
+      const got = Number(it.got) || 0;
+      const pct = max > 0 ? Math.max(0, Math.min(100, Math.round(got / max * 100))) : 0;
+      const barColor = pct >= 85 ? '#16a34a' : (pct >= 60 ? '#d97706' : '#dc2626');
+      html += '<div class="bar-row">' +
+        '<span title="' + esc(it.name || '') + '">' + esc(it.name || '评分项') + '</span>' +
+        '<span class="bar-track"><span class="bar-fill" style="width:' + pct + '%;background:' + barColor + '"></span></span>' +
+        '<span class="num">' + got + ' / ' + max + '</span>' +
+        (it.reason ? '<span class="bar-reason">' + esc(it.reason) + '</span>' : '') +
+      '</div>';
+    });
+    html += '</div>';
+  }
+
+  if (Array.isArray(data.bugs) && data.bugs.length) {
+    html += '<div class="note warn" style="margin-top:14px"><b>漏洞摘要：</b><ul>' +
+      data.bugs.map(function (b) { return '<li>' + esc(b) + '</li>'; }).join('') + '</ul></div>';
+  }
+  if (data._partial) {
+    html += '<div class="note warn" style="margin-top:12px">未能解析出完整的评分明细（模型没有按要求返回 JSON），下面展示完整原始批改报告。</div>';
+  }
+  return html;
+}
+
+const GRADE_DEMO = {
+  python:
+    '题目：温度统计\n输入 n 个整数表示连续 n 天的气温（-50 ≤ 气温 ≤ 50），输出这 n 天中的最高气温、最低气温与平均气温（保留 1 位小数），用空格分隔。\n输入格式：第一行一个整数 n（1 ≤ n ≤ 1000），第二行 n 个整数。\n输出格式：三个值，空格分隔，平均气温保留 1 位小数。\n样例输入：\n5\n3 -1 7 0 2\n样例输出：\n7 -1 2.2',
+  c:
+    '题目：统计字符\n输入一行字符串（长度不超过 1000，可含空格），统计其中英文字母、数字字符、其它字符的个数并依次输出，用空格分隔。\n输入格式：一行字符串。\n输出格式：三个整数，空格分隔。\n样例输入：\nab 12, x!\n样例输出：\n3 4 1',
+  cpp:
+    '题目：区间求和\n输入 n 个整数与 q 次询问，每次询问给出 l、r（1 ≤ l ≤ r ≤ n），求下标 l 到 r 的元素之和。\n输入格式：第一行 n 和 q；第二行 n 个整数；随后 q 行每行 l r。\n输出格式：每次询问输出一个整数，占一行。\n数据范围：1 ≤ n, q ≤ 100000，1 ≤ 元素 ≤ 1000。\n样例输入：\n5 2\n1 2 3 4 5\n1 3\n2 5\n样例输出：\n6\n14'
+};
+
+function bindGradePanel() {
+  gradeEditor.api = createEditor('gradeEditor', { lines: 'gradeLines', chars: 'gradeChars' });
+  gradeEditor.api.setLang(state.lang);
+
+  const out = $('#gradeOutput');
+  const scoreArea = $('#gradeScoreArea');
+
+  $('#gradeDemoBtn').addEventListener('click', function () {
+    $('#gradeProblem').value = GRADE_DEMO[state.lang] || GRADE_DEMO.python;
+    if (!gradeEditor.api.getValue().trim()) {
+      gradeEditor.api.setValue('// 在这里写下你的解答，然后点「开始批改」\n');
+    }
+    toast('已载入 ' + langOf(state.lang).name + ' 示例题目', 'ok');
+  });
+  $('#gradeClearProblemBtn').addEventListener('click', function () { $('#gradeProblem').value = ''; });
+  $('#gradeClearCodeBtn').addEventListener('click', function () { gradeEditor.api.setValue(''); gradeEditor.api.focus(); });
+  $('#gradeCopyBtn').addEventListener('click', function () {
+    copyText(gradeEditor.api.getValue()).then(function (ok) { toast(ok ? '代码已复制' : '复制失败', ok ? 'ok' : 'err'); });
+  });
+  $('#gradeStopBtn').addEventListener('click', function () { stopRun('grade'); });
+
+  // Ctrl / Cmd + Enter 快速提交
+  $('#gradeEditorHost').addEventListener('keydown', function (e) {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); submit(); }
+  });
+
+  async function submit() {
+    const problem = $('#gradeProblem').value.trim();
+    const code = gradeEditor.api.getValue().trim();
+    const rubric = $('#gradeRubric').value.trim();
+    const strict = $('#gradeStrict').checked;
+
+    if (!problem) { toast('请先填写题目', 'err'); $('#gradeProblem').focus(); return; }
+    if (!code) { toast('请先写下你的代码', 'err'); gradeEditor.api.focus(); return; }
+
+    const cfgErr = configError();
+    if (cfgErr) { showError(out, cfgErr); switchTab('api'); return; }
+
+    const messages = [
+      { role: 'system', content: buildSystemPrompt('你正在批改代码。必须按我给出的结构输出，并在最后附上规定格式的 JSON 评分块。') },
+      { role: 'user', content: buildGradePrompt(problem, code, rubric, strict) }
+    ];
+
+    scoreArea.innerHTML = '';
+    startRunUI('grade', 'AI 正在批改…');
+    showLoading(out, 'AI 正在逐项批改（含样例推演与参考代码），内容较长请稍候…');
+
+    let acc = '';
+    try {
+      const finalText = await callAI({
+        messages: messages,
+        which: 'grade',
+        temperature: 0.2,
+        maxTokens: 7000,
+        onDelta: function (chunk, full) { acc = full; paint(out, full, true); scrollBottom(out); }
+      });
+      paint(out, finalText, false);
+      const parsed = parseGradeJson(finalText);
+      // 解析成功时，隐藏报告末尾的 ```json 块（其信息已呈现在评分卡里）
+      if (parsed && !parsed._partial) paint(out, stripGradeJson(finalText), false);
+      scoreArea.innerHTML = renderScoreCard(parsed);
+      if (parsed) {
+        const s = Number(parsed.score);
+        toast('批改完成：' + s + ' / 100', s >= 60 ? 'ok' : 'err');
+        scoreArea.scrollIntoView({ block: 'start' });
+      } else {
+        toast('批改完成，但未能解析评分明细');
+      }
+    } catch (e) {
+      if (e && e.name === 'AbortError') {
+        if (acc) {
+          const p2 = parseGradeJson(acc);
+          paint(out, p2 && !p2._partial ? stripGradeJson(acc) : acc, false);
+          scoreArea.innerHTML = renderScoreCard(p2);
+          toast('已停止生成');
+        }
+        else out.innerHTML = '<div class="note warn">已停止生成。</div>';
+      } else {
+        showError(out, e.message);
+      }
+    } finally {
+      endRunUI('grade');
+    }
+  }
+
+  $('#gradeSubmitBtn').addEventListener('click', submit);
+}
+
+/* ==========================================================================
+ * 11. 运行状态控制 / 标签页 / 语言切换 / 初始化
+ * ========================================================================== */
+function startRunUI(which, text) {
+  const map = { assistant: 'assistantStopBtn', quiz: 'quizStopBtn', grade: 'gradeStopBtn' };
+  const submitMap = { assistant: 'assistantAskBtn', quiz: 'quizGenBtn', grade: 'gradeSubmitBtn' };
+  const stopBtn = document.getElementById(map[which]);
+  const submitBtn = document.getElementById(submitMap[which]);
+  if (stopBtn) { stopBtn.disabled = false; stopBtn.textContent = '■ 停止生成'; }
+  if (submitBtn) submitBtn.disabled = true;
+  if (text) toast(text);
+  document.querySelectorAll('#assistantActions .btn').forEach(function (b) { b.disabled = true; });
+}
+function endRunUI(which) {
+  const map = { assistant: 'assistantStopBtn', quiz: 'quizStopBtn', grade: 'gradeStopBtn' };
+  const submitMap = { assistant: 'assistantAskBtn', quiz: 'quizGenBtn', grade: 'gradeSubmitBtn' };
+  const stopBtn = document.getElementById(map[which]);
+  const submitBtn = document.getElementById(submitMap[which]);
+  if (stopBtn) { stopBtn.disabled = true; }
+  if (submitBtn) submitBtn.disabled = false;
+  running[which] = null;
+  document.querySelectorAll('#assistantActions .btn').forEach(function (b) { b.disabled = false; });
+}
+function stopRun(which) {
+  if (running[which]) { running[which].abort(); toast('已请求停止…'); }
+  else toast('当前没有正在进行的任务');
+}
+
+/** 语言切换：全局联动（编辑器高亮 + 徽标 + 示例代码提示） */
+function onLangChanged() {
+  const L = langOf(state.lang);
+  if (assistantEditor.api) assistantEditor.api.setLang(L.id);
+  if (gradeEditor.api) gradeEditor.api.setLang(L.id);
+  $('#assistantLangBadge').textContent = L.name;
+  $('#quizLangBadge').textContent = L.name;
+  $('#gradeLangBadge').textContent = L.name;
+  $('#gradeEditorLang').textContent = L.name;
+  saveSettings(true);
+}
+
+function switchTab(name) {
+  $$('.tab').forEach(function (t) {
+    const on = t.dataset.panel === name;
+    t.classList.toggle('active', on);
+    t.setAttribute('aria-selected', on ? 'true' : 'false');
+  });
+  $$('.panel').forEach(function (p) { p.classList.toggle('active', p.id === 'panel-' + name); });
+  // CodeMirror 在隐藏容器里初始化会算错尺寸，切回来必须 refresh
+  setTimeout(function () {
+    if (assistantEditor.api) assistantEditor.api.refresh();
+    if (gradeEditor.api) gradeEditor.api.refresh();
+  }, 40);
+  try { location.hash = name; } catch (e) {}
+}
+
+function init() {
+  loadSettings();
+
+  // 顶部语言选择器
+  $('#langSelect').value = state.lang;
+  $('#langSelect').addEventListener('change', function () {
+    state.lang = this.value;
+    onLangChanged();
+    toast('已切换到 ' + langOf(state.lang).name + '：出题、诊断、批改语言同步更新', 'ok');
+  });
+
+  // 标签页
+  $$('.tab').forEach(function (t) {
+    t.addEventListener('click', function () { switchTab(t.dataset.panel); });
+  });
+
+  // 各面板
+  bindApiPanel();
+  bindAssistantPanel();
+  bindQuizPanel();
+  bindGradePanel();
+
+  // 初始化时统一语言状态
+  onLangChanged();
+  refreshApiStatus();
+
+  // 从 URL hash 打开指定标签页
+  const hash = (location.hash || '').replace('#', '');
+  if (['api', 'assistant', 'quiz', 'grade'].indexOf(hash) >= 0) switchTab(hash);
+
+  // 降级提示
+  if (!window.CodeMirror) {
+    toast('CodeMirror CDN 未加载成功，已降级为普通编辑器', 'err');
+  }
+
+  // 页面关闭/刷新时主动清空内存中的密钥（双保险；key 本身不落盘）
+  window.addEventListener('pagehide', function () { state.apiKey = ''; });
+
+  // 键盘快捷键：Alt+1~4 切换标签页
+  document.addEventListener('keydown', function (e) {
+    if (e.altKey && !e.ctrlKey && !e.metaKey) {
+      const map = { '1': 'api', '2': 'assistant', '3': 'quiz', '4': 'grade' };
+      if (map[e.key]) { e.preventDefault(); switchTab(map[e.key]); }
+    }
+  });
+
+  console.log('%cCodeTutor 已就绪', 'color:#2563eb;font-weight:700', '｜纯静态前端，API Key 仅存内存。');
+}
+
+// DOM 就绪后启动
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+else init();
+
+})();
+</script>
+</body>
+</html>
