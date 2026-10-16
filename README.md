@@ -1,2 +1,426 @@
-# code-tutor-site
-none
+# CodeTutor · 多语言编程学习网站
+
+纯静态前端（HTML + CSS + JavaScript），无后端、无数据库。支持 **Python / C / C++** 三种语言的
+AI 代码诊断、习题生成与在线代码批改，API Key 只存浏览器内存、绝不落盘。
+
+---
+
+## 当前线上状态（已部署并验证）
+
+| 项 | 值 |
+| --- | --- |
+| 站点 | **https://code-tutor-site.pages.dev** |
+| Pages 项目 | `code-tutor-site`（Cloudflare，生产分支 `main`） |
+| 同源代理 | **https://code-tutor-site.pages.dev/api/chat** → `{"ok":true,"service":"codelearn-proxy","deploy":"pages-function"}` |
+| Git 仓库 | `Mikecode985/code-tutor-site` |
+| 访客成本 | **零配置**：打开网站 → 代理地址自动填 `/api/chat` → 只需粘贴自己的 API Key |
+
+## 一、外观与皮肤（贵阳 · 多彩主题）
+
+配色**整体移植自插件 `dsh-client-ui-guiyang-theme v0.5.0`**：9 套贵阳皮肤、每套的
+主色 `p` / 呼应色 `a` / 暖色 `w` / 金属色 `m` / 底色 `surface`（各带浅深两版），
+以及插件的 `mix()/alpha()` 令牌推衍公式都保持一致 —— 所以网站和你在 DSH 里看到的皮肤是同一套配色。
+
+| 皮肤 | 主色（浅/深） | 呼应色 | 灵感 |
+| --- | --- | --- | --- |
+| **林城晨雾** lin | `#0f9d6f` / `#2fbf8f` | `#0e7490` / `#5eead4` | 贵阳的早晨：森林绿 + 南明河的水汽 |
+| **甲秀夜月** jiaxiu | `#0d7a6a` / `#37c39c` | `#3e8e93` / `#7fd1c1` | 甲秀楼的月色：碧瓦青 + 水青 + 朱梁 |
+| **数谷蓝调** shugu | `#0a66c2` / `#5b93ff` | `#0093ad` / `#4dd0e1` | 中国数谷：科技蓝 + 数据青 |
+| **侗乡蓝** dong | `#2b4a6f` / `#8fb6e0` | `#4a6fa5` / `#a9c4e8` | 侗布靛蓝 + 苗绣红 + 银饰白 |
+| **青岩古韵** qingyan | `#4f6a72` / `#9fb9c0` | `#7a8a8f` / `#b9c8cc` | 青岩古镇的青石 + 苗绣红 + 石牌坊 |
+| **阳明心源** yangming | `#6a4c93` / `#a98fd6` | `#7c8c6a` / `#b5c79a` | 修文龙场悟道：一线天光 + 竹影 |
+| **九门夜灯** jiubamen | `#8c6d46` / `#d8b06a` | `#9a7b1f` / `#e8b100` | 老贵阳九门四阁：城门灯影 |
+| **三叠纪之海** sanyu | `#2f6d63` / `#5fb3a1` | `#3f7f96` / `#8fd0dd` | 2.4 亿年前兴义海底：胡氏贵州龙 |
+| **樱花梯田** yinghua | `#c95f88` / `#f2a0bd` | `#5f8c42` / `#a8cf7a` | 贵安樱花园与黔中梯田 |
+
+**怎么用**：顶栏「皮肤」按钮 → 面板里 9 张卡片（含色板圆点与说明），点一下即换；
+选择存 `localStorage`（`codetutor.skin.v1`）。**首次访问按节令自动选皮**（春樱花 / 夏林城 / 秋九门 / 冬甲秀），
+与插件行为一致；用户一旦手动选过就以用户选择为准。
+
+**深浅色**：顶栏「外观」按钮三态循环（跟随系统 / 浅色 / 深色）。每套皮肤都自带浅深两套令牌，
+一次注入、随 `data-theme` 自动切换；CodeMirror 的高亮配色也分浅深两套。
+
+**技术上怎么落的**：`<head>` 里一段独立小脚本定义皮肤表与推衍函数，把结果写成
+`html:root{…}` 与 `html[data-theme="dark"]{…}` 注入 `<style id="gySkinStyle">`；
+静态 CSS 里的令牌是"无 JS 时的兜底"，`html:root` 的特异性保证皮肤永远覆盖它，不存在闪屏。
+
+---
+
+## 二、彩蛋栏 🎈
+
+页面底部常驻一条彩蛋栏：**「代码写累了，看看贵州发展吧休息一下吧～」**，
+右侧「去逛逛 ↗」按钮新窗口打开 [贵州发展吧（百度贴吧）](https://tieba.baidu.com/f?kw=%E8%B4%B5%E5%B7%9E%E5%8F%91%E5%B1%95&fr=personalize_page)。
+
+- 右侧 `✕` 可收起，状态记在 `localStorage`（`codetutor.eggbar.v1`）
+- 页脚留了「🎈 显示彩蛋栏」入口，随时能找回来
+- 栏身是「品牌色 → 呼应色 → 暖色」的柔和渐变，一道高光缓慢扫过（`prefers-reduced-motion` 下自动关闭）
+
+---
+
+## 三、功能一览（5 个标签页）
+
+| 标签页 | 作用 | 数据是否本地保存 |
+| --- | --- | --- |
+| **对话**（默认页） | 自由向 AI 提问；多会话管理（新建/切换/重命名/删除）、流式回复、Markdown 渲染、代码块一键复制、可「带入当前代码/题目」提问、导出 Markdown | ✅ 历史会话存 localStorage |
+| 代码助手 | 上传 .py/.c/.cpp → Bug 诊断 / 代码讲解 / 修复后的完整代码 / 扣分陷阱 | 使用次数计入进度 |
+| **练习**（出题 · 作答 · 批改三合一） | ①**出题**：4 档难度 × 题型 × 数量 × 知识点，按考试/竞赛规范生成（**只给题面，不给答案**），也可直接取内置题库；②**作答**：题面与答题区分栏，题目给出的代码**直接注入答题编辑器**（选择题点选，填空 / 改错 / 编程在编辑器里做，多题用题号切换）；③**批改**：提交后满分 100 打分、逐题得分、样例推演、参考代码、学习总结 | ✅ 每次批改记录分数与明细 |
+| **学习进度** | 8 张统计卡、SVG 分数趋势图、按语言统计、批改历史（可展开 / 一键带回练习重做）、JSON 导出导入、清空 | ✅ 全部本地 |
+| API 设置 | 服务商 / 模型 / Key / 代理地址、两步「测试连接」自检、免责声明 | Key 只在内存 |
+
+### 练习板块的四档难度（严格按对应考试 / 竞赛规范出题）
+
+| 档位 | 对标 | 出题规范要点 |
+| --- | --- | --- |
+| **基础** | 课后练习 | 单一知识点、不设陷阱；n ≤ 1000 允许 O(n²)；样例 ≥ 2 组含边界 |
+| **中等** | 全国计算机等级考试二级 · 程序设计 | 严格按二级上机结构：**选择题 40 分（每题 1 分）+ 程序填空题 18 分（3 空）+ 程序改错题 18 分（2~3 处错）+ 程序设计题 24 分**；考点限定在大纲范围（数据类型与运算、流程控制、数组、函数、指针/引用、字符串、结构体、文件操作）；填空题统一用 `____(1)____` 标记空位；改错题给出完整可编译但含语法 + 逻辑错误的代码 |
+| **进阶** | 小型单人竞赛 · CSP-J / 普及组风格 | 单文件、标准输入输出；数据范围明确（常见 1 ≤ n ≤ 10^5）；时间 1s / 内存 256MB；算法复杂度要与数据范围匹配（前缀和 / 二分 / 贪心 / DFS·BFS / 简单 DP）；样例 2~3 组并说明设计意图；给出易错边界提示 |
+| **王者** | 大型计算机决赛 · 蓝桥杯国赛级 | **结果填空题（只交答案）+ 编程题（交源码、按测试点部分给分）**；数据范围到 10^5~10^6；多知识点组合（二分 + 前缀和 / 图论最短路 / 并查集 / 树形 DP / 状压 DP）；必须说明「部分分怎么拿」 |
+
+**「不给答案」是怎么保证的**：出题请求明确禁止输出答案 / 解析 / 参考代码 / 填空内容，并要求最后附一个 `json` 结构块，
+字段只有题面信息（`statement / inputFormat / outputFormat / samples / constraints / limits / scorePoints / stemCode / templateCode / blanks / choices`）——
+**契约里根本没有 answer / solution 字段**；前端只用这个结构渲染题面与答题区，答案与解析在提交后由批改环节给出。
+（自动化测试里有专门断言：题面文本不得出现「答案 / 解析」字样与 JSON 契约残留。）
+
+**内置题库**：点「📚 从题库出题」可**离线取题**（不消耗 API），覆盖 4 档难度 × Python/C/C++，
+每题都带完整题面、样例、数据范围、评分点与答题模板代码，字段与 AI 出题的契约完全一致。
+
+**本地存储说明**：历史与进度保存在浏览器 `localStorage`（键名 `codetutor.chat.v1` / `codetutor.progress.v1`），
+上限为 20 个会话 × 每会话 120 条消息、100 条批改记录；**写入超限时自动裁剪最旧数据**再重试。
+`apiKey` 依然只存在于内存，**从不落盘**（有自动化断言保证）。清理浏览器数据、换设备或换浏览器会丢失历史，
+可在【学习进度】页导出 JSON 备份。
+
+线上实测（真实 Chrome 打开生产域名）：
+```
+✔ 第 1 步 · 代理自检通过：codelearn-proxy v1.1.0 · pages-function · 同源，无 CORS 风险
+✘ 第 2 步 · 模型调用失败  认证失败（401）… Authentication Fails, Your api key: ****fake is invalid
+```
+第二步用假 Key 得到 DeepSeek 的真实回执，证明「浏览器 → 同源 Function → DeepSeek」全链路通畅。
+
+> ⚠️ **重要：本项目是 Git 连接的 Pages 项目。**
+> 直接上传（wrangler/拖拽）的部署会被**下一次 `git push` 覆盖**。
+> 所以 `functions/api/chat.js` 与最新的 `index.html` **必须提交到仓库**，否则下次推送会把
+> 同源代理冲掉，网站又变回"只能用 workers.dev"的状态。
+> 本地克隆已准备好提交（`codelearn/repo`，commit `6ba81f0`），只差：
+> ```powershell
+> cd D:\贵阳美图\codelearn\repo
+> git push          # 会弹出 GitHub 登录
+> ```
+
+---
+
+## 一、文件清单与架构
+codelearn/
+├── index.html               # 主站（单文件：页面 + 样式 + CodeMirror 集成 + 全部交互逻辑）
+├── functions/api/chat.js    # 【已上线·方案①】Cloudflare Pages Functions 同源代理
+├── deploy-site/             # 可直接部署/提交的干净目录（index.html + functions/）
+├── repo/                    # 站点 Git 仓库的本地克隆（已含待推送的提交 6ba81f0）
+├── cloudflare-proxy.js      # 【备用·方案③】Cloudflare Worker 跨域代理
+├── local-proxy.mjs          # 【备用·方案④】本机 Node 代理（127.0.0.1:8787）
+├── README.md                # 本文档
+├── preview-1-assistant.png  # 预览图：代码助手
+├── preview-2-grading.png    # 预览图：练习批改（评分卡）
+├── preview-3-mobile.png     # 预览图：手机端
+├── preview-4-scorecard.png  # 预览图：评分卡特写
+├── preview-5-proxy-check.png# 预览图：代理自检诊断界面
+├── preview-6-chat.png       # 预览图：对话页
+├── preview-7-progress.png   # 预览图：学习进度页
+├── preview-8-chat-mobile.png# 预览图：手机端对话页
+├── preview-9-dark-chat.png  # 预览图：深色对话页
+├── preview-10-dark-progress.png # 预览图：深色学习进度页
+├── preview-11-skin-lin.png  # 预览图：林城晨雾皮肤
+├── preview-12-skin-shugu-dark.png # 预览图：数谷蓝调皮肤（深色）
+├── preview-13-skin-yinghua.png    # 预览图：樱花梯田皮肤
+├── preview-14-skin-jiubamen-dark.png # 预览图：九门夜灯皮肤（深色）
+└── tests/
+    ├── worker.test.mjs      # Worker 单元测试（22 项断言）
+    ├── alt-deploy.test.mjs  # Pages Function + 本机代理测试（20 项断言）
+    ├── e2e.mjs              # jsdom 端到端测试（103 项断言：全功能 + 练习三步 + 对话 + 进度 + 持久化 + 皮肤 + 彩蛋栏）
+    ├── browser.mjs          # 真实 Chrome 验证 + 预览图生成（17 项断言）
+    ├── failure-repro.mjs    # 复现"Worker 装错"故障并截图（6 项判定）
+    ├── live-verify.mjs      # 对线上生产域名做端到端验证（25 项判定）
+    ├── feature-preview.mjs  # 生成对话页/进度页/多皮肤预览图
+    ├── lna-diagnose.mjs     # 诊断 Chrome Local Network Access 拦截
+    └── README.md            # 测试运行方法
+```
+
+---
+
+## 四、架构
+
+```
+浏览器 (index.html)
+   │  POST { provider, model, apiKey, messages, stream }
+   │  代理地址支持三种写法：
+   │    /api/chat              → Pages Functions（同源，最稳）
+   │    https://api.你的域名.com → Worker 绑定自定义域
+   │    https://xxx.workers.dev → Worker 默认域（国内常被墙，见第三节）
+   │    http://127.0.0.1:8787   → 本机 local-proxy.mjs
+   ▼
+代理层（以上四选一，逻辑完全一致）
+   │  补 CORS 头 + 校验参数 + 限流 + Authorization: Bearer <用户的 key>
+   ▼
+DeepSeek / 通义千问 官方 OpenAI 兼容接口
+```
+
+- **为什么需要代理**：大模型官方接口不允许浏览器直接跨域调用（CORS），且前端直连会把
+  Key 暴露在浏览器网络面板里、无法统一限流。代理只做「透明转发」，不记录任何密钥。
+- **四个版本逻辑一致**：`service` 都返回 `codelearn-proxy`，前端「测试连接」第 1 步会校验它，
+  所以换部署方式不用改前端逻辑，只改代理地址。
+- **前端零依赖**：只用 CodeMirror 5（CDN 引入，加载失败自动降级为原生 textarea），
+  没有构建步骤、没有 npm 依赖、没有框架。
+
+---
+
+## 五、部署步骤
+
+> **先选代理方案**：如果你在国内网络下访问 `*.workers.dev` 失败（`Failed to fetch`），
+> 请直接看 **第三节「网络被墙怎么办」**，用同源 `/api/chat`（推荐）或本机 `local-proxy.mjs`，
+> 下面的第 1 步可以跳过。下面按「Worker 默认可用的网络环境」来写。
+
+### 第 1 步：部署 Worker（先做这步，才能拿到代理地址）
+
+**方式 A — 控制台粘贴（推荐）**
+
+1. 登录 <https://dash.cloudflare.com> → 左侧 **Workers & Pages** → **Create** → **Create Worker**
+2. 名称填 `codelearn-proxy`（随意）→ **Deploy**
+3. 点 **Edit code**，把 `cloudflare-proxy.js` 的全部内容粘贴进去覆盖模板 → **Deploy**
+4. 记下生成的地址，形如：`https://codelearn-proxy.你的子域.workers.dev`
+5. 【重要】回到 Worker 的 **Settings → Variables and Secrets**，添加变量：
+   - `ALLOWED_ORIGINS` = `https://你的站点.pages.dev`（多个用英文逗号分隔；本地调试再加 `http://localhost:8080`）
+   - 不设置则默认 `*`，任何网站都能调你的代理，正式站点务必收紧。
+
+**方式 B — Wrangler CLI**
+
+```bash
+npm i -g wrangler
+wrangler login
+mkdir codelearn-proxy && cd codelearn-proxy
+# 把 cloudflare-proxy.js 改名为 index.js 放进来
+cat > wrangler.toml <<'EOF'
+name = "codelearn-proxy"
+main = "index.js"
+compatibility_date = "2025-01-01"
+
+[vars]
+ALLOWED_ORIGINS = "https://你的站点.pages.dev,http://localhost:8080"
+EOF
+wrangler deploy
+```
+
+**验证代理是否活着**：浏览器直接打开 Worker 地址，应返回
+`{"ok":true,"service":"codelearn-proxy",...}`。
+
+### 第 2 步：部署前端
+
+**方式 A — Cloudflare Pages（推荐，与 Worker 同生态）**
+
+1. Workers & Pages → **Create** → **Pages** → **Upload assets**
+2. 项目名随意，把 `index.html` 拖进去（或上传整个 `codelearn` 目录）→ **Deploy**
+3. 得到 `https://项目名.pages.dev`
+4. 回到 Worker，把 `ALLOWED_ORIGINS` 改成这个真实域名并保存
+
+> Git 集成方式：把仓库连到 Pages，构建命令留空、输出目录填 `.`（因为不需要构建）。
+
+**方式 B — GitHub Pages**
+
+```bash
+git init && git add index.html && git commit -m "init"
+git branch -M main
+git remote add origin https://github.com/你的用户名/codelearn.git
+git push -u origin main
+```
+
+仓库 **Settings → Pages** → Source 选 `Deploy from a branch` → 分支 `main`、目录 `/ (root)` → Save。
+地址为 `https://你的用户名.github.io/codelearn/`，把它加进 Worker 的 `ALLOWED_ORIGINS`。
+
+**方式 C — 本地跑**
+
+双击 `index.html` 即可（file:// 也能用）；或 `python -m http.server 8080` 后访问
+<http://localhost:8080>（记得把 `http://localhost:8080` 加进 `ALLOWED_ORIGINS`）。
+
+### 第 3 步：站点配置
+
+1. 打开站点 → **API 设置** 标签页
+2. 服务商选 **DeepSeek** 或 **通义千问**
+3. 填入你自己的 API Key（[DeepSeek 控制台](https://platform.deepseek.com) / [阿里云百炼](https://bailian.console.aliyun.com)）
+4. 代理地址填第 1 步拿到的 Worker 地址
+5. 点 **测试连接** → 显示「连接成功」即配置完成
+6. 顶部选择编程语言，切到 **代码助手 / 练习（出题 · 作答 · 批改）** 开始使用
+
+---
+
+## 六、网络被墙怎么办（`*.workers.dev` 连不上）
+
+**症状**：前端报 `无法连接代理。原始错误：Failed to fetch`（注意与"401 认证失败"是两回事）。
+
+**原因**：国内网络对 `*.workers.dev` 普遍做了 **DNS 污染 + SNI 阻断**。本机实测（2026-10）：
+
+| 检查项 | 实测结果 |
+| --- | --- |
+| `nslookup code-proxy.xxx.workers.dev` | 解析到 `31.13.96.192`、`185.60.216.169`（**Facebook IP 段**）——每次查询还不一样 |
+| 解析一个**根本不存在的**随机子域 | 竟然也"解析成功"，返回 `162.125.2.5`（**Dropbox IP**）→ 确证是污染 |
+| 用公共 DoH（Cloudflare DNS）查询 | 返回正确答案 `104.21.72.244`（Cloudflare 真实 IP） |
+| 用正确 IP + 正确 SNI 强制直连 | **ECONNRESET**（TCP 能连、TLS 握手被重置）→ SNI 阻断 |
+| 同一台机器访问你的 Pages 站点、`api.deepseek.com` | **完全正常** |
+
+> 结论：这是**网络层问题**，改代码没用；而且**改 hosts 文件也没用**（SNI 阻断发生在 TLS 阶段，
+> 与 DNS 解析结果无关——上面那条 ECONNRESET 就是用正确 IP 测出来的）。
+
+### 方案 ①（推荐）：改用同源 `/api/chat`（Pages Functions）
+
+代理跑在**你自己的站点域名**下，同域请求、没有 CORS、完全不碰 `workers.dev`。
+
+```bash
+# 目录里放好 index.html 与 functions/api/chat.js（functions/ 必须与 index.html 同级，
+# 不能放进 dist/ 之类的构建输出目录），然后在项目根目录执行：
+npm i -g wrangler && wrangler login
+wrangler pages deploy . --project-name=code-tutor-site
+#                    ↑ project-name 必须与你现有的 Pages 项目名完全一致
+```
+
+- **注意**：控制台「拖拽上传」**不支持** Functions（[官方说明](https://developers.cloudflare.com/pages/functions/get-started/)），必须用 `wrangler` 或 Git 集成（构建命令留空、输出目录 `.`）。
+- 部署后浏览器打开 `https://你的站点.pages.dev/api/chat`，应看到 `{"ok":true,"service":"codelearn-proxy","deploy":"pages-function",...}`
+- 前端【API 设置】→ 代理地址填 **`/api/chat`**（以 `/` 开头会被识别为同源路径）
+
+### 方案 ②：给 Worker 绑定自定义域名
+
+Workers & Pages → 你的 Worker → **Settings → Domains & Routes → Add → Custom Domain**，
+绑定例如 `api.你的域名.com`（域名需托管在 Cloudflare）。前端代理地址填 `https://api.你的域名.com`。
+
+### 方案 ③：本机代理（最快，但新版 Chrome/Edge 需要授权）
+
+```bash
+node local-proxy.mjs        # 看到 "本机代理已启动 http://127.0.0.1:8787"
+```
+
+前端代理地址填 `http://127.0.0.1:8787`。
+
+> ⚠️ **Chrome 147+ / Edge 147+ 会拦这一跳**。它们引入了 **Local Network Access** 策略：
+> 公网 https 页面访问本机 `127.0.0.1` 必须由用户显式授权，否则前端只显示 `Failed to fetch`，
+> 浏览器控制台原文（本机实测 Chrome 154.0.8037.93）：
+> ```
+> Access to fetch at 'http://127.0.0.1:8787/' from origin 'https://xxxx.pages.dev'
+>   has been blocked by CORS policy: Permission was denied for this request
+>   to access the `loopback` address space.
+> net::ERR_BLOCKED_BY_LOCAL_NETWORK_ACCESS_CHECKS   (LocalNetworkAccessPermissionDenied)
+> ```
+> **处理**：点「测试连接」时留意地址栏弹出的「访问本地网络上的设备」提示 → 允许；
+> 若已误拒，去 地址栏图标 → 网站设置 → 「本地网络访问」→ 允许 → 刷新重试。
+> （`local-proxy.mjs` 已按规范返回 `Access-Control-Allow-Private-Network: true`，服务端无需再改。）
+> 想彻底不折腾这一套，请用**方案 ①**。
+
+优点是零依赖、不受任何封锁影响；代价是**只有你自己开着脚本时能用**，且每个浏览器都要单独授权一次。
+
+### 怎么确认是"被墙"而不是"地址写错"
+
+```bash
+nslookup 你的worker名.你的子域.workers.dev      # 看是不是 Facebook/Twitter/Dropbox 等无关 IP
+curl -v https://你的worker名.你的子域.workers.dev   # 看是不是 TCP 通、TLS 被 reset
+```
+
+前端「测试连接」第 1 步也会自动区分三种失败：**连不上（网络）** / **能连上但读不到（CORS）** /
+**连上了但不是我们的脚本（装错）**，并给出对应处理建议。
+
+---
+
+## 七、故障排查（先看这一节）
+
+新版【API 设置】的「测试连接（含代理自检）」分两步，**能直接定位问题在哪一端**：
+
+```
+① 代理自检   GET 一次代理地址，确认它返回 {"ok":true,"service":"codelearn-proxy","version":"1.1.0"}
+② 模型连通性  真实调用一次大模型，确认 Key + 服务商匹配
+```
+
+### 症状：报错 `认证失败（401）… 服务商返回：Authentication Fails (governor)`
+
+**先做 5 秒判定**：浏览器新标签页**直接打开你的代理地址**。
+
+| 打开后看到 | 结论 | 处理 |
+| --- | --- | --- |
+| `{"ok":true,"service":"codelearn-proxy",...}` | 代理部署正确 | 问题在 **Key 或服务商选择**，见下方 A |
+| 任何**不是**这个 JSON 的东西（报错、纯文本、别的 JSON） | 该地址上跑的不是本项目脚本 | 见下方 B |
+
+**A. 代理没问题 → 查 Key**
+1. 服务商选择与 Key 是否匹配：DeepSeek 的 Key 只能选 DeepSeek，通义千问（百炼）的 Key 只能选通义千问；
+2. Key 是否复制完整（前后没有空格/换行）、是否已过期或删除；
+3. 用 `curl` 直接验证（把 Key 换成你的，注意它只出现在你本机终端里）：
+   ```bash
+   curl https://api.deepseek.com/v1/chat/completions \
+     -H "Content-Type: application/json" \
+     -H "Authorization: Bearer sk-你的key" \
+     -d '{"model":"deepseek-chat","messages":[{"role":"user","content":"hi"}]}'
+   ```
+   返回 `Authentication Fails` 就是 Key 本身的问题，与本站无关。
+
+**B. 该地址上跑的不是我们的脚本**（真实踩坑案例）
+典型特征是：`GET` 代理地址也返回 401、响应头里没有 `X-Proxy`、`POST` 未知 provider 也不报 400。
+多数情况是**把密钥读成了 `Authorization` 请求头**的老脚本，而本站是把密钥放在 JSON body 的 `apiKey` 字段里发的，
+于是它每次拿空 Key 去请求上游，上游就回 `Authentication Fails (governor)`——**看起来像 Key 坏了，其实是 Worker 装错了**。
+
+处理步骤：
+1. 回 Cloudflare 控制台，确认**那个 Worker**（地址与站点里填的一致）的代码已被 `cloudflare-proxy.js` 全文覆盖；
+2. 容易犯的错：**建了两个 Worker**，代码部署在 A，站点里填了 B 的地址；
+3. 重新 Deploy 后，刷新页面点「测试连接」→ 第 1 步应显示 **代理自检通过（codelearn-proxy v1.1.0）**。
+
+### 症状：`请求失败（502）… 无法连接上游接口`
+Worker 能跑，但访问不到上游。检查 `PROVIDERS` 里的 endpoint 是否被改错，以及你的网络是否可直连服务商域名。
+
+### 症状：`无权限（403）… 白名单拦截`
+Worker 的 `ALLOWED_ORIGINS` 没写上当前站点域名。把它改成实际域名（含 `https://`，不要带结尾斜杠），多个用逗号分隔。
+
+---
+
+## 八、可选环境变量（Worker）
+
+| 变量 | 默认 | 说明 |
+| --- | --- | --- |
+| `ALLOWED_ORIGINS` | `*` | 允许的来源白名单，逗号分隔 |
+| `MAX_TOKENS_CAP` | `8192` | 单次请求 `max_tokens` 上限 |
+| `MAX_BODY_BYTES` | `524288` | 请求体上限（字节） |
+| `RATE_LIMIT_PER_MIN` | `60` | 每 IP 每分钟请求上限（尽力而为） |
+| `ALLOW_SERVER_KEY` | `false` | 设为 `true` 时允许用服务端密钥（你自己付费） |
+| `SERVER_DEEPSEEK_KEY` / `SERVER_QWEN_KEY` | 无 | 服务端密钥，仅上一条为 true 时生效 |
+
+---
+
+## 九、安全注意事项
+
+1. **密钥零存储**：`apiKey` 只存在于页面 JavaScript 内存变量 `state.apiKey` 中，
+   不写 `localStorage` / `sessionStorage` / Cookie / IndexedDB，刷新即消失（已由自动化测试断言）。
+2. **不要用别人的代理**：Key 会随请求经代理转发，代理方理论上可见。只填自己部署的 Worker。
+3. **用限额 Key**：在服务商控制台设置消费上限，用完即轮换/销毁；不要用主账号高权限 Key。
+4. **收紧白名单**：正式上线一定要设置 `ALLOWED_ORIGINS`，否则任何人都能白嫖你的 Worker 做转发。
+5. **限流是尽力而为**：Worker 免费版的 Map 限流不跨机房共享，只防手滑连点。要真正防刷请用
+   Cloudflare WAF 的 Rate Limiting Rules，或改用「服务端密钥 + 严格白名单 + 每日预算告警」。
+6. **XSS 防护**：AI 返回内容全部先 HTML 转义再渲染（`esc()`），Markdown 渲染器不输出
+   原始 HTML，因此模型输出无法注入脚本。
+7. **隐私**：粘贴的代码和题目会发送给对应的 AI 服务商，不要提交涉密或含个人隐私的代码。
+
+---
+
+## 十、免责声明
+
+本项目为纯静态教学演示网站，仅供学习参考。AI 生成内容可能存在错误、过时语法或不被考试认可的
+写法，**请以编译器运行结果、教材与考试大纲为准**。API 调用产生的费用由使用者账号承担。
+因使用本网站造成的任何直接或间接损失（包括但不限于 API 费用、作业/考试成绩影响），
+作者不承担任何责任。使用即表示已知悉并接受《API 设置》页的完整免责声明。
+
+---
+
+## 十一、自动化验证（7 套 · 289 项断言）
+
+| 套件 | 运行方式 | 断言 | 覆盖 |
+| --- | --- | --- | --- |
+| `worker.test.mjs` | `node` | 22 | Worker 代理：身份标识、CORS、密钥来源、错误包装 |
+| `alt-deploy.test.mjs` | `node` | 20 | Pages Function / 本机代理两条备选部署路径 |
+| `e2e.mjs` | `node`（需 `jsdom`） | 103 | 前端全流程（含练习三步、对话、进度、皮肤、彩蛋栏、持久化、容量保护） |
+| `browser.mjs` | headless Chrome | 17 | 真实 CodeMirror、真实排版与像素、移动端、预览图 |
+| `failure-repro.mjs` | headless Chrome | 6 | 复现「Worker 装错脚本」故障，验证自检提示是否指得准 |
+| `live-verify.mjs` | headless Chrome + 线上域名 | 25 | 对生产域名跑完整链路：零配置、两步自检、对话、练习、皮肤、彩蛋栏 |
+| **`feature-audit.mjs`** | headless Chrome + 线上域名 | **96** | **全功能完整性审计**：A 阶段真实链路 + B 阶段注入 AI 桩，逐项覆盖全部用户功能 |
+
+**最近一次全量结果：289 / 289 通过 ✅**（含 96 项全功能审计，逐区域全绿：结构导航 7、语言联动 4、外观皮肤 6、帮助 4、彩蛋栏 4、进度空态 5、API 两步自检 7、安全 3、布局 4、对话 10、代码助手 7、练习出题 10、练习批改 10、内置题库 2、进度有数据 7、持久化 5）。
+
+> 审计过程中发现并修复的真实缺陷：**地址栏 hash 变化不响应**（浏览器前进/后退不切页）——
+> 已补 `hashchange` 监听，并由 `feature-audit.mjs` 的 A1 用例长期守住。
