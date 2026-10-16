@@ -724,6 +724,39 @@ kbd{background:var(--card-2);border:1px solid var(--line);border-bottom-width:2p
   .egg-spacer{display:none}
   .egg-go{margin-left:auto}
 }
+/* ============================================================
+ * 12. 练习板块：步骤条 + 答题区
+ * ============================================================ */
+.step-card{padding:12px 16px}
+.steps{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.step-item{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);background:var(--card);color:var(--muted);border-radius:999px;padding:5px 14px 5px 6px;cursor:pointer;font:inherit;font-size:13.5px;transition:.16s}
+.step-item b{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;background:var(--card-2);color:var(--muted);font-size:12px;font-weight:700}
+.step-item:hover{border-color:var(--brand-line);color:var(--brand)}
+.step-item.active{border-color:var(--brand);color:var(--brand);font-weight:600;box-shadow:var(--focus-ring)}
+.step-item.active b{background:var(--brand);color:var(--on-brand)}
+.step-item.done b{background:var(--ok-soft);color:var(--ok)}
+.step-line{flex:0 0 20px;height:2px;background:var(--line);border-radius:2px}
+.answer-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:900px){ .answer-grid{grid-template-columns:1fr} }
+.answer-left{border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--card-2);max-height:74vh;overflow:auto}
+.answer-left .output{min-height:auto}
+.answer-right{min-width:0}
+.answer-right .editor-card{margin-bottom:0}
+.q-card{border:1px solid var(--line);border-radius:12px;padding:11px 13px;margin-bottom:10px;background:var(--card)}
+.q-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px}
+.q-title{font-weight:600;font-size:14px}
+.q-pts{font-size:12px;color:var(--muted)}
+.q-tip{font-size:12.5px;color:var(--muted);margin-top:4px}
+.opt{display:flex;gap:9px;align-items:flex-start;border:1px solid var(--line);border-radius:10px;padding:8px 11px;margin:6px 0;cursor:pointer;background:var(--card);transition:.14s;font-size:13.5px}
+.opt:hover{border-color:var(--brand-line)}
+.opt input{margin-top:3px;width:16px;height:16px;flex:0 0 auto}
+.opt.sel{border-color:var(--brand);background:var(--brand-soft)}
+.opt-key{font-weight:700;color:var(--brand);flex:0 0 auto}
+.q-switch{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.q-switch button{border:1px solid var(--line);background:var(--card);color:var(--muted);border-radius:9px;padding:5px 11px;font:inherit;font-size:12.5px;cursor:pointer;transition:.15s}
+.q-switch button:hover{border-color:var(--brand-line);color:var(--brand)}
+.q-switch button[aria-pressed="true"]{border-color:var(--brand);color:var(--brand);font-weight:600;background:var(--brand-soft)}
+.q-switch button.done::after{content:" ✓";color:var(--ok)}
 </style>
 </head>
 <body>
@@ -766,8 +799,7 @@ kbd{background:var(--card-2);border:1px solid var(--line);border-bottom-width:2p
     <nav class="tabs" id="tabs" role="tablist" aria-label="功能切换">
       <button class="tab active" role="tab" data-panel="chat"   aria-selected="true">&#128172; 对话</button>
       <button class="tab" role="tab" data-panel="assistant" aria-selected="false">&#128295; 代码助手</button>
-      <button class="tab" role="tab" data-panel="quiz"     aria-selected="false">&#128221; 习题生成</button>
-      <button class="tab" role="tab" data-panel="grade"    aria-selected="false">&#127919; 代码批改</button>
+      <button class="tab" role="tab" data-panel="practice" aria-selected="false">&#127919; 练习（出题 · 作答 · 批改）</button>
       <button class="tab" role="tab" data-panel="progress" aria-selected="false">&#128200; 学习进度</button>
       <button class="tab" role="tab" data-panel="api"      aria-selected="false">&#9881;&#65039; API 设置</button>
     </nav>
@@ -1001,125 +1033,146 @@ kbd{background:var(--card-2);border:1px solid var(--line);border-bottom-width:2p
   </section>
 
   <!-- ============================================================
-       面板 3：习题生成
+       面板 3：练习（出题 → 作答 → 批改，三合一）
        ============================================================ -->
-  <section class="panel" id="panel-quiz" role="tabpanel" aria-labelledby="tab-quiz">
-    <div class="card">
-      <h2>&#128221; 习题生成 <span class="badge lang" id="quizLangBadge">Python</span></h2>
-      <p class="sub">按你选择的编程语言自动出题，题型、难度、输入输出样例、数据范围一并生成，附参考答案与解析。</p>
+  <section class="panel" id="panel-practice" role="tabpanel" aria-labelledby="tab-practice">
 
-      <div class="grid c4">
-        <div class="field">
-          <span>难度</span>
-          <select id="quizLevel">
-            <option value="basic">基础（入门 / 课后练习）</option>
-            <option value="exam" selected>考试真题难度</option>
-            <option value="advanced">进阶（竞赛 / 拔高）</option>
-          </select>
-        </div>
-        <div class="field">
-          <span>题型</span>
-          <select id="quizType">
-            <option value="choice">选择题</option>
-            <option value="fill">程序填空题</option>
-            <option value="fix">改错题</option>
-            <option value="coding" selected>编程大题</option>
-          </select>
-        </div>
-        <div class="field">
-          <span>题目数量</span>
-          <select id="quizCount">
-            <option value="1" selected>1 题</option>
-            <option value="2">2 题</option>
-            <option value="3">3 题</option>
-            <option value="5">5 题</option>
-          </select>
-        </div>
-        <div class="field">
-          <span>知识点 / 范围（可选）</span>
-          <input id="quizTopic" type="text" placeholder="如：循环与数组、指针、递归、结构体" autocomplete="off">
-        </div>
+    <!-- 步骤指示器 -->
+    <div class="card step-card">
+      <div class="steps" id="practiceSteps">
+        <button class="step-item active" type="button" data-step="1"><b>1</b><span>出题</span></button>
+        <i class="step-line"></i>
+        <button class="step-item" type="button" data-step="2"><b>2</b><span>作答</span></button>
+        <i class="step-line"></i>
+        <button class="step-item" type="button" data-step="3"><b>3</b><span>批改</span></button>
+        <div class="spacer"></div>
+        <span class="badge lang" id="practiceLangBadge">Python</span>
       </div>
-
-      <div class="field" style="margin-top:12px">
-        <span>额外要求（可选）</span>
-        <textarea id="quizExtra" rows="2" placeholder="例如：数据范围控制在 n ≤ 1000；只考一维数组；样例要有易错边界"></textarea>
-      </div>
-
-      <div class="btn-row" style="margin-top:12px">
-        <button class="btn primary" id="quizGenBtn">&#10024; 生成习题</button>
-        <button class="btn" id="quizStopBtn" disabled>&#9632; 停止生成</button>
-        <button class="btn ghost" id="quizRegenBtn">换一批</button>
-        <button class="btn" id="quizToGradeBtn" title="把生成的题目送到【代码批改】标签页">&#10145;&#65039; 送去批改</button>
-      </div>
-      <div id="quizMeta" class="hint" style="margin-top:10px;font-size:12.5px;color:var(--muted)"></div>
     </div>
 
-    <div class="card">
-      <h2>&#128209; 题目</h2>
-      <div class="output empty" id="quizOutput">点击「生成习题」，AI 会按当前语言与难度出题。</div>
-    </div>
-  </section>
+    <!-- ---------- 步骤 1：出题 ---------- -->
+    <div id="stepGen">
+      <div class="card">
+        <h2>&#10024; 出题</h2>
+        <p class="sub">
+          四档难度各自按对应的考试 / 竞赛规范出题。<b>生成时只给题面，不给答案</b>；答完提交才出现评分与解析。
+        </p>
 
-  <!-- ============================================================
-       面板 4：在线代码批改
-       ============================================================ -->
-  <section class="panel" id="panel-grade" role="tabpanel" aria-labelledby="tab-grade">
-    <div class="card">
-      <h2>&#127919; 在线代码批改 <span class="badge lang" id="gradeLangBadge">Python</span></h2>
-      <p class="sub">粘贴或自动带入题目，写下你的解答，AI 按机考规则逐项打分（满分 100），给出扣分原因、样例通过情况、漏洞清单与参考标准代码。</p>
-
-      <div class="field">
-        <span>题目（题目描述 / 输入输出格式 / 样例 / 数据范围）</span>
-        <textarea id="gradeProblem" rows="5" class="code-ish" placeholder="把题目原文粘贴到这里；也可以从【习题生成】页点「送去批改」自动带入。"></textarea>
-      </div>
-
-      <div class="grid c2" style="margin-top:12px">
-        <div class="field">
-          <span>评分标准 / 额外要求（可选）</span>
-          <textarea id="gradeRubric" rows="2" placeholder="例如：函数题按函数签名给分；要求 O(n log n)；必须使用指针；不允许使用 STL"></textarea>
-        </div>
-        <div class="field">
-          <span>快捷操作</span>
-          <div class="btn-row">
-            <button class="btn sm" id="gradeDemoBtn">载入示例题目</button>
-            <button class="btn sm" id="gradeClearProblemBtn">清空题目</button>
+        <div class="grid c4">
+          <div class="field">
+            <span>难度</span>
+            <select id="quizLevel">
+              <option value="basic">基础（课后练习）</option>
+              <option value="mid" selected>中等（计算机二级）</option>
+              <option value="adv">进阶（单人竞赛）</option>
+              <option value="king">王者（蓝桥杯国赛级）</option>
+            </select>
           </div>
-          <div class="hint">批改严格程度默认按考试标准；勾选下方选项可调整。</div>
-          <label style="display:flex;gap:7px;align-items:center;font-size:13px;color:var(--text);margin-top:8px">
-            <input type="checkbox" id="gradeStrict" checked style="width:16px;height:16px"> 严格模式（逐项扣分，扣分理由必须引用具体行号）
+          <div class="field">
+            <span>题型</span>
+            <select id="quizType">
+              <option value="choice">选择题</option>
+              <option value="fill">程序填空题</option>
+              <option value="fix">程序改错题</option>
+              <option value="coding" selected">编程大题</option>
+              <option value="mix">按难度自动配比</option>
+            </select>
+          </div>
+          <div class="field">
+            <span>题目数量</span>
+            <select id="quizCount">
+              <option value="1" selected>1 题</option>
+              <option value="2">2 题</option>
+              <option value="3">3 题</option>
+              <option value="5">5 题</option>
+            </select>
+          </div>
+          <div class="field">
+            <span>知识点 / 范围（可选）</span>
+            <input id="quizTopic" type="text" placeholder="如：循环与数组、指针、递归、结构体" autocomplete="off">
+          </div>
+        </div>
+
+        <div class="field" style="margin-top:12px">
+          <span>额外要求（可选）</span>
+          <textarea id="quizExtra" rows="2" placeholder="例如：数据范围控制在 n ≤ 1000；只考一维数组；样例要有易错边界"></textarea>
+        </div>
+
+        <div class="btn-row" style="margin-top:12px">
+          <button class="btn primary" id="quizGenBtn">&#10024; 按规范生成</button>
+          <button class="btn" id="quizStopBtn" disabled>&#9632; 停止生成</button>
+          <button class="btn" id="bankBtn" title="不调用 AI，直接从内置题库取题（离线可用）">&#128218; 从题库出题</button>
+          <button class="btn ghost" id="quizRegenBtn">换一批</button>
+        </div>
+        <div id="quizMeta" class="hint" style="margin-top:10px;font-size:12.5px;color:var(--muted)"></div>
+        <div class="note info" id="levelSpec" style="margin-top:12px"></div>
+      </div>
+    </div>
+
+    <!-- ---------- 步骤 2：作答 ---------- -->
+    <div id="stepAnswer" style="display:none">
+      <div class="card">
+        <h2>&#9997;&#65039; 作答 <span class="badge gray" id="answerCount">0 题</span></h2>
+        <p class="sub">题目里给出的代码已经放进答题区：<b>选择题点选项</b>，<b>代码题直接在编辑器里补全 / 改正</b>；多题时用题号切换。提交后进入批改。</p>
+
+        <div class="answer-grid">
+          <!-- 左：题面 -->
+          <div class="answer-left">
+            <div class="output" id="practiceOutput"></div>
+          </div>
+
+          <!-- 右：答题区 -->
+          <div class="answer-right">
+            <div id="answerArea"></div>
+
+            <div class="card editor-card" id="answerEditorCard">
+              <div class="editor-bar">
+                <span class="badge lang" id="answerLangBadge">Python</span>
+                <span class="stat"><b id="answerLines">0</b> 行 · <b id="answerChars">0</b> 字符</span>
+                <div class="spacer"></div>
+                <span class="badge gray" id="answerWhich">第 1 题</span>
+                <button class="btn sm ghost" id="answerResetBtn" title="把本题代码恢复成题面给出的原始代码">重置本题</button>
+              </div>
+              <div class="editor-host" id="answerEditorHost">
+                <textarea id="answerEditor" spellcheck="false"></textarea>
+              </div>
+            </div>
+
+            <div class="field" style="margin-top:10px">
+              <span>补充说明（可选）：思路 / 卡住的地方 / 想让我重点看哪里</span>
+              <textarea id="answerNote" rows="2" placeholder="例如：第 2 题我用了前缀和，但不确定边界处理对不对"></textarea>
+            </div>
+
+            <div class="btn-row" style="margin-top:12px">
+              <button class="btn primary" id="submitAnswerBtn">&#128221; 提交并批改</button>
+              <button class="btn" id="backToGenBtn">&#8592; 重新出题</button>
+              <button class="btn ghost" id="answerCopyBtn">复制我的代码</button>
+            </div>
+            <div class="hint" style="margin-top:8px;font-size:12.5px;color:var(--muted)">
+              提交即把「题目 + 你的作答」按机考规则交给 AI 打分（满分 100，多题按分值加权）。
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ---------- 步骤 3：批改 ---------- -->
+    <div id="stepGrade" style="display:none">
+      <div class="card">
+        <h2>&#127919; 批改结果 <span class="badge lang" id="gradeLangBadge">Python</span></h2>
+        <div class="btn-row" style="margin-bottom:12px">
+          <button class="btn" id="gradeAgainBtn">&#8635; 回去改一改</button>
+          <button class="btn ghost" id="gradeNewBtn">&#10024; 再出一套</button>
+          <button class="btn" id="gradeStopBtn" disabled>&#9632; 停止生成</button>
+          <label style="display:flex;gap:7px;align-items:center;font-size:13px;color:var(--text);margin-left:auto">
+            <input type="checkbox" id="gradeStrict" checked style="width:16px;height:16px"> 严格模式（逐项扣分，理由要引用具体行号）
           </label>
         </div>
+        <div id="gradeScoreArea"></div>
+        <div class="output empty" id="gradeOutput">提交作答后，这里会显示总分、逐题得分、样例推演、参考代码与学习总结。</div>
       </div>
-    </div>
-
-    <div class="card editor-card">
-      <div class="editor-bar">
-        <span class="badge lang" id="gradeEditorLang">Python</span>
-        <span class="stat"><b id="gradeLines">0</b> 行 · <b id="gradeChars">0</b> 字符</span>
-        <div class="spacer"></div>
-        <button class="btn sm ghost" id="gradeCopyBtn">复制全部代码</button>
-        <button class="btn sm ghost" id="gradeClearCodeBtn">清空代码</button>
-      </div>
-      <div class="editor-host" id="gradeEditorHost">
-        <textarea id="gradeEditor" spellcheck="false"></textarea>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="btn-row">
-        <button class="btn primary" id="gradeSubmitBtn">&#128221; 开始批改（满分 100）</button>
-        <button class="btn" id="gradeStopBtn" disabled>&#9632; 停止生成</button>
-      </div>
-    </div>
-
-    <div class="card">
-      <h2>&#128202; 批改结果</h2>
-      <div id="gradeScoreArea"></div>
-      <div class="output empty" id="gradeOutput">提交后这里会显示总分、逐项扣分、样例通过情况、代码漏洞、参考标准代码与学习总结。</div>
     </div>
   </section>
-
 </main>
 
 <!-- ============================================================
@@ -1371,9 +1424,6 @@ const conv = { assistant: [], quiz: [], grade: [] };
 
 /** 当前正在进行的请求控制器，用于「停止生成」 */
 const running = { assistant: null, quiz: null, grade: null, chat: null };
-
-/** 最近一次生成的题目文本，供「送去批改」使用 */
-let lastQuizText = '';
 
 /* ==========================================================================
  * 3. 通用工具
@@ -2316,185 +2366,639 @@ function bindAssistantPanel() {
 }
 
 /* ==========================================================================
- * 9. 习题生成模块
+ * 9. 练习板块：出题 → 作答 → 批改（三合一）
+ *     · 四档难度各自按考试/竞赛规范出题
+ *     · 出题阶段**只给题面，不给答案**（结构化的 JSON 契约里也没有答案字段）
+ *     · 题目中给出的代码（填空/改错/模板）直接注入答题编辑器
  * ========================================================================== */
-const QUIZ_LEVELS = {
-  basic: '基础（入门/课后练习）',
-  exam: '考试真题难度',
-  advanced: '进阶（竞赛/拔高）'
+
+/** 四档难度：题目规范 + 评分规范 + 标准配比 */
+const LEVEL_SPEC = {
+  basic: {
+    name: '基础（课后练习）',
+    spec: '面向刚学完本章的学生：单一知识点、题干直白、不设陷阱；若出编程题，数据范围 n ≤ 1000 且允许 O(n²)；给出明确的输入输出格式，样例至少 2 组（含 1 组边界）。',
+    points: '满分 100：读入正确 20 / 核心逻辑 50 / 输出格式 20 / 边界处理 10。',
+    mix: '1 道选择题 + 1 道编程题'
+  },
+  mid: {
+    name: '中等（全国计算机等级考试二级 · 程序设计）',
+    spec: '严格按二级上机题型与分值：选择题 40 分（每题 1 分）、程序填空题 18 分（3 空）、程序改错题 18 分（2~3 处错）、程序设计题 24 分。考点限定在大纲范围内（数据类型与运算、流程控制、数组、函数、指针/引用、字符串、结构体、文件操作）。程序填空题的空位统一写成 ____(1)____ ____(2)____；程序改错题必须给出完整、可编译但含 2~3 处错误的代码（语法错误与逻辑错误都要有）。',
+    points: '选择题每题 1 分；程序填空每空 6 分；程序改错每处 6~9 分；程序设计题按 读入 20 / 算法 50 / 输出 20 / 边界 10。',
+    mix: '1 道选择题 + 1 道程序填空题（或程序改错题）'
+  },
+  adv: {
+    name: '进阶（小型单人竞赛 · CSP-J / 普及组风格）',
+    spec: '单文件、标准输入输出、不涉及交互与文件读写；数据范围明确（常见 1 ≤ n ≤ 10^5）；给出时间限制 1s、内存 256MB；要求算法复杂度与数据范围匹配（前缀和 / 二分 / 贪心 / DFS·BFS / 简单 DP）；样例 2~3 组并说明设计意图；必须给出易错边界提示。',
+    points: '按测试点给分：样例与边界 30 / 主流数据 50 / 大数据 20；允许写出暴力做法并注明「大数据会超时」。',
+    mix: '2 道编程题（1 道偏模拟、1 道偏算法）'
+  },
+  king: {
+    name: '王者（大型计算机决赛难度 · 蓝桥杯国赛级）',
+    spec: '模仿蓝桥杯国赛：结果填空题（只交答案，题面要写清答案格式，例如「答案为整数」）+ 编程题（交源码、按测试点部分给分）。数据范围到 10^5~10^6，时间 1s / 内存 256MB。鼓励多知识点组合（二分 + 前缀和 / 图论最短路 / 并查集 / 树形 DP / 状压 DP）。除样例外必须说明「部分分怎么拿」。',
+    points: '结果填空：每空答对即得分；编程题按测试点：小数据 40 / 中数据 30 / 大数据 30。',
+    mix: '1 道结果填空题 + 1 道编程题'
+  }
 };
-const QUIZ_TYPES = {
-  choice: '选择题',
-  fill: '程序填空题',
-  fix: '改错题',
-  coding: '编程大题'
+
+const QUIZ_TYPES = { choice: '选择题', fill: '程序填空题', fix: '程序改错题', coding: '编程大题', mix: '按难度自动配比' };
+const TYPE_LABEL = { choice: '选择题', fill: '程序填空', fix: '程序改错', coding: '编程题' };
+
+/**
+ * 内置题库：离线可用（点「从题库出题」直接取，不消耗 API）。
+ * 覆盖 4 档难度 × 三种语言；字段与 AI 出题的结构化契约完全一致。
+ */
+const BANK = [
+  {
+    id: 'py-basic-sum', level: 'basic', type: 'coding', lang: 'python', points: 100,
+    title: '求 1 到 n 的和',
+    statement: '读入一个正整数 n，输出 1 + 2 + … + n 的结果。',
+    inputFormat: '一行一个整数 n。', outputFormat: '一行一个整数，表示累加和。',
+    samples: [{ input: '5', expected: '15', note: '样例 1' }, { input: '1', expected: '1', note: '边界：n = 1' }],
+    constraints: '1 ≤ n ≤ 1000', limits: '时间 1s / 内存 64MB',
+    scorePoints: ['读入正确 20 分', '累加逻辑 50 分', '输出格式 20 分', '边界处理 10 分'],
+    templateCode: 'n = int(input())\n# 在这里计算 1..n 的和并输出\n'
+  },
+  {
+    id: 'c-basic-max', level: 'basic', type: 'coding', lang: 'c', points: 100,
+    title: '求 n 个数的最大值',
+    statement: '读入 n 个整数，输出其中的最大值。',
+    inputFormat: '第一行一个整数 n；第二行 n 个整数。', outputFormat: '一行一个整数。',
+    samples: [{ input: '5\n3 -1 7 0 2', expected: '7', note: '样例 1' }, { input: '1\n-5', expected: '-5', note: '边界：只有负数' }],
+    constraints: '1 ≤ n ≤ 1000，|ai| ≤ 10^6', limits: '时间 1s / 内存 64MB',
+    scorePoints: ['读入正确 20 分', '比较逻辑 50 分', '输出格式 20 分', '初值设置 10 分'],
+    templateCode: '#include <stdio.h>\n\nint main(void) {\n    int n, x, i, max;\n    scanf("%d", &n);\n    /* 在这里读入并比较 */\n    printf("%d\\n", max);\n    return 0;\n}\n'
+  },
+  {
+    id: 'cpp-basic-leap', level: 'basic', type: 'coding', lang: 'cpp', points: 100,
+    title: '判断闰年',
+    statement: '读入年份 y，判断它是不是闰年：能被 4 整除且不能被 100 整除，或者能被 400 整除。输出 YES 或 NO。',
+    inputFormat: '一行一个整数 y。', outputFormat: '一行，YES 或 NO。',
+    samples: [{ input: '2024', expected: 'YES', note: '样例 1' }, { input: '1900', expected: 'NO', note: '易错：整百年' }],
+    constraints: '1 ≤ y ≤ 9999', limits: '时间 1s / 内存 64MB',
+    scorePoints: ['读入正确 20 分', '判断条件 50 分', '输出大小写 20 分', '整百年边界 10 分'],
+    templateCode: '#include <iostream>\nusing namespace std;\n\nint main() {\n    int y;\n    cin >> y;\n    // 在这里判断并输出 YES / NO\n    return 0;\n}\n'
+  },
+  {
+    id: 'c-mid-fill-reverse', level: 'mid', type: 'fill', lang: 'c', points: 18,
+    title: '程序填空：数组逆序输出',
+    statement: '下面的程序读入 n 个整数存入数组，再按相反顺序输出。请补全 3 处空缺。',
+    inputFormat: '第一行 n；第二行 n 个整数。', outputFormat: '一行，逆序后的 n 个整数，空格分隔。',
+    samples: [{ input: '5\n1 2 3 4 5', expected: '5 4 3 2 1', note: '样例 1' }],
+    constraints: '1 ≤ n ≤ 100', limits: '时间 1s / 内存 64MB',
+    scorePoints: ['第 1 空 6 分', '第 2 空 6 分', '第 3 空 6 分'],
+    stemCode: '#include <stdio.h>\n\nint main(void) {\n    int n, i, a[105];\n    scanf("%d", &n);\n    for (i = 0; i < ____(1)____; i++)\n        scanf("%d", &a[i]);\n    for (i = n - 1; ____(2)____; i--)\n        printf("%d ", a[i]);\n    printf("\\n");\n    ____(3)____\n}\n',
+    blanks: [{ no: 1, hint: '循环上界与 n 的关系' }, { no: 2, hint: '倒序循环的终止条件' }, { no: 3, hint: 'main 的返回值语句' }]
+  },
+  {
+    id: 'cpp-mid-fix-bubble', level: 'mid', type: 'fix', lang: 'cpp', points: 18,
+    title: '程序改错：冒泡排序',
+    statement: '下面的程序本应将 n 个数升序排序后输出，但有 3 处错误（2 处逻辑、1 处语法/越界）。请改正后提交完整代码。',
+    inputFormat: '第一行 n；第二行 n 个整数。', outputFormat: '一行，升序排列的 n 个整数。',
+    samples: [{ input: '5\n3 1 4 2 5', expected: '1 2 3 4 5', note: '样例 1' }],
+    constraints: '1 ≤ n ≤ 1000', limits: '时间 1s / 内存 256MB',
+    scorePoints: ['找出并改正第 1 处 6 分', '第 2 处 6 分', '第 3 处 6 分'],
+    stemCode: '#include <iostream>\nusing namespace std;\n\nint main() {\n    int n;\n    cin >> n;\n    int a[1005];\n    for (int i = 0; i <= n; i++) cin >> a[i];      // 错误 1\n    for (int i = 0; i < n; i++)\n        for (int j = 0; j < n - i; j++)            // 错误 2\n            if (a[j] > a[j + 1]) swap(a[j], a[j + 1]);\n    for (int i = 0; i < n; i++) cout << a[i] << " ";\n    return 0\n}                                                  // 错误 3\n'
+  },
+  {
+    id: 'py-mid-wordcount', level: 'mid', type: 'coding', lang: 'python', points: 24,
+    title: '程序设计：统计单词出现次数',
+    statement: '读入一行由空格分隔的英文单词（全部小写），按出现次数从多到少输出「单词:次数」；次数相同时按单词字典序升序。',
+    inputFormat: '一行字符串，长度不超过 1000。', outputFormat: '每行一个「单词:次数」。',
+    samples: [{ input: 'a b a c b a', expected: 'a:3\nb:2\nc:1', note: '样例 1' }, { input: 'x', expected: 'x:1', note: '边界：单个单词' }],
+    constraints: '1 ≤ 单词数 ≤ 200', limits: '时间 1s / 内存 64MB',
+    scorePoints: ['读入与切分 20 分', '计数逻辑 50 分', '排序规则 20 分', '输出格式 10 分'],
+    templateCode: 'line = input().split()\n# 在这里统计并按规则输出\n'
+  },
+  {
+    id: 'cpp-adv-prefix', level: 'adv', type: 'coding', lang: 'cpp', points: 100,
+    title: '区间求和（前缀和）',
+    statement: '给定 n 个整数与 q 次询问，每次询问给出 l、r，输出下标 l 到 r（含端点，1 起）的元素之和。要求单次询问 O(1)。',
+    inputFormat: '第一行两个整数 n、q；第二行 n 个整数；随后 q 行每行两个整数 l、r。',
+    outputFormat: '每次询问输出一行一个整数。',
+    samples: [
+      { input: '5 2\n1 2 3 4 5\n1 3\n2 5', expected: '6\n14', note: '样例 1' },
+      { input: '1 1\n7\n1 1', expected: '7', note: '边界：n = 1' }
+    ],
+    constraints: '1 ≤ n, q ≤ 100000，1 ≤ ai ≤ 1000', limits: '时间 1s / 内存 256MB',
+    scorePoints: ['读入 20 分', '前缀和 O(1) 询问 50 分', '输出格式 20 分', '边界与 long long 10 分'],
+    templateCode: '#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    int n, q;\n    cin >> n >> q;\n    // 在这里实现前缀和\n    return 0;\n}\n'
+  },
+  {
+    id: 'py-king-tailzero', level: 'king', type: 'coding', lang: 'python', points: 100,
+    title: '乘积尾零（蓝桥杯风格）',
+    statement: '给定 n 个整数，求它们乘积的十进制表示末尾有多少个 0。（提示：尾部 0 的个数由因子 2 与 5 的较少者决定，不需要真的算出乘积。）',
+    inputFormat: '第一行一个整数 n；第二行 n 个整数。', outputFormat: '一行一个整数，表示乘积末尾 0 的个数。',
+    samples: [
+      { input: '5\n2 5 10 25 4', expected: '3', note: '样例 1' },
+      { input: '3\n3 7 11', expected: '0', note: '边界：没有 2 或 5' }
+    ],
+    constraints: '1 ≤ n ≤ 100000，1 ≤ ai ≤ 10^9', limits: '时间 1s / 内存 256MB',
+    scorePoints: ['读入 20 分（小数据）', '分解因子 2/5 并取 min 40 分（中数据）', 'O(n log a) 通过大数据 30 分', 'n = 1 与无 2/5 的边界 10 分'],
+    templateCode: 'n = int(input())\nvals = list(map(int, input().split()))\n# 提示：分别统计因子 2 与因子 5 的个数，答案取较小值\n'
+  }
+];
+
+/** 练习板块的运行时状态 */
+const answerEditor = { api: null };   // 答题区的编辑器句柄（与 assistantEditor 同构）
+const practice = {
+  problems: [],      // 结构化题目（无答案）
+  raw: '',           // AI 原始 Markdown（只作兜底展示）
+  answers: {},       // { [题号索引]: { choice: 'B', code: '...', note: '' } }
+  editorFor: null,   // 当前在编辑器里作答的题号索引
+  step: 1
 };
+
+/** 结构化输出契约：明确「不要答案」 */
+const PROBLEM_JSON_CONTRACT =
+  '\n最后必须附加一个 ```json 代码块，内容**只有题面信息，绝对不能包含答案 / 解析 / 参考代码 / 正确填空**，格式严格如下（没有的字段留空字符串或空数组）：\n' +
+  '```json\n' +
+  '{"problems":[{"id":1,"type":"coding","title":"区间求和","points":24,' +
+  '"statement":"题目描述…","inputFormat":"第一行…","outputFormat":"一行…",' +
+  '"samples":[{"input":"5\\n1 2 3 4 5","expected":"15","note":"样例 1"}],' +
+  '"constraints":"1 ≤ n ≤ 100000","limits":"时间 1s / 内存 256MB",' +
+  '"scorePoints":["读入 20 分","算法 50 分","输出格式 20 分","边界 10 分"],' +
+  '"stemCode":"","templateCode":"# 在此补全\\n","blanks":[],"choices":[]}]}\n' +
+  '```\n' +
+  'type 取值：choice（选择题，必须给 choices: [{"key":"A","text":"…"}]）/ fill（程序填空，必须给 stemCode 与 blanks: [{"no":1,"hint":"考查点"}]）' +
+  '/ fix（程序改错，必须给 stemCode 与本题错误处数）/ coding（编程题，必须给 templateCode）。\n' +
+  '禁止出现 answer、solution、correct、referenceCode、解析 等字段。';
 
 function buildQuizPrompt(levelKey, typeKey, count, topic, extra) {
   const L = langOf(state.lang);
-  const levelText = QUIZ_LEVELS[levelKey];
-  const typeText = QUIZ_TYPES[typeKey];
-
-  let head =
-    '请为学习 ' + L.name + ' 的学生出 ' + count + ' 道题。\n' +
-    '【编程语言】' + L.name + '（所有代码必须使用 ```' + L.fence + ' 围栏，且保证能通过编译/运行）\n' +
-    '【难度】' + levelText + '\n' +
-    '【题型】' + typeText + '\n' +
+  const sp = LEVEL_SPEC[levelKey] || LEVEL_SPEC.mid;
+  return '请为正在学习 ' + L.name + ' 的学生出 ' + count + ' 道题。\n\n' +
+    '【编程语言】' + L.name + '（所有代码用 ```' + L.fence + ' 围栏，必须能编译 / 运行）\n' +
+    '【难度档位】' + sp.name + '\n' +
+    '【本档出题规范（必须严格遵守）】' + sp.spec + '\n' +
+    '【本档评分规范】' + sp.points + '\n' +
+    '【题型】' + (QUIZ_TYPES[typeKey] || '按难度自动配比') +
+    (typeKey === 'mix' ? '（本档标准配比：' + sp.mix + '，题目数量按 ' + count + ' 题循环取用）' : '') + '\n' +
     (topic ? '【知识点范围】' + topic + '\n' : '') +
     (extra ? '【额外要求】' + extra + '\n' : '') +
-    '\n';
-
-  let body = '';
-  if (typeKey === 'choice') {
-    body =
-      '每道题按以下格式输出：\n' +
-      '### 第 N 题（' + L.name + ' · ' + levelText + '）\n' +
-      '**题目**：……（可含一个短代码片段）\n' +
-      'A. ……\nB. ……\nC. ……\nD. ……\n' +
-      '**答案**：X\n' +
-      '**解析**：为什么对、其余选项错在哪（要具体到语法与运行结果）。\n' +
-      '**易错点**：这道题最容易误选的选项及原因。\n\n' +
-      '要求：选项之间要有迷惑性（针对真实错误认知设计），不要出现「以上都对」这类凑数选项。全部题目输出完后，用 `## 参考答案汇总` 小表列出题号与答案。';
-  } else if (typeKey === 'fill') {
-    body =
-      '每道题按以下格式输出：\n' +
-      '### 第 N 题（程序填空 · ' + L.name + '）\n' +
-      '**题面**：说明程序要实现什么功能。\n' +
-      '**程序代码**：完整代码，需填空处统一写成 `____(1)____`、`____(2)____` …\n' +
-      '**输入输出样例**：给出 2 组样例。\n' +
-      '**数据范围**：说明取值上限（如 1 ≤ n ≤ 1000）。\n' +
-      '**答案**：逐空给出答案与说明。\n' +
-      '**易错点**：每一空常见的错误填法与后果。';
-  } else if (typeKey === 'fix') {
-    body =
-      '每道题按以下格式输出：\n' +
-      '### 第 N 题（改错题 · ' + L.name + '）\n' +
-      '**题面**：说明程序本应实现的功能。\n' +
-      '**有错误的代码**：完整可提交的代码，内嵌 2~5 处错误（语法错误 + 逻辑错误都要有，不要过于明显）。\n' +
-      '**输入输出样例**：给出正确程序的预期样例。\n' +
-      '**错误清单**：逐条给出「位置（行号/片段）→ 错误类型 → 为什么错 → 正确写法」。\n' +
-      '**正确代码**：完整的修正后代码。\n' +
-      '**易错点**：学生自查时容易漏掉的地方。';
-  } else {
-    body =
-      '每道题按以下格式输出：\n' +
-      '### 第 N 题（编程大题 · ' + L.name + ' · ' + levelText + '）\n' +
-      '**题目描述**：完整可读的题面，包含故事背景与任务要求。\n' +
-      '**输入格式**：逐行说明输入内容与类型。\n' +
-      '**输出格式**：逐行说明输出内容（注意大小写、空格、换行等格式细节）。\n' +
-      '**输入输出样例**：至少 2 组，用 ```text 围栏给出「输入」与「输出」，另外给 1 组易错边界样例。\n' +
-      '**数据范围与提示**：给出变量取值范围、时间/空间限制建议、算法复杂度要求。\n' +
-      '**评分点**：列出本题按步骤给分的点（如：读入正确 20 分、核心算法 50 分、格式正确 20 分、边界处理 10 分，合计 100 分）。\n' +
-      '**参考答案**：完整、可直接编译/运行的 ' + L.name + ' 代码（```' + L.fence + ' 围栏）。\n' +
-      '**解题思路**：分步骤讲解算法与关键实现细节。\n' +
-      '**易错点**：本题最典型的 WA/TLE/RE 原因。';
-  }
-
-  return head + body + '\n\n注意：题号连续、题目之间用 `---` 分隔；不要输出与题目无关的寒暄。';
+    '\n【输出要求】\n' +
+    '1. 先用 Markdown 逐题给出题面：`### 第 N 题 · 题型 · 分值`，每题包含 题目描述 / 输入格式 / 输出格式 / 样例（```text 围栏，至少含 1 组边界）/ 数据范围与限制 / 评分点。\n' +
+    '2. 程序填空与程序改错题必须给出完整代码块；填空位置统一写成 ____(1)____、____(2)____。\n' +
+    '3. 编程题必须给出答题模板代码块（函数签名或 main 骨架），方便学生直接在模板上补全。\n' +
+    '4. **绝对不要给出答案、解析、参考代码、填空内容或错误位置**：这些要留到批改环节。题干里也不要出现「答案」「解析」「正确的是」等字样。\n' +
+    '5. 题目之间用 --- 分隔，不要寒暄。' + PROBLEM_JSON_CONTRACT;
 }
 
-function bindQuizPanel() {
-  const out = $('#quizOutput');
-
-  async function generate() {
-    const cfgErr = configError();
-    if (cfgErr) { showError(out, cfgErr); switchTab('api'); return; }
-
-    const levelKey = $('#quizLevel').value;
-    const typeKey = $('#quizType').value;
-    const count = parseInt($('#quizCount').value, 10) || 1;
-    const topic = $('#quizTopic').value.trim();
-    const extra = $('#quizExtra').value.trim();
-    const L = langOf(state.lang);
-
-    const userText = buildQuizPrompt(levelKey, typeKey, count, topic, extra);
-    const messages = [
-      { role: 'system', content: buildSystemPrompt('出题时请严格遵守我给出的输出格式，题目要完整、可直接用于练习或考试。') },
-      { role: 'user', content: userText }
-    ];
-
-    $('#quizMeta').textContent = '正在生成：' + L.name + ' · ' + QUIZ_TYPES[typeKey] + ' · ' + QUIZ_LEVELS[levelKey] + ' · ' + count + ' 题';
-    startRunUI('quiz', 'AI 正在出题…');
-    showLoading(out, 'AI 正在出题（' + L.name + ' · ' + QUIZ_TYPES[typeKey] + '），内容较长请稍候…');
-
-    let acc = '';
-    try {
-      const finalText = await callAI({
-        messages: messages,
-        which: 'quiz',
-        temperature: levelKey === 'advanced' ? 0.6 : 0.5,
-        maxTokens: 7000,
-        onDelta: function (chunk, full) { acc = full; paint(out, full, true); scrollBottom(out); }
-      });
-      paint(out, finalText, false);
-      lastQuizText = finalText;
-      recordQuiz();
-      $('#quizMeta').textContent = '生成完成：' + L.name + ' · ' + QUIZ_TYPES[typeKey] + ' · ' + QUIZ_LEVELS[levelKey] +
-        ' · ' + finalText.length + ' 字。可直接点「送去批改」开始作答。';
-    } catch (e) {
-      if (e && e.name === 'AbortError') {
-        if (acc) { paint(out, acc, false); lastQuizText = acc; toast('已停止生成'); }
-        else out.innerHTML = '<div class="note warn">已停止生成。</div>';
-      } else {
-        showError(out, e.message);
-      }
-    } finally {
-      endRunUI('quiz');
+/** 从 AI 输出里解析题目数组 */
+function parseProblems(text) {
+  const blocks = [];
+  const re = /```json\s*([\s\S]*?)```/gi;
+  let m;
+  while ((m = re.exec(text)) !== null) blocks.push(m[1]);
+  for (let i = blocks.length - 1; i >= 0; i--) {
+    let j = null;
+    try { j = JSON.parse(blocks[i].trim()); } catch (e) { continue; }
+    const list = (j && Array.isArray(j.problems)) ? j.problems : (Array.isArray(j) ? j : null);
+    if (list && list.length) {
+      return list.slice(0, 8).map(function (q, k) { return normalizeProblem(q, k); });
     }
   }
+  return [];
+}
 
-  $('#quizGenBtn').addEventListener('click', generate);
+function normalizeProblem(q, i) {
+  q = q || {};
+  const t = String(q.type || '').toLowerCase();
+  const type = ['choice', 'fill', 'fix', 'coding'].indexOf(t) >= 0 ? t : 'coding';
+  function str(v) { return String(v == null ? '' : v); }
+  return {
+    idx: i,
+    id: q.id != null ? q.id : (i + 1),
+    type: type,
+    title: str(q.title || ('第 ' + (i + 1) + ' 题')).slice(0, 80),
+    points: Number(q.points) || 0,
+    statement: str(q.statement),
+    inputFormat: str(q.inputFormat),
+    outputFormat: str(q.outputFormat),
+    samples: (Array.isArray(q.samples) ? q.samples : []).slice(0, 5).map(function (s) {
+      s = s || {};
+      return { input: str(s.input), expected: str(s.expected), note: str(s.note) };
+    }),
+    constraints: str(q.constraints),
+    limits: str(q.limits),
+    scorePoints: (Array.isArray(q.scorePoints) ? q.scorePoints : []).slice(0, 8).map(str),
+    stemCode: str(q.stemCode),
+    templateCode: str(q.templateCode),
+    blanks: (Array.isArray(q.blanks) ? q.blanks : []).slice(0, 8).map(function (b) {
+      b = b || {};
+      return { no: Number(b.no) || 0, hint: str(b.hint) };
+    }),
+    choices: (Array.isArray(q.choices) ? q.choices : []).slice(0, 8).map(function (c) {
+      c = c || {};
+      return { key: str(c.key), text: str(c.text) };
+    })
+  };
+}
+
+/* ---------- 渲染 ---------- */
+function setPracticeStep(n) {
+  practice.step = n;
+  $('#stepGen').style.display = (n === 1 ? '' : 'none');
+  $('#stepAnswer').style.display = (n === 2 ? '' : 'none');
+  $('#stepGrade').style.display = (n === 3 ? '' : 'none');
+  $$('#practiceSteps .step-item').forEach(function (el) {
+    const k = Number(el.dataset.step);
+    el.classList.toggle('active', k === n);
+    el.classList.toggle('done', k < n);
+  });
+  try { const se = document.scrollingElement || document.documentElement; if (se) se.scrollTop = 0; } catch (e) { /* 忽略 */ }
+}
+
+function problemHtml(q, i) {
+  let h = '<div class="q-card" id="qcard-' + i + '">' +
+    '<div class="q-head"><span class="badge">第 ' + (i + 1) + ' 题</span>' +
+    '<span class="q-title">' + esc(q.title) + '</span>' +
+    '<span class="badge gray">' + esc(TYPE_LABEL[q.type]) + '</span>' +
+    (q.points ? '<span class="q-pts">' + esc(String(q.points)) + ' 分</span>' : '') + '</div>';
+  if (q.statement) h += '<div class="md">' + renderMarkdown(q.statement) + '</div>';
+  if (q.inputFormat) h += '<p><b>输入格式：</b>' + esc(q.inputFormat) + '</p>';
+  if (q.outputFormat) h += '<p><b>输出格式：</b>' + esc(q.outputFormat) + '</p>';
+  if (q.samples.length) {
+    h += '<p><b>样例：</b></p>';
+    q.samples.forEach(function (s, k) {
+      h += '<p style="font-size:12.5px;color:var(--muted);margin:6px 0 2px">' + esc(s.note || ('样例 ' + (k + 1))) + '</p>' +
+        '<div class="code-block" style="margin:4px 0"><div class="code-head"><span class="code-lang">text</span></div>' +
+        '<pre><code>' + esc('输入：\n' + s.input + '\n\n输出：\n' + s.expected) + '</code></pre></div>';
+    });
+  }
+  if (q.constraints || q.limits) {
+    h += '<p><b>数据范围：</b>' + esc(q.constraints || '—') + (q.limits ? '　<b>限制：</b>' + esc(q.limits) : '') + '</p>';
+  }
+  if (q.scorePoints.length) {
+    h += '<p><b>评分点：</b></p><ul>' + q.scorePoints.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>';
+  }
+  h += '</div>';
+  return h;
+}
+
+function codeProblems() {
+  return practice.problems.map(function (q, i) { return { q: q, i: i }; })
+    .filter(function (x) { return x.q.type !== 'choice'; });
+}
+
+function defaultSkeleton() {
+  const id = langOf(state.lang).id;
+  if (id === 'python') return '# 在这里作答\n';
+  if (id === 'c') return '#include <stdio.h>\n\nint main(void) {\n    \n    return 0;\n}\n';
+  return '#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    \n    return 0;\n}\n';
+}
+function prefillFor(q) {
+  if (q.stemCode) return q.stemCode;            // 填空/改错：题面代码直接进答题区
+  if (q.templateCode) return q.templateCode;    // 编程题：模板骨架
+  return defaultSkeleton();
+}
+
+function renderAnswerArea() {
+  const area = $('#answerArea');
+  if (!area) return;
+  const chose = practice.problems.map(function (q, i) { return { q: q, i: i }; }).filter(function (x) { return x.q.type === 'choice'; });
+  const codes = codeProblems();
+  let h = '';
+  if (chose.length) {
+    h += '<div class="q-card"><div class="q-head"><span class="badge">选择题</span><span class="q-tip">点选你的答案</span></div>';
+    chose.forEach(function (x) {
+      const a = practice.answers[x.i] || {};
+      h += '<div class="q-head" style="margin:10px 0 2px"><span class="badge gray">第 ' + (x.i + 1) + ' 题</span>' +
+        '<span class="q-title">' + esc(x.q.title) + '</span></div>';
+      if (x.q.statement) h += '<div class="md">' + renderMarkdown(x.q.statement) + '</div>';
+      const opts = x.q.choices.length ? x.q.choices : [{ key: 'A', text: '' }, { key: 'B', text: '' }, { key: 'C', text: '' }, { key: 'D', text: '' }];
+      opts.forEach(function (c) {
+        const sel = a.choice === c.key;
+        h += '<label class="opt' + (sel ? ' sel' : '') + '" data-choice="' + esc(c.key) + '" data-q="' + x.i + '">' +
+          '<input type="radio" name="choice-' + x.i + '" value="' + esc(c.key) + '"' + (sel ? ' checked' : '') + '>' +
+          '<span class="opt-key">' + esc(c.key) + '.</span><span>' + esc(c.text) + '</span></label>';
+      });
+    });
+    h += '</div>';
+  }
+  if (codes.length) {
+    h += '<div class="q-card"><div class="q-head"><span class="badge">代码作答</span>' +
+      '<span class="q-tip">' + (codes.length > 1 ? '用题号切换，在下方编辑器里作答' : '直接在下方编辑器里作答（题面代码已填好）') + '</span></div>';
+    if (codes.length > 1) {
+      h += '<div class="q-switch">' + codes.map(function (x) {
+        const done = ((practice.answers[x.i] || {}).code || '').trim().length > 0;
+        return '<button type="button" data-switch="' + x.i + '" aria-pressed="' + (practice.editorFor === x.i) + '"' +
+          (done ? ' class="done"' : '') + '>第 ' + (x.i + 1) + ' 题</button>';
+      }).join('') + '</div>';
+    }
+    h += '</div>';
+  }
+  area.innerHTML = h;
+}
+
+function saveEditorAnswer() {
+  if (practice.editorFor == null || !answerEditor.api) return;
+  const i = practice.editorFor;
+  practice.answers[i] = practice.answers[i] || {};
+  practice.answers[i].code = answerEditor.api.getValue();
+}
+
+function loadEditorFor(qi, force) {
+  const q = practice.problems[qi];
+  if (!q) return;
+  saveEditorAnswer();
+  practice.editorFor = qi;
+  const a = practice.answers[qi] || {};
+  const text = (!force && typeof a.code === 'string') ? a.code : prefillFor(q);
+  practice.answers[qi] = Object.assign({}, a, { code: text });
+  answerEditor.api.setValue(text);
+  answerEditor.api.setLang(state.lang);
+  const which = $('#answerWhich');
+  if (which) which.textContent = '第 ' + (qi + 1) + ' 题 · ' + TYPE_LABEL[q.type];
+  renderAnswerArea();
+}
+
+function resetEditorForCurrent() {
+  if (practice.editorFor == null) return;
+  loadEditorFor(practice.editorFor, true);
+  toast('已把本题代码恢复为题面给出的原始代码', 'ok');
+}
+
+/** 出题结果落地：切换到作答步骤 */
+function applyProblems(list, raw) {
+  practice.problems = list;
+  practice.raw = raw || '';
+  practice.answers = {};
+  practice.editorFor = null;
+  $('#answerNote').value = '';
+  $('#practiceOutput').innerHTML = list.map(problemHtml).join('');
+  $('#answerCount').textContent = list.length + ' 题';
+  const codes = codeProblems();
+  const hasEditor = codes.length > 0;
+  $('#answerEditorCard').style.display = hasEditor ? '' : 'none';
+  if (hasEditor) loadEditorFor(codes[0].i, true);
+  else { practice.editorFor = null; renderAnswerArea(); }
+  setPracticeStep(2);
+}
+
+/* ---------- 批改 ---------- */
+function buildGradePrompt() {
+  const L = langOf(state.lang);
+  const strict = $('#gradeStrict') && $('#gradeStrict').checked;
+  const note = ($('#answerNote').value || '').trim();
+  const parts = [];
+  parts.push('请批改下面这份 ' + L.name + ' 练习，满分 100 分，模拟机考 / 考试评分规则。');
+  parts.push('\n【题目共 ' + practice.problems.length + ' 题】');
+  practice.problems.forEach(function (q, i) {
+    parts.push('\n### 第 ' + (i + 1) + ' 题（' + TYPE_LABEL[q.type] + (q.points ? ' · ' + q.points + ' 分' : '') + '）\n' +
+      '题目：' + (q.title || '') + '\n' + q.statement +
+      (q.inputFormat ? '\n输入格式：' + q.inputFormat : '') +
+      (q.outputFormat ? '\n输出格式：' + q.outputFormat : '') +
+      (q.constraints ? '\n数据范围：' + q.constraints : '') +
+      (q.samples.length ? '\n样例：' + q.samples.map(function (s, k) { return '样例' + (k + 1) + ' 输入[' + s.input.replace(/\n/g, ' ⏎ ') + '] 输出[' + s.expected + ']'; }).join('；') : '') +
+      (q.stemCode ? '\n题面给出的原始代码：\n```' + L.fence + '\n' + q.stemCode + '\n```' : '') +
+      (q.scorePoints.length ? '\n评分点：' + q.scorePoints.join('；') : ''));
+  });
+  parts.push('\n【学生作答】');
+  practice.problems.forEach(function (q, i) {
+    const a = practice.answers[i] || {};
+    if (q.type === 'choice') parts.push('第 ' + (i + 1) + ' 题（选择）答案：' + (a.choice || '（未作答）'));
+    else parts.push('第 ' + (i + 1) + ' 题（' + TYPE_LABEL[q.type] + '）代码：\n```' + L.fence + '\n' + ((a.code || '').trim() || '（未作答）') + '\n```');
+  });
+  if (note) parts.push('\n【学生补充说明】\n' + note);
+  parts.push('\n【批改要求】\n' +
+    (strict ? '严格模式：逐项扣分，每个扣分点必须引用具体行号或原代码片段，不允许含糊。\n' : '') +
+    '1. 先逐题判分（第 N 题：得分 / 该题分值 / 依据），再给总分（把各题得分折算到 100 分制）。\n' +
+    '2. 选择题要说明正确选项与其余选项错在哪；程序填空题逐空判对错；程序改错题要指出「学生是否改对了这几处」。\n' +
+    '3. 给出参考标准代码（完整可编译运行）。\n' +
+    '4. 最后必须附一个 ```json 代码块，格式严格如下（不要注释、不要多余字段；multiple 题时 items 用「第 N 题 · 评分项」命名，items 的 max 之和为 100）：\n' +
+    '```json\n' +
+    '{"score":85,"verdict":"通过","items":[{"name":"第 1 题 · 语法与编译","max":20,"got":18,"reason":"第 3 行缺少分号"}],' +
+    '"samplesPassed":true,"sampleNote":"样例 2/2 通过","bugs":["第 2 题边界未处理"],"summary":"基础扎实，注意边界与格式"}\n' +
+    '```\n' +
+    '章节结构：一、总分　二、逐题得分表　三、样例演算　四、漏洞清单　五、参考标准代码　六、学习总结与易错点。');
+  return parts.join('\n');
+}
+
+async function runGrading() {
+  saveEditorAnswer();
+  const cfgErr = configError();
+  if (cfgErr) { toast(cfgErr, 'err'); switchTab('api'); return; }
+  const out = $('#gradeOutput');
+  const scoreArea = $('#gradeScoreArea');
+  setPracticeStep(3);
+  scoreArea.innerHTML = '';
+  showLoading(out, 'AI 正在逐题批改（样例演算 + 参考代码），内容较长请稍候…');
+  startRunUI('grade', 'AI 正在批改…');
+  let acc = '';
+  try {
+    const finalText = await callAI({
+      messages: [
+        { role: 'system', content: buildSystemPrompt('你正在批改练习。必须按我给出的结构输出，并在最后附上规定格式的 JSON 评分块。') },
+        { role: 'user', content: buildGradePrompt() }
+      ],
+      which: 'grade',
+      temperature: 0.2,
+      maxTokens: 7000,
+      onDelta: function (chunk, full) { acc = full; paint(out, full, true); scrollBottom(out); }
+    });
+    paint(out, finalText, false);
+    const parsed = parseGradeJson(finalText);
+    if (parsed && !parsed._partial) paint(out, stripGradeJson(finalText), false);
+    scoreArea.innerHTML = renderScoreCard(parsed);
+    if (parsed) {
+      const s = Math.max(0, Math.min(100, Number(parsed.score) || 0));
+      animateRing(s);
+      toast('批改完成：' + s + ' / 100', s >= 60 ? 'ok' : 'err');
+      scoreArea.scrollIntoView({ block: 'start' });
+      recordGrade({
+        ts: Date.now(),
+        lang: state.lang,
+        problem: practice.problems.map(function (q, i) { return '第 ' + (i + 1) + ' 题：' + (q.title || '') + '　' + q.statement; }).join('\n').slice(0, 2000),
+        code: practice.problems.map(function (q, i) {
+          const a = practice.answers[i] || {};
+          return '【第 ' + (i + 1) + ' 题】' + (q.type === 'choice' ? ('选择 ' + (a.choice || '—')) : ((a.code || '').trim()));
+        }).join('\n\n').slice(0, LS_LIMIT.codeChars),
+        score: s,
+        grade: String(parsed.verdict || '').slice(0, 20),
+        items: (Array.isArray(parsed.items) ? parsed.items : []).slice(0, 10).map(function (it) {
+          return { name: String(it.name || '').slice(0, 40), max: Number(it.max) || 0, got: Number(it.got) || 0, reason: String(it.reason || '').slice(0, 200) };
+        }),
+        summary: String(parsed.summary || '').slice(0, 300)
+      });
+    } else {
+      toast('批改完成，但未能解析评分明细');
+    }
+  } catch (e) {
+    if (e && e.name === 'AbortError') {
+      if (acc) {
+        const p2 = parseGradeJson(acc);
+        paint(out, p2 && !p2._partial ? stripGradeJson(acc) : acc, false);
+        scoreArea.innerHTML = renderScoreCard(p2);
+        toast('已停止生成');
+      } else out.innerHTML = '<div class="note warn">已停止生成。</div>';
+    } else {
+      showError(out, e.message);
+    }
+  } finally {
+    endRunUI('grade');
+  }
+}
+
+/* ---------- 出题（AI / 题库） ---------- */
+async function generateProblems(silent) {
+  const cfgErr = configError();
+  if (cfgErr) { toast(cfgErr, 'err'); switchTab('api'); return; }
+  const level = $('#quizLevel').value;
+  const type = $('#quizType').value;
+  const count = parseInt($('#quizCount').value, 10) || 1;
+  const topic = $('#quizTopic').value.trim();
+  const extra = $('#quizExtra').value.trim();
+  const L = langOf(state.lang);
+  $('#quizMeta').textContent = '正在生成：' + L.name + ' · ' + LEVEL_SPEC[level].name + ' · ' + QUIZ_TYPES[type] + ' · ' + count + ' 题';
+  startRunUI('quiz', 'AI 正在按规范出题…');
+  const box = $('#practiceOutput');
+  if (!silent) showLoading(box, 'AI 正在按「' + LEVEL_SPEC[level].name + '」的规范出题…');
+  let acc = '';
+  try {
+    const finalText = await callAI({
+      messages: [
+        { role: 'system', content: buildSystemPrompt('出题时严格遵守我给出的出题规范与输出格式；只给题面，绝不泄露答案。') },
+        { role: 'user', content: buildQuizPrompt(level, type, count, topic, extra) }
+      ],
+      which: 'quiz',
+      temperature: level === 'king' ? 0.5 : 0.45,
+      maxTokens: 7000,
+      onDelta: function (chunk, full) { acc = full; }
+    });
+    const list = parseProblems(finalText);
+    if (!list.length) {
+      // 解析失败：至少把 Markdown 题面呈现出来，进入作答步骤让其粘贴作答
+      practice.problems = [normalizeProblem({
+        id: 1, type: 'coding', title: '（未能解析出结构化题目，下面保留 AI 原始输出）',
+        statement: '结构化解析失败，这里保留 AI 的原始题面文本。你可以直接在编辑器里作答，或在【对话】页继续追问。',
+        points: 100, templateCode: defaultSkeleton()
+      }, 0)];
+      practice.answers = {};
+      $('#practiceOutput').innerHTML = '<div class="note warn" style="margin-bottom:10px">未能从 AI 输出中解析出结构化题目（模型没按 JSON 契约返回），下面保留原始题面。</div>' +
+        '<div class="md">' + renderMarkdown(stripGradeJson(finalText)) + '</div>';
+      $('#answerCount').textContent = '1 题';
+      $('#answerEditorCard').style.display = '';
+      loadEditorFor(0, true);
+      setPracticeStep(2);
+      $('#quizMeta').textContent = '已生成但结构化解析失败，可重试或改小题目数量。';
+      recordQuiz();
+      return;
+    }
+    applyProblems(list, finalText);
+    recordQuiz();
+    $('#quizMeta').textContent = '生成完成：' + L.name + ' · ' + LEVEL_SPEC[level].name + ' · ' + list.length + ' 题（答案将在提交后给出）';
+    toast('出题完成，去作答吧 ✍️', 'ok');
+  } catch (e) {
+    if (e && e.name === 'AbortError') { toast('已停止生成'); if (acc) { /* 保留已有内容 */ } }
+    else { showError(box, e.message); }
+  } finally {
+    endRunUI('quiz');
+  }
+}
+
+/** 从内置题库出题（离线，不消耗 API） */
+function generateFromBank() {
+  const level = $('#quizLevel').value;
+  const type = $('#quizType').value;
+  const langId = langOf(state.lang).id;
+  let pool = BANK.filter(function (q) { return q.level === level; });
+  let list = pool.filter(function (q) { return q.lang === langId; });
+  if (!list.length) list = pool;              // 该档没有这门语言就用同档其它语言
+  if (type !== 'mix') {
+    const t = list.filter(function (q) { return q.type === type; });
+    if (t.length) list = t;
+  }
+  if (!list.length) { toast('题库里这一档暂时没有匹配的题，换一档试试', 'err'); return; }
+  const n = Math.min(parseInt($('#quizCount').value, 10) || 1, list.length);
+  const picked = list.slice(0, n).map(function (q, i) { return normalizeProblem(Object.assign({}, q, { id: i + 1 }), i); });
+  applyProblems(picked, '');
+  recordQuiz();
+  $('#quizMeta').textContent = '来自内置题库：' + LEVEL_SPEC[level].name + ' · ' + picked.length + ' 题（离线可用）';
+  toast('已从题库取题，去作答吧 ✍️', 'ok');
+}
+
+function bindPracticePanel() {
+  answerEditor.api = createEditor('answerEditor', { lines: 'answerLines', chars: 'answerChars' });
+  answerEditor.api.setLang(state.lang);
+
+  // 步骤条
+  $$('#practiceSteps .step-item').forEach(function (el) {
+    el.addEventListener('click', function () {
+      const n = Number(el.dataset.step);
+      if (n === 2 && !practice.problems.length) { toast('先出一道题吧', 'err'); return; }
+      if (n === 3 && !$('#gradeScoreArea').innerHTML) { toast('先在作答页提交，才会有批改结果', 'err'); return; }
+      setPracticeStep(n);
+    });
+  });
+
+  // 出题
+  $('#quizGenBtn').addEventListener('click', function () { generateProblems(false); });
+  $('#quizStopBtn').addEventListener('click', function () { stopRun('quiz'); });
+  $('#bankBtn').addEventListener('click', generateFromBank);
   $('#quizRegenBtn').addEventListener('click', function () {
-    // 换一批：临时追加「不重复」要求，不污染用户输入框
     const old = $('#quizExtra').value;
     if (old.indexOf('请与上一次的题目完全不同') < 0) {
-      $('#quizExtra').value = (old + ' 请与上一次的题目完全不同（换题型角度、换数据范围）。').trim();
+      $('#quizExtra').value = (old + ' 请与上一次的题目完全不同（换考查角度与数据范围）。').trim();
     }
-    generate().then(function () { $('#quizExtra').value = old; });
+    const p = generateProblems(true);
+    Promise.resolve(p).then(function () { $('#quizExtra').value = old; });
   });
-  $('#quizStopBtn').addEventListener('click', function () { stopRun('quiz'); });
+  function syncLevelSpec() {
+    const sp = LEVEL_SPEC[$('#quizLevel').value];
+    const el = $('#levelSpec');
+    if (el && sp) {
+      el.innerHTML = '<b>当前档位：</b>' + esc(sp.name) + '<br><b>出题规范：</b>' + esc(sp.spec) + '<br><b>配比：</b>' + esc(sp.mix) +
+        '<br><b>评分规范：</b>' + esc(sp.points);
+    }
+  }
+  $('#quizLevel').addEventListener('change', syncLevelSpec);
+  syncLevelSpec();
 
-  $('#quizToGradeBtn').addEventListener('click', function () {
-    if (!lastQuizText) { toast('还没有生成题目，请先点「生成习题」', 'err'); return; }
-    // 取正文里第一道题（到第一个 --- 分隔线）之外的全部内容更稳妥，这里简单取全文
-    $('#gradeProblem').value = lastQuizText;
-    switchTab('grade');
-    toast('题目已带入【代码批改】页', 'ok');
-    setTimeout(function () { $('#gradeEditorHost').scrollIntoView({ block: 'center' }); }, 60);
+  // 作答区交互（选择题 / 题号切换）
+  $('#answerArea').addEventListener('click', function (e) {
+    const opt = e.target.closest('.opt');
+    if (opt) {
+      const qi = Number(opt.dataset.q);
+      practice.answers[qi] = practice.answers[qi] || {};
+      practice.answers[qi].choice = opt.dataset.choice;
+      renderAnswerArea();
+      return;
+    }
+    const sw = e.target.closest('[data-switch]');
+    if (sw) loadEditorFor(Number(sw.dataset.switch));
   });
+  $('#answerResetBtn').addEventListener('click', resetEditorForCurrent);
+  $('#answerCopyBtn').addEventListener('click', function () {
+    saveEditorAnswer();
+    const i = practice.editorFor;
+    const code = i != null ? ((practice.answers[i] || {}).code || '') : '';
+    copyText(code).then(function (ok) { toast(ok ? '代码已复制' : '复制失败', ok ? 'ok' : 'err'); });
+  });
+  $('#backToGenBtn').addEventListener('click', function () { setPracticeStep(1); });
+  $('#submitAnswerBtn').addEventListener('click', function () {
+    saveEditorAnswer();
+    const missing = [];
+    practice.problems.forEach(function (q, i) {
+      const a = practice.answers[i] || {};
+      if (q.type === 'choice' && !a.choice) missing.push('第 ' + (i + 1) + ' 题（选择题）');
+      else if (q.type !== 'choice' && !((a.code || '').trim())) missing.push('第 ' + (i + 1) + ' 题（代码）');
+    });
+    if (missing.length) { toast('还没作答：' + missing.join('、'), 'err'); return; }
+    runGrading();
+  });
+
+  // 批改页按钮
+  $('#gradeAgainBtn').addEventListener('click', function () { setPracticeStep(2); });
+  $('#gradeNewBtn').addEventListener('click', function () { setPracticeStep(1); });
+
+  // 编辑器内容变化时同步到 answers（切换题目/提交时也会再存一次）
+  if (answerEditor.api.cm) answerEditor.api.cm.on('change', function () { saveEditorAnswer(); });
+  else answerEditor.api.ta.addEventListener('input', saveEditorAnswer);
 }
 
 /* ==========================================================================
- * 10. 代码批改模块
+ * 10. 批改结果解析与渲染（评分卡 / JSON 协议）
  * ========================================================================== */
-const gradeEditor = { api: null };
-
-function buildGradePrompt(problem, code, rubric, strict) {
-  const L = langOf(state.lang);
-  return '' +
-    '请批改下面这份 ' + L.name + ' 代码，满分 100 分，模拟机考/期末考试评分规则。\n\n' +
-    '【题目】\n' + problem + '\n\n' +
-    '【学生提交的代码】\n```' + L.fence + '\n' + code + '\n```\n\n' +
-    (rubric ? '【评分标准 / 额外要求】\n' + rubric + '\n\n' : '') +
-    (strict
-      ? '【批改模式】严格模式：逐项扣分，每个扣分点必须引用具体行号或原代码片段，不允许含糊其辞。\n\n'
-      : '【批改模式】常规模式：给出主要问题与整体评价即可。\n\n') +
-    '请严格按以下结构输出：\n' +
-    '## 一、总分\n给出 `XX / 100`，并给一句话总评（不要客套）。\n' +
-    '## 二、逐项得分表\n用 Markdown 表格输出：| 评分项 | 分值 | 得分 | 扣分原因（引用具体行号/代码片段） |\n' +
-    '评分项必须覆盖：语法与编译正确性、输入输出格式、核心算法/逻辑正确性、边界与特殊情况、代码规范与可读性，各项分值合计 100。\n' +
-    '## 三、样例测试结果\n逐组列出题目样例（若无样例则自行构造 3 组），说明：输入 → 期望输出 → 你的代码实际输出/推断输出 → 是否通过。\n' +
-    '## 四、代码漏洞清单\n编号列出所有问题，标注类型（语法错误 / 编译错误 / 逻辑错误 / 边界问题 / 性能问题 / 规范问题）与严重程度（致命/严重/一般/建议）。\n' +
-    '## 五、参考标准代码\n给出满分做法的完整 ' + L.name + ' 代码（```' + L.fence + ' 围栏，可直接编译运行），并在代码后简要说明关键点。\n' +
-    '## 六、学习总结\n1) 这份代码暴露出的 2~4 个知识薄弱点；2) 针对性练习建议；3) 下次做题前应检查的 3 条要点。\n\n' +
-    '最后必须附加一个 ```json 代码块，内容严格为如下 JSON（不要写注释、不要用多余字段，score 为 0-100 的整数，items 内 max 之和为 100，got ≤ max）：\n' +
-    '```json\n' +
-    '{"score":85,"verdict":"通过","items":[{"name":"语法与编译","max":20,"got":20,"reason":"无语法错误，编译通过"},' +
-    '{"name":"输入输出格式","max":20,"got":16,"reason":"第 12 行输出多了一个空格"}],' +
-    '"samplesPassed":true,"sampleNote":"2/2 组样例通过","bugs":["第 7 行循环边界少一次"],"summary":"基础扎实，注意边界与格式"}\n' +
-    '```';
-}
-
 /** 从 AI 输出中解析评分 JSON（优先取最后一个 json 代码块） */
 function parseGradeJson(text) {
   const blocks = [];
@@ -2507,7 +3011,6 @@ function parseGradeJson(text) {
       if (j && typeof j.score !== 'undefined') return j;
     } catch (e) { /* 继续试上一个 */ }
   }
-  // 兜底：用正则抓分数
   const s = text.match(/(?:总分|得分|Score)\D{0,8}(\d{1,3})/i) || text.match(/(\d{1,3})\s*\/\s*100/);
   if (s) {
     return { score: Math.min(100, parseInt(s[1], 10)), verdict: '', items: [], samplesPassed: null, sampleNote: '', bugs: [], summary: '', _partial: true };
@@ -2515,7 +3018,7 @@ function parseGradeJson(text) {
   return null;
 }
 
-/** 从批改报告里去掉机器解析用的 JSON 块（内容已在评分卡中可视化，避免用户看到裸 JSON） */
+/** 去掉给机器解析用的 JSON 块（已在评分卡里可视化） */
 function stripGradeJson(text) {
   const cleaned = text
     .replace(/```json\s*\{[\s\S]*?"score"[\s\S]*?```/g, '')
@@ -2529,9 +3032,8 @@ function stripGradeJson(text) {
 function renderScoreCard(data) {
   if (!data) return '';
   const score = Math.max(0, Math.min(100, Number(data.score) || 0));
-  // 颜色统一走令牌，深色主题下自动换色
   const color = score >= 85 ? 'var(--ok)' : (score >= 60 ? 'var(--warn)' : 'var(--err)');
-  const c = color;   // 圆环与文字同色
+  const c = color;
   const verdict = data.verdict || (score >= 85 ? '优秀，可以提交' : (score >= 60 ? '及格，仍需修改' : '未达标，建议重做'));
 
   let html = '<div class="score-card" style="--ring:' + c + ';--pct:' + score + '">' +
@@ -2567,117 +3069,6 @@ function renderScoreCard(data) {
     html += '<div class="note warn" style="margin-top:12px">未能解析出完整的评分明细（模型没有按要求返回 JSON），下面展示完整原始批改报告。</div>';
   }
   return html;
-}
-
-const GRADE_DEMO = {
-  python:
-    '题目：温度统计\n输入 n 个整数表示连续 n 天的气温（-50 ≤ 气温 ≤ 50），输出这 n 天中的最高气温、最低气温与平均气温（保留 1 位小数），用空格分隔。\n输入格式：第一行一个整数 n（1 ≤ n ≤ 1000），第二行 n 个整数。\n输出格式：三个值，空格分隔，平均气温保留 1 位小数。\n样例输入：\n5\n3 -1 7 0 2\n样例输出：\n7 -1 2.2',
-  c:
-    '题目：统计字符\n输入一行字符串（长度不超过 1000，可含空格），统计其中英文字母、数字字符、其它字符的个数并依次输出，用空格分隔。\n输入格式：一行字符串。\n输出格式：三个整数，空格分隔。\n样例输入：\nab 12, x!\n样例输出：\n3 4 1',
-  cpp:
-    '题目：区间求和\n输入 n 个整数与 q 次询问，每次询问给出 l、r（1 ≤ l ≤ r ≤ n），求下标 l 到 r 的元素之和。\n输入格式：第一行 n 和 q；第二行 n 个整数；随后 q 行每行 l r。\n输出格式：每次询问输出一个整数，占一行。\n数据范围：1 ≤ n, q ≤ 100000，1 ≤ 元素 ≤ 1000。\n样例输入：\n5 2\n1 2 3 4 5\n1 3\n2 5\n样例输出：\n6\n14'
-};
-
-function bindGradePanel() {
-  gradeEditor.api = createEditor('gradeEditor', { lines: 'gradeLines', chars: 'gradeChars' });
-  gradeEditor.api.setLang(state.lang);
-
-  const out = $('#gradeOutput');
-  const scoreArea = $('#gradeScoreArea');
-
-  $('#gradeDemoBtn').addEventListener('click', function () {
-    $('#gradeProblem').value = GRADE_DEMO[state.lang] || GRADE_DEMO.python;
-    if (!gradeEditor.api.getValue().trim()) {
-      gradeEditor.api.setValue('// 在这里写下你的解答，然后点「开始批改」\n');
-    }
-    toast('已载入 ' + langOf(state.lang).name + ' 示例题目', 'ok');
-  });
-  $('#gradeClearProblemBtn').addEventListener('click', function () { $('#gradeProblem').value = ''; });
-  $('#gradeClearCodeBtn').addEventListener('click', function () { gradeEditor.api.setValue(''); gradeEditor.api.focus(); });
-  $('#gradeCopyBtn').addEventListener('click', function () {
-    copyText(gradeEditor.api.getValue()).then(function (ok) { toast(ok ? '代码已复制' : '复制失败', ok ? 'ok' : 'err'); });
-  });
-  $('#gradeStopBtn').addEventListener('click', function () { stopRun('grade'); });
-
-  // Ctrl / Cmd + Enter 快速提交
-  $('#gradeEditorHost').addEventListener('keydown', function (e) {
-    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); submit(); }
-  });
-
-  async function submit() {
-    const problem = $('#gradeProblem').value.trim();
-    const code = gradeEditor.api.getValue().trim();
-    const rubric = $('#gradeRubric').value.trim();
-    const strict = $('#gradeStrict').checked;
-
-    if (!problem) { toast('请先填写题目', 'err'); $('#gradeProblem').focus(); return; }
-    if (!code) { toast('请先写下你的代码', 'err'); gradeEditor.api.focus(); return; }
-
-    const cfgErr = configError();
-    if (cfgErr) { showError(out, cfgErr); switchTab('api'); return; }
-
-    const messages = [
-      { role: 'system', content: buildSystemPrompt('你正在批改代码。必须按我给出的结构输出，并在最后附上规定格式的 JSON 评分块。') },
-      { role: 'user', content: buildGradePrompt(problem, code, rubric, strict) }
-    ];
-
-    scoreArea.innerHTML = '';
-    startRunUI('grade', 'AI 正在批改…');
-    showLoading(out, 'AI 正在逐项批改（含样例推演与参考代码），内容较长请稍候…');
-
-    let acc = '';
-    try {
-      const finalText = await callAI({
-        messages: messages,
-        which: 'grade',
-        temperature: 0.2,
-        maxTokens: 7000,
-        onDelta: function (chunk, full) { acc = full; paint(out, full, true); scrollBottom(out); }
-      });
-      paint(out, finalText, false);
-      const parsed = parseGradeJson(finalText);
-      // 解析成功时，隐藏报告末尾的 ```json 块（其信息已呈现在评分卡里）
-      if (parsed && !parsed._partial) paint(out, stripGradeJson(finalText), false);
-      scoreArea.innerHTML = renderScoreCard(parsed);
-      if (parsed) {
-        const s = Number(parsed.score);
-        animateRing(Math.max(0, Math.min(100, s || 0)));   // 圆环动画
-        toast('批改完成：' + s + ' / 100', s >= 60 ? 'ok' : 'err');
-        scoreArea.scrollIntoView({ block: 'start' });
-        // 记入学习进度（本地保存，可在【学习进度】页看趋势）
-        recordGrade({
-          ts: Date.now(),
-          lang: state.lang,
-          problem: problem.slice(0, 2000),
-          code: code.slice(0, LS_LIMIT.codeChars),
-          score: Math.max(0, Math.min(100, s || 0)),
-          grade: String(parsed.verdict || '').slice(0, 20),
-          items: (Array.isArray(parsed.items) ? parsed.items : []).slice(0, 10).map(function (it) {
-            return { name: String(it.name || '').slice(0, 40), max: Number(it.max) || 0, got: Number(it.got) || 0, reason: String(it.reason || '').slice(0, 200) };
-          }),
-          summary: String(parsed.summary || '').slice(0, 300)
-        });
-      } else {
-        toast('批改完成，但未能解析评分明细');
-      }
-    } catch (e) {
-      if (e && e.name === 'AbortError') {
-        if (acc) {
-          const p2 = parseGradeJson(acc);
-          paint(out, p2 && !p2._partial ? stripGradeJson(acc) : acc, false);
-          scoreArea.innerHTML = renderScoreCard(p2);
-          toast('已停止生成');
-        }
-        else out.innerHTML = '<div class="note warn">已停止生成。</div>';
-      } else {
-        showError(out, e.message);
-      }
-    } finally {
-      endRunUI('grade');
-    }
-  }
-
-  $('#gradeSubmitBtn').addEventListener('click', submit);
 }
 
 /* ==========================================================================
@@ -3116,8 +3507,9 @@ async function chatSend() {
     if (code) extra.push('【我当前的代码】\n```' + L.fence + '\n' + code + '\n```');
   }
   if ($('#chatUseProblem') && $('#chatUseProblem').checked) {
-    const p = ($('#gradeProblem').value || '').trim();
-    if (p) extra.push('【我当前的题目】\n' + p);
+    const p = (practice.raw || '').trim() ||
+      practice.problems.map(function (q, i) { return '第 ' + (i + 1) + ' 题：' + q.title + '\n' + q.statement; }).join('\n\n');
+    if (p) extra.push('【我当前的题目】\n' + p.slice(0, 4000));
   }
   const full = extra.length ? (extra.join('\n\n') + '\n\n【我的问题】\n' + text) : text;
 
@@ -3459,10 +3851,21 @@ function bindProgressPanel() {
     const act = e.target.closest('[data-act]');
     if (act && act.dataset.act === 'toggle') { item.classList.toggle('open'); return; }
     if (act && act.dataset.act === 'redo') {
-      $('#gradeProblem').value = g.problem || '';
-      gradeEditor.api.setValue(g.code || '');
-      switchTab('grade');
-      toast('已把这条记录带回【代码批改】', 'ok');
+      // 把这条历史记录还原成一道练习题，直接进「作答」步骤，改完可重新提交批改
+      practice.problems = [normalizeProblem({
+        id: 1, type: 'coding', title: '历史记录重练', points: 100,
+        statement: g.problem || '（这条记录没有保存题面）',
+        templateCode: g.code || defaultSkeleton()
+      }, 0)];
+      practice.raw = g.problem || '';
+      practice.answers = {};
+      $('#practiceOutput').innerHTML = practice.problems.map(problemHtml).join('');
+      $('#answerCount').textContent = '1 题';
+      $('#answerEditorCard').style.display = '';
+      loadEditorFor(0, true);
+      setPracticeStep(2);
+      switchTab('practice');
+      toast('已把这条记录带回【练习】作答页，改完提交即可重新批改', 'ok');
     }
   });
 
@@ -3527,7 +3930,7 @@ function bindProgressPanel() {
  * ========================================================================== */
 function startRunUI(which, text) {
   const map = { assistant: 'assistantStopBtn', quiz: 'quizStopBtn', grade: 'gradeStopBtn', chat: 'chatStopBtn' };
-  const submitMap = { assistant: 'assistantAskBtn', quiz: 'quizGenBtn', grade: 'gradeSubmitBtn', chat: 'chatSendBtn' };
+  const submitMap = { assistant: 'assistantAskBtn', quiz: 'quizGenBtn', grade: 'submitAnswerBtn', chat: 'chatSendBtn' };
   const stopBtn = document.getElementById(map[which]);
   const submitBtn = document.getElementById(submitMap[which]);
   if (stopBtn) { stopBtn.disabled = false; stopBtn.textContent = '■ 停止生成'; }
@@ -3537,7 +3940,7 @@ function startRunUI(which, text) {
 }
 function endRunUI(which) {
   const map = { assistant: 'assistantStopBtn', quiz: 'quizStopBtn', grade: 'gradeStopBtn', chat: 'chatStopBtn' };
-  const submitMap = { assistant: 'assistantAskBtn', quiz: 'quizGenBtn', grade: 'gradeSubmitBtn', chat: 'chatSendBtn' };
+  const submitMap = { assistant: 'assistantAskBtn', quiz: 'quizGenBtn', grade: 'submitAnswerBtn', chat: 'chatSendBtn' };
   const stopBtn = document.getElementById(map[which]);
   const submitBtn = document.getElementById(submitMap[which]);
   if (stopBtn) { stopBtn.disabled = true; }
@@ -3554,11 +3957,12 @@ function stopRun(which) {
 function onLangChanged() {
   const L = langOf(state.lang);
   if (assistantEditor.api) assistantEditor.api.setLang(L.id);
-  if (gradeEditor.api) gradeEditor.api.setLang(L.id);
+  if (answerEditor.api) answerEditor.api.setLang(L.id);
   $('#assistantLangBadge').textContent = L.name;
-  $('#quizLangBadge').textContent = L.name;
+  $('#practiceLangBadge').textContent = L.name;
   $('#gradeLangBadge').textContent = L.name;
-  $('#gradeEditorLang').textContent = L.name;
+  $('#answerLangBadge').textContent = L.name;
+
   const cb = $('#chatLangBadge');
   if (cb) {
     cb.textContent = L.name;
@@ -3584,7 +3988,7 @@ function switchTab(name) {
   // CodeMirror 在隐藏容器里初始化会算错尺寸，切回来必须 refresh
   setTimeout(function () {
     if (assistantEditor.api) assistantEditor.api.refresh();
-    if (gradeEditor.api) gradeEditor.api.refresh();
+    if (answerEditor.api) answerEditor.api.refresh();
   }, 40);
   try { location.hash = name; } catch (e) {}
 }
@@ -3638,8 +4042,7 @@ function init() {
   // 各面板
   bindApiPanel();
   bindAssistantPanel();
-  bindQuizPanel();
-  bindGradePanel();
+  bindPracticePanel();
   bindChatPanel();
   bindProgressPanel();
 
@@ -3688,7 +4091,7 @@ function init() {
   renderProgress();
 
   // 从 URL hash 打开指定标签页（没有则默认落在「对话」）
-  const TABS = ['chat', 'assistant', 'quiz', 'grade', 'progress', 'api'];
+  const TABS = ['chat', 'assistant', 'practice', 'progress', 'api'];
   const hash = (location.hash || '').replace('#', '');
   switchTab(TABS.indexOf(hash) >= 0 ? hash : 'chat');
 
@@ -3703,7 +4106,7 @@ function init() {
   // 键盘：Alt+1~6 切标签；? 打开帮助；Esc 关闭弹窗
   document.addEventListener('keydown', function (e) {
     if (e.altKey && !e.ctrlKey && !e.metaKey) {
-      const map = { '1': 'chat', '2': 'assistant', '3': 'quiz', '4': 'grade', '5': 'progress', '6': 'api' };
+      const map = { '1': 'chat', '2': 'assistant', '3': 'practice', '4': 'progress', '5': 'api' };
       if (map[e.key]) { e.preventDefault(); switchTab(map[e.key]); }
       return;
     }
