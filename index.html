@@ -57,48 +57,74 @@
     var c = hex2rgb(hex);
     return 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + a + ')';
   }
+  function rgbTriplet(hex) {
+    var c = hex2rgb(hex);
+    return c[0] + ',' + c[1] + ',' + c[2];
+  }
 
-  /** 由皮肤推出本站的整套令牌（浅色 mode=0 / 深色 mode=1） */
+  /**
+   * 由皮肤推出本站的整套令牌。
+   * 设计策略（Apple HIG × 贵阳）：
+   *   · 底层中性色 = Apple 系统灰（页面 #f5f5f7 / 卡片白 / 文字 #1d1d1f…），保证克制、耐看；
+   *   · 强调色 = 贵阳皮肤的主色（林城绿 / 甲秀青 / 数谷蓝 / 侗乡靛 / 青岩石 / 阳明紫 / 九门金 / 三叠纪 / 樱花粉），
+   *     只用在按钮、选中态、链接、图表这类"需要被看见"的地方；
+   *   · 语义色 = Apple 系统色（绿 #34c759 / 橙 #ff9500 / 红 #ff3b30），保证正确性可读；
+   *   · 皮肤的暖色/金属色单独保留为 --gy-red / --gy-metal，供纹样与装饰使用。
+   * mode: 0 浅色 / 1 深色
+   */
   function tokens(s, mode) {
-    var p = s.p[mode], a = s.a[mode], w = s.w[mode], surface = s.surface[mode];
-    var ink = mode === 0 ? '#182b21' : '#e6f1ea';
-    var white = '#ffffff', black = '#000000', L = mode === 0;
+    var p = s.p[mode], a = s.a[mode], w = s.w[mode], m = s.m[mode];
+    var L = mode === 0;
     var t = {};
-    t['--bg'] = surface;
-    t['--bg-2'] = L ? mix(surface, p, 0.05) : mix(surface, p, 0.12);
-    t['--card'] = L ? white : mix(surface, p, 0.16);
-    t['--card-2'] = L ? mix(surface, p, 0.06) : mix(surface, black, 0.18);
-    t['--line'] = L ? alpha(mix(p, black, 0.3), 0.16) : 'rgba(255,255,255,0.12)';
-    t['--line-2'] = L ? alpha(mix(p, black, 0.35), 0.1) : 'rgba(255,255,255,0.07)';
-    t['--text'] = mix(ink, p, L ? 0.09 : 0.1);
-    t['--text-2'] = mix(ink, p, L ? 0.34 : 0.42);
-    t['--muted'] = L ? mix(ink, p, 0.55) : '#7e988a';
-    t['--muted-2'] = L ? mix(ink, p, 0.66) : '#64796d';
-    t['--brand'] = p;
-    t['--brand-deep'] = L ? mix(p, black, 0.16) : mix(p, white, 0.14);
-    t['--brand-soft'] = L ? mix(surface, p, 0.16) : mix(surface, p, 0.24);
-    t['--brand-line'] = L ? mix(p, black, 0.1) : mix(p, white, 0.3);
-    t['--accent'] = a;
-    t['--on-brand'] = L ? white : mix(surface, black, 0.35);
-    t['--ok'] = L ? '#22c55e' : '#4ed17e';
-    t['--ok-soft'] = L ? '#e6faed' : '#233c2c';
-    t['--ok-line'] = alpha(L ? '#22c55e' : '#4ed17e', 0.32);
-    t['--warn'] = L ? '#f59e0b' : '#f7ad31';
-    t['--warn-soft'] = L ? '#fef5e7' : '#27241f';
-    t['--warn-line'] = alpha(L ? '#f59e0b' : '#f7ad31', 0.32);
-    t['--err'] = w;
-    t['--err-soft'] = L ? mix(surface, w, 0.12) : mix(surface, w, 0.22);
-    t['--err-line'] = alpha(w, L ? 0.3 : 0.34);
-    t['--focus-ring'] = '0 0 0 3px ' + alpha(p, L ? 0.22 : 0.3);
-    t['--grad'] = 'linear-gradient(135deg,' + p + ',' + a + ')';
-    t['--glass'] = alpha(surface, L ? 0.84 : 0.82);
-    var edge = mix(p, black, 0.35);
-    t['--shadow'] = L ? ('0 1px 2px ' + alpha(edge, 0.05) + ', 0 8px 22px -16px ' + alpha(edge, 0.3))
-                      : '0 1px 2px rgba(0,0,0,.45), 0 10px 26px -16px rgba(0,0,0,.8)';
-    t['--shadow-lg'] = L ? ('0 2px 6px ' + alpha(edge, 0.07) + ', 0 22px 44px -26px ' + alpha(edge, 0.38))
-                         : '0 2px 8px rgba(0,0,0,.5), 0 26px 52px -26px rgba(0,0,0,.9)';
+
+    /* ── Apple 中性层（不随皮肤变）── */
+    t['--bg']      = L ? '#f5f5f7' : '#000000';
+    t['--bg-2']    = L ? '#ececee' : '#0b0b0d';
+    t['--card']    = L ? '#ffffff' : '#1c1c1e';
+    t['--card-2']  = L ? '#f5f5f7' : '#2c2c2e';
+    t['--card-3']  = L ? '#ebebed' : '#3a3a3c';
+    t['--line']    = L ? 'rgba(0,0,0,.10)' : 'rgba(255,255,255,.12)';
+    t['--line-2']  = L ? 'rgba(0,0,0,.055)' : 'rgba(255,255,255,.065)';
+    t['--text']    = L ? '#1d1d1f' : '#f5f5f7';
+    t['--text-2']  = L ? '#6e6e73' : '#a1a1a6';
+    t['--muted']   = L ? '#86868b' : '#8e8e93';
+    t['--muted-2'] = L ? '#a1a1a6' : '#636366';
+
+    /* ── 强调层：来自贵阳皮肤 ── */
+    t['--brand']       = p;
+    t['--brand-deep']  = L ? mix(p, '#000000', 0.16) : mix(p, '#ffffff', 0.20);
+    t['--brand-soft']  = L ? alpha(p, 0.10) : alpha(p, 0.18);
+    t['--brand-line']  = L ? alpha(p, 0.26) : alpha(p, 0.36);
+    t['--accent']      = a;
+    t['--on-brand']    = '#ffffff';
+    t['--gy-red']      = w;
+    t['--gy-metal']    = m;
+    t['--gy-p-rgb']    = rgbTriplet(p);
+    t['--gy-a-rgb']    = rgbTriplet(a);
+    t['--grad']        = 'linear-gradient(140deg,' + p + ' 0%,' + a + ' 100%)';
+
+    /* ── Apple 系统语义色 ── */
+    t['--ok']        = L ? '#34c759' : '#30d158';
+    t['--ok-soft']   = alpha(L ? '#34c759' : '#30d158', L ? 0.13 : 0.20);
+    t['--ok-line']   = alpha(L ? '#34c759' : '#30d158', 0.34);
+    t['--warn']      = L ? '#ff9500' : '#ff9f0a';
+    t['--warn-soft'] = alpha(L ? '#ff9500' : '#ff9f0a', L ? 0.13 : 0.20);
+    t['--warn-line'] = alpha(L ? '#ff9500' : '#ff9f0a', 0.34);
+    t['--err']       = L ? '#ff3b30' : '#ff453a';
+    t['--err-soft']  = alpha(L ? '#ff3b30' : '#ff453a', L ? 0.11 : 0.20);
+    t['--err-line']  = alpha(L ? '#ff3b30' : '#ff453a', L ? 0.30 : 0.36);
+
+    /* ── 材质与阴影（Apple 的"层次"靠极淡阴影 + 发丝线）── */
+    t['--glass']    = L ? 'rgba(255,255,255,.72)' : 'rgba(28,28,30,.72)';
+    t['--glass-2']  = L ? 'rgba(245,245,247,.80)' : 'rgba(0,0,0,.66)';
+    t['--focus-ring'] = '0 0 0 4px ' + alpha(p, L ? 0.16 : 0.26);
+    t['--shadow']    = L ? '0 1px 2px rgba(0,0,0,.04), 0 6px 22px -14px rgba(0,0,0,.22)'
+                         : '0 1px 2px rgba(0,0,0,.5), 0 10px 28px -18px rgba(0,0,0,.9)';
+    t['--shadow-lg'] = L ? '0 2px 6px rgba(0,0,0,.05), 0 26px 60px -28px rgba(0,0,0,.34)'
+                         : '0 2px 8px rgba(0,0,0,.55), 0 30px 70px -30px rgba(0,0,0,1)';
     return t;
   }
+
   function decls(obj) {
     var out = [];
     for (var k in obj) if (Object.prototype.hasOwnProperty.call(obj, k)) out.push(k + ':' + obj[k]);
@@ -757,6 +783,383 @@ kbd{background:var(--card-2);border:1px solid var(--line);border-bottom-width:2p
 .q-switch button:hover{border-color:var(--brand-line);color:var(--brand)}
 .q-switch button[aria-pressed="true"]{border-color:var(--brand);color:var(--brand);font-weight:600;background:var(--brand-soft)}
 .q-switch button.done::after{content:" ✓";color:var(--ok)}
+/* ==========================================================================
+   13. Apple × 贵阳 设计层
+   --------------------------------------------------------------------------
+   思路：Apple HIG 的三件事 ——
+     ① 系统字体与克制的字号层级（-0.011em 字距、清晰的主/次/三级文字灰）
+     ② 材质与层次（毛玻璃顶栏/弹窗遮罩、发丝线分隔、极淡阴影，而不是粗边框与大渐变）
+     ③ 单一强调色 + 系统语义色（强调色由「贵阳 · 多彩主题」皮肤提供，语义色用 Apple 系统色）
+   贵阳特色只出现在讲故事的地方：App 图标、对话空态、皮肤卡、页脚天际线、彩蛋栏。
+   本节写在静态样式之后 → 同优先级下覆盖前文组件样式（不改变任何 id / class，测试不受影响）。
+   ========================================================================== */
+
+:root{
+  --r-xs:8px; --r-s:10px; --r-m:14px; --r-l:18px; --r-xl:22px; --r-pill:980px;
+  --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Segoe UI Variable Text","Segoe UI",
+         "PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,sans-serif;
+  --mono:ui-monospace,"SF Mono",SFMono-Regular,"JetBrains Mono",Menlo,Consolas,monospace;
+  --ease:cubic-bezier(.32,.72,0,1);
+  --dur:.3s;
+}
+
+/* ---------- 基础排版 ---------- */
+html{-webkit-text-size-adjust:100%}
+body{
+  font-family:var(--font);letter-spacing:-.011em;color:var(--text);background:var(--bg);
+  -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;
+}
+h1,h2,h3{letter-spacing:-.022em;font-weight:600}
+h2{font-size:17px}
+.sub{color:var(--text-2);font-size:13.5px;line-height:1.6}
+::selection{background:color-mix(in srgb,var(--brand) 24%,transparent)}
+*:focus-visible{outline:none;box-shadow:var(--focus-ring);border-radius:var(--r-xs)}
+kbd{
+  font-family:var(--mono);font-size:11.5px;background:var(--card);border:1px solid var(--line);
+  border-bottom-width:2px;border-radius:6px;padding:1px 6px;color:var(--text-2)
+}
+::-webkit-scrollbar{width:11px;height:11px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{
+  background:color-mix(in srgb,var(--muted) 38%,transparent);border-radius:99px;
+  border:3px solid transparent;background-clip:content-box
+}
+::-webkit-scrollbar-thumb:hover{background:color-mix(in srgb,var(--muted) 62%,transparent);background-clip:content-box}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+
+/* ---------- 顶栏：毛玻璃材质 ---------- */
+.topbar{
+  background:var(--glass);border-bottom:1px solid var(--line-2);padding:11px 0;
+  -webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px)
+}
+.brand{gap:10px;font-weight:600;letter-spacing:-.02em;font-size:15px}
+.brand .logo{
+  width:32px;height:32px;border-radius:10px;background:var(--grad);color:#fff;
+  display:grid;place-items:center;box-shadow:0 1px 2px rgba(0,0,0,.14),inset 0 .5px 0 rgba(255,255,255,.35)
+}
+.brand .logo svg{width:22px;height:22px;display:block}
+.brand small{color:var(--muted);font-size:11.5px;font-weight:400;letter-spacing:0}
+.top-ctl{gap:8px}
+.top-ctl label{color:var(--muted);font-size:12.5px}
+.icon-btn{
+  background:color-mix(in srgb,var(--muted) 11%,transparent);border:1px solid transparent;color:var(--text);
+  border-radius:var(--r-s);padding:7px 11px;font-size:12.5px;font-weight:500;
+  transition:background var(--dur) var(--ease),transform .18s var(--ease)
+}
+.icon-btn:hover{background:color-mix(in srgb,var(--muted) 18%,transparent)}
+.icon-btn:active{transform:scale(.96)}
+.badge{
+  border-radius:var(--r-pill);padding:3px 10px;font-size:11.5px;font-weight:500;border:1px solid transparent
+}
+.badge.gray{background:color-mix(in srgb,var(--muted) 13%,transparent);color:var(--text-2)}
+.badge.lang{background:var(--brand-soft);color:var(--brand);border-color:var(--brand-line)}
+.badge.ok{background:var(--ok-soft);color:var(--ok)}
+.badge.err{background:var(--err-soft);color:var(--err)}
+
+/* ---------- 标签栏：选中态是白色药丸（Apple 分段控件观感） ---------- */
+.tabs{gap:4px;padding:0 0 2px}
+.tab{
+  background:transparent;border:1px solid transparent;border-radius:var(--r-pill);padding:7px 15px;
+  font-size:13.5px;font-weight:500;color:var(--text-2);
+  transition:background var(--dur) var(--ease),color var(--dur) var(--ease),transform .18s var(--ease)
+}
+.tab:hover{background:color-mix(in srgb,var(--muted) 12%,transparent);color:var(--text)}
+.tab.active{
+  background:var(--card);color:var(--text);font-weight:600;
+  box-shadow:0 1px 3px rgba(0,0,0,.10),0 0 0 .5px var(--line-2)
+}
+.tab:active{transform:scale(.97)}
+
+/* ---------- 卡片 ---------- */
+.card{
+  background:var(--card);border:1px solid var(--line-2);border-radius:var(--r-xl);
+  padding:22px 24px;box-shadow:var(--shadow)
+}
+.card.step-card{padding:12px 16px}
+.note{border-radius:var(--r-m);border:1px solid var(--line-2);padding:12px 15px;font-size:13px;line-height:1.65}
+.note.info{background:var(--brand-soft);border-color:var(--brand-line);color:var(--text)}
+.note.warn{background:var(--warn-soft);border-color:var(--warn-line)}
+.hint{color:var(--muted);font-size:12.5px;line-height:1.65}
+
+/* ---------- 按钮 ---------- */
+.btn{
+  border:none;border-radius:var(--r-pill);padding:9px 18px;font-size:14px;font-weight:500;font-family:inherit;
+  transition:background var(--dur) var(--ease),color var(--dur) var(--ease),transform .16s var(--ease),opacity .2s
+}
+.btn:active{transform:scale(.97)}
+.btn.primary{background:var(--brand);color:var(--on-brand);box-shadow:0 1px 2px rgba(0,0,0,.10)}
+.btn.primary:hover{background:var(--brand-deep)}
+.btn:not(.primary):not(.ghost):not(.danger){background:color-mix(in srgb,var(--muted) 13%,transparent);color:var(--text)}
+.btn:not(.primary):not(.ghost):not(.danger):hover{background:color-mix(in srgb,var(--muted) 20%,transparent)}
+.btn.ghost{background:transparent;color:var(--brand)}
+.btn.ghost:hover{background:var(--brand-soft)}
+.btn.danger{background:var(--err-soft);color:var(--err)}
+.btn.danger:hover{background:color-mix(in srgb,var(--err) 20%,transparent)}
+.btn.sm{padding:6px 13px;font-size:13px;border-radius:var(--r-pill)}
+.btn[disabled]{opacity:.45;cursor:not-allowed;transform:none}
+
+/* ---------- 表单控件：填充式（无边框，聚焦才出现强调色光环） ---------- */
+input[type=text],input[type=password],input[type=search],textarea,select{
+  font-family:inherit;font-size:14px;color:var(--text);background:color-mix(in srgb,var(--muted) 10%,transparent);
+  border:1px solid transparent;border-radius:var(--r-s);padding:10px 13px;
+  transition:background .2s var(--ease),border-color .2s var(--ease),box-shadow .2s var(--ease)
+}
+input::placeholder,textarea::placeholder{color:var(--muted-2)}
+input:hover,textarea:hover,select:hover{background:color-mix(in srgb,var(--muted) 15%,transparent)}
+input:focus,textarea:focus,select:focus{
+  outline:none;background:var(--card);border-color:var(--brand-line);box-shadow:var(--focus-ring)
+}
+input[type=checkbox]{accent-color:var(--brand);width:15px;height:15px}
+.field > span{font-size:12.5px;font-weight:500;color:var(--text-2);margin-bottom:5px}
+label.chk{font-size:13px}
+
+/* ---------- 分段控件（原生 select 被 enhanceSelect 变成 .seg） ---------- */
+.seg{
+  display:inline-flex;gap:2px;padding:2px;border-radius:9px;border:0;width:fit-content;
+  background:color-mix(in srgb,var(--muted) 15%,transparent)
+}
+.seg button{
+  border:0;background:transparent;border-radius:7px;padding:5px 13px;font-family:inherit;font-size:13px;
+  color:var(--text-2);cursor:pointer;white-space:nowrap;
+  transition:background .2s var(--ease),color .2s var(--ease),box-shadow .2s var(--ease)
+}
+.seg button:hover{color:var(--text)}
+.seg button[aria-pressed="true"]{
+  background:var(--card);color:var(--text);font-weight:600;
+  box-shadow:0 1px 3px rgba(0,0,0,.12),0 0 0 .5px var(--line-2)
+}
+
+/* ---------- 输出区 / 代码块 / Markdown ---------- */
+.output{border-radius:var(--r-m);border:1px solid var(--line-2);background:var(--card-2);padding:16px}
+.output.empty{color:var(--muted);font-size:13.5px}
+.code-block{border:1px solid var(--line-2);border-radius:var(--r-m);background:var(--card);overflow:hidden;margin:10px 0}
+.code-head{
+  background:color-mix(in srgb,var(--muted) 7%,transparent);border-bottom:1px solid var(--line-2);
+  padding:7px 12px;font-size:11.5px
+}
+.code-lang{font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.code-block pre{margin:0;padding:13px 14px;background:transparent;overflow-x:auto}
+.code-block pre code{font-family:var(--mono);font-size:12.5px;line-height:1.65;color:var(--text)}
+.copy-btn{
+  border:1px solid transparent;background:transparent;color:var(--text-2);border-radius:var(--r-xs);
+  padding:3px 9px;font-size:11.5px;font-family:inherit;cursor:pointer;transition:.18s var(--ease)
+}
+.copy-btn:hover{background:color-mix(in srgb,var(--muted) 14%,transparent);color:var(--text)}
+.md{font-size:14.5px;line-height:1.68;letter-spacing:-.008em}
+.md h1,.md h2,.md h3{letter-spacing:-.022em;margin:18px 0 8px}
+.md h1{font-size:19px}.md h2{font-size:16.5px}.md h3{font-size:15px}
+.md p{margin:9px 0}
+.md ul,.md ol{margin:9px 0;padding-left:22px}
+.md li{margin:4px 0}
+.md code.inline{border-radius:6px}
+.md blockquote{
+  margin:11px 0;padding:9px 14px;border-left:3px solid var(--brand-line);background:var(--brand-soft);
+  color:var(--text-2);border-radius:0 var(--r-s) var(--r-s) 0
+}
+.md table{border-collapse:separate;border-spacing:0;width:100%;margin:12px 0;font-size:13px}
+.md th{
+  text-align:left;font-weight:600;font-size:11.5px;letter-spacing:.04em;text-transform:uppercase;
+  color:var(--muted);padding:8px 10px;border-bottom:1px solid var(--line)
+}
+.md td{padding:9px 10px;border-bottom:1px solid var(--line-2)}
+.md tr:last-child td{border-bottom:0}
+
+/* ---------- 编辑器外壳 ---------- */
+.editor-card{padding:0;overflow:hidden}
+.editor-bar{
+  background:color-mix(in srgb,var(--muted) 6%,transparent);border-bottom:1px solid var(--line-2);
+  padding:9px 14px;gap:10px;font-size:12px
+}
+.editor-bar .stat{color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums}
+.editor-host{background:var(--card)}
+.CodeMirror{
+  height:auto;font-family:var(--mono);font-size:12.5px;line-height:1.65;background:var(--card);color:var(--text)
+}
+.CodeMirror-gutters{background:transparent;border-right:1px solid var(--line-2)}
+.CodeMirror-linenumber{color:var(--muted-2);font-size:11.5px}
+.CodeMirror-cursor{border-left:2px solid var(--brand)}
+.CodeMirror-selected{background:color-mix(in srgb,var(--brand) 18%,transparent)}
+.CodeMirror-activeline-background{background:color-mix(in srgb,var(--muted) 6%,transparent)}
+textarea.fallback-editor{
+  font-family:var(--mono);font-size:12.5px;line-height:1.65;background:var(--card);border:0;border-radius:0;padding:14px
+}
+
+/* ---------- 对话 ---------- */
+.chat-shell{border-radius:var(--r-xl);overflow:hidden}
+.chat-side{background:color-mix(in srgb,var(--muted) 7%,transparent);border-right:1px solid var(--line-2)}
+.chat-side-head{padding:14px;gap:9px}
+.chat-item{
+  border-radius:var(--r-s);padding:9px 11px;border:1px solid transparent;background:transparent;
+  transition:background .2s var(--ease)
+}
+.chat-item:hover{background:color-mix(in srgb,var(--muted) 10%,transparent)}
+.chat-item.on,.chat-item.active{background:var(--brand-soft);border-color:var(--brand-line)}
+.chat-body{background:var(--card);gap:14px;padding:20px}
+.chat-head{padding:12px 16px;border-bottom:1px solid var(--line-2);background:var(--card)}
+.chat-title-input{font-size:14.5px;font-weight:600;border-radius:var(--r-xs)}
+.chat-title-input:hover{background:color-mix(in srgb,var(--muted) 10%,transparent);border-color:transparent}
+.chat-compose{border-top:1px solid var(--line-2);background:var(--card);padding:12px 16px 14px}
+.msg .avatar{
+  width:29px;height:29px;border-radius:9px;font-size:13px;
+  box-shadow:0 1px 2px rgba(0,0,0,.10),inset 0 .5px 0 rgba(255,255,255,.28)
+}
+.msg.ai .avatar{background:var(--grad);color:#fff}
+.msg.user .avatar{background:var(--card-3);color:var(--text-2);box-shadow:none}
+.msg .bubble{
+  border-radius:19px;padding:10px 15px;font-size:14.5px;line-height:1.62;max-width:min(78%,720px);
+  border:1px solid transparent;box-shadow:none
+}
+.msg.user .bubble{background:var(--brand);color:var(--on-brand);border-bottom-right-radius:6px}
+.msg.ai .bubble{background:var(--card-2);color:var(--text);border-color:var(--line-2);border-bottom-left-radius:6px}
+.msg .bubble .meta{font-size:11px;color:var(--muted);margin-top:7px}
+.msg.user .bubble .meta{color:color-mix(in srgb,var(--on-brand) 72%,transparent)}
+.msg .acts button{
+  border:0;background:transparent;color:var(--muted);font-size:11.5px;font-family:inherit;
+  border-radius:var(--r-xs);padding:3px 8px;cursor:pointer;transition:.18s var(--ease)
+}
+.msg .acts button:hover{background:color-mix(in srgb,var(--muted) 14%,transparent);color:var(--text)}
+.chip{
+  border:1px solid var(--line);background:var(--card);border-radius:var(--r-pill);padding:8px 15px;font-size:13px;
+  transition:.2s var(--ease)
+}
+.chip:hover{border-color:var(--brand-line);color:var(--brand);background:var(--brand-soft)}
+.scroll-bottom{
+  border:1px solid var(--line-2);background:var(--glass);color:var(--brand);border-radius:50%;
+  -webkit-backdrop-filter:blur(16px) saturate(180%);backdrop-filter:blur(16px) saturate(180%)
+}
+
+/* ---------- 练习板块 ---------- */
+.steps{gap:8px}
+.step-item{
+  border:0;border-radius:var(--r-pill);padding:6px 16px 6px 7px;
+  background:color-mix(in srgb,var(--muted) 12%,transparent);color:var(--text-2);font-size:13.5px;font-weight:500
+}
+.step-item b{width:23px;height:23px;background:var(--card);color:var(--text-2);font-size:12px;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.step-item:hover{color:var(--text)}
+.step-item.active{background:var(--brand);color:var(--on-brand);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.step-item.active b{background:color-mix(in srgb,#fff 88%,var(--brand));color:var(--brand)}
+.step-item.done{background:var(--brand-soft);color:var(--brand)}
+.step-item.done b{background:transparent;color:var(--brand);box-shadow:none}
+.step-line{background:var(--line-2)}
+.answer-left{background:var(--card-2);border:1px solid var(--line-2);border-radius:var(--r-l);padding:14px 16px}
+.answer-left .output{background:transparent;border:0;padding:0}
+.q-card{background:var(--card-2);border:1px solid var(--line-2);border-radius:var(--r-l);padding:14px 16px}
+.q-title{font-weight:600;font-size:14.5px;letter-spacing:-.015em}
+.q-pts{font-size:12px;color:var(--brand);font-weight:600;font-variant-numeric:tabular-nums}
+.opt{
+  border:1px solid var(--line-2);border-radius:var(--r-m);background:var(--card);padding:11px 14px;font-size:13.5px;
+  transition:.2s var(--ease)
+}
+.opt:hover{border-color:var(--brand-line)}
+.opt.sel{border-color:var(--brand);background:var(--brand-soft)}
+.q-switch button{
+  border:0;border-radius:var(--r-s);background:color-mix(in srgb,var(--muted) 12%,transparent);color:var(--text-2);
+  padding:6px 13px;font-size:12.5px;transition:.2s var(--ease)
+}
+.q-switch button[aria-pressed="true"]{background:var(--brand);color:var(--on-brand);font-weight:600}
+.q-switch button.done::after{content:" \2713";color:var(--ok)}
+
+/* ---------- 学习进度 ---------- */
+.stat-card{
+  border:1px solid var(--line-2);border-radius:var(--r-l);padding:14px 16px;background:var(--card);
+  transition:transform .22s var(--ease),box-shadow .22s var(--ease)
+}
+.stat-card:hover{transform:translateY(-1px);box-shadow:var(--shadow)}
+.stat-card .k{font-size:12px;color:var(--muted)}
+.stat-card .v{font-size:26px;font-weight:600;letter-spacing:-.03em;margin-top:3px}
+.stat-card .u{font-size:12px;color:var(--muted);font-weight:400}
+.trend-wrap{background:var(--card-2);border:1px solid var(--line-2);border-radius:var(--r-l);padding:14px 16px 10px}
+.trend-svg{max-height:240px}
+.bar-track{height:6px;background:color-mix(in srgb,var(--muted) 18%,transparent)}
+.bar-fill{transition:width .5s var(--ease)}
+.grade-item{
+  border:0;border-bottom:1px solid var(--line-2);border-radius:0;background:transparent;
+  padding:13px 4px;margin:0;transition:background .2s var(--ease)
+}
+.grade-item:last-child{border-bottom:0}
+.grade-item:hover{background:color-mix(in srgb,var(--muted) 6%,transparent)}
+.grade-item .row1{gap:10px}
+.grade-item .score{font-size:15px;letter-spacing:-.02em}
+.grade-item .prob{white-space:normal;line-height:1.55}
+.grade-item .detail{border-top:1px solid var(--line-2);margin-top:12px;padding-top:12px}
+.score-card{
+  background:var(--card);border:1px solid var(--line-2);border-radius:var(--r-xl);padding:20px;box-shadow:var(--shadow)
+}
+.score-ring{width:118px;height:118px}
+.score-ring::after{inset:10px}
+.score-ring .inner b{font-size:31px;letter-spacing:-.03em}
+.score-ring .inner span{color:var(--muted);font-size:11px}
+.score-meta .verdict{font-size:16px;font-weight:600;letter-spacing:-.02em}
+
+/* ---------- 弹窗：类 iOS Sheet ---------- */
+.modal-mask{
+  background:rgba(0,0,0,.30);
+  -webkit-backdrop-filter:blur(12px) saturate(140%);backdrop-filter:blur(12px) saturate(140%)
+}
+.modal{
+  background:var(--card);border:1px solid var(--line-2);border-radius:var(--r-xl);padding:24px 26px;
+  box-shadow:0 30px 80px -30px rgba(0,0,0,.55),0 2px 8px rgba(0,0,0,.10);animation:gySheet .36s var(--ease)
+}
+@keyframes gySheet{from{opacity:0;transform:translateY(16px) scale(.97)}to{opacity:1;transform:none}}
+.modal h3{font-size:18px}
+.modal td{border-bottom:1px solid var(--line-2);padding:9px 0}
+.skin-card{
+  border:1px solid var(--line-2);border-radius:var(--r-m);background:var(--card-2);padding:11px 12px;
+  transition:transform .22s var(--ease),box-shadow .22s var(--ease),border-color .22s var(--ease)
+}
+.skin-card:hover{transform:translateY(-2px);box-shadow:var(--shadow);border-color:var(--brand-line)}
+.skin-card[aria-pressed="true"]{border-color:var(--brand);box-shadow:0 0 0 .5px var(--brand),var(--focus-ring)}
+
+/* ---------- 通知：顶部毛玻璃胶囊 ---------- */
+#toast{top:64px;right:16px;left:auto;bottom:auto;transform:none;align-items:flex-end;gap:6px}
+@media (max-width:640px){ #toast{top:auto;bottom:14px;right:14px} }
+#toast .t{
+  background:var(--glass);color:var(--text);border:1px solid var(--line);border-radius:var(--r-pill);
+  padding:10px 18px;font-size:13.5px;box-shadow:var(--shadow-lg);
+  -webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);
+  animation:gyToast .34s var(--ease)
+}
+@keyframes gyToast{from{opacity:0;transform:translateY(-10px) scale(.96)}to{opacity:1;transform:none}}
+#toast .t.ok{color:var(--ok)}
+#toast .t.err{color:var(--err)}
+
+/* ---------- 彩蛋栏：发丝线 + 毛玻璃（高光收敛到很淡） ---------- */
+.egg-bar{
+  border-top:1px solid var(--line-2);
+  background:linear-gradient(100deg,
+    color-mix(in srgb,var(--brand) 7%,var(--card)) 0%,
+    color-mix(in srgb,var(--accent) 8%,var(--card)) 55%,
+    color-mix(in srgb,var(--gy-red) 6%,var(--card)) 100%)
+}
+.egg-bar::after{animation-duration:7.5s;opacity:.5}
+[data-theme="dark"] .egg-bar::after{opacity:.35}
+.egg-ico{animation-duration:3.4s}
+.egg-go{background:var(--card);border:1px solid var(--line-2);box-shadow:var(--shadow)}
+
+/* ---------- 页脚 ---------- */
+footer{border-top:1px solid var(--line-2);background:var(--bg);padding:24px 0 30px;color:var(--muted);font-size:12.5px;line-height:1.8}
+footer b{color:var(--text-2)}
+footer a{color:var(--brand);text-decoration:none}
+footer a:hover{text-decoration:underline}
+
+/* ---------- 贵阳纹样（细线条天际线，只作讲故事用的装饰） ---------- */
+.gy-art{display:block;color:var(--brand);overflow:hidden}
+.gy-art svg{display:block;width:100%;height:auto}
+.gy-hero{width:300px;height:76px;margin:0 auto 16px;opacity:.22}
+.gy-hero svg{width:300px;height:76px}
+.skin-card .gy-art svg{width:100%;height:auto}
+.gy-seal{
+  display:inline-flex;align-items:center;gap:7px;border-radius:var(--r-pill);padding:5px 14px;margin-bottom:14px;
+  font-size:11.5px;letter-spacing:.16em;color:var(--brand);background:var(--brand-soft);border:1px solid var(--brand-line)
+}
+.gy-seal::before{content:"";width:6px;height:6px;border-radius:2px;background:var(--brand);opacity:.7}
+.skin-card .gy-art{margin-top:9px;opacity:.28}
+.gy-footer-art{width:300px;height:44px;margin:0 auto 14px;opacity:.13}
+.gy-footer-art svg{width:300px;height:44px}
+@media (max-width:640px){
+  .gy-hero,.gy-hero svg{width:220px;height:56px}
+  .gy-footer-art,.gy-footer-art svg{width:220px;height:32px}
+}
 </style>
 </head>
 <body>
@@ -767,7 +1170,15 @@ kbd{background:var(--card-2);border:1px solid var(--line);border-bottom-width:2p
 <header class="topbar">
   <div class="wrap topbar-inner">
     <div class="brand">
-      <span class="logo">&#128187;</span>
+      <span class="logo" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor">
+        <path d="M6.2 15.5h11.6v1.3H6.2z"/>
+        <path d="M7.6 13.8h8.8l-1-1.5H8.6z"/>
+        <path d="M9 11.6h6l-.85-1.4h-4.3z"/>
+        <path d="M10.8 9.5h2.4l-.6-1.2h-1.2z"/>
+        <path d="M11.55 6.9h.9v1.5h-.9z"/>
+        <path d="M2.4 18.5q2.6-1.5 5.2 0t5.2 0 5.2 0 4.6 0v1.5H2.4z" opacity=".88"/>
+        <path d="M3.6 21.4h16.8v1.1H3.6z" opacity=".55"/>
+      </svg></span>
       <span>CodeTutor<small>多语言编程学习助手</small></span>
     </div>
 
@@ -1193,6 +1604,7 @@ kbd{background:var(--card-2);border:1px solid var(--line);border-bottom-width:2p
 
 <footer>
   <div class="wrap">
+    <div class="gy-footer-art" id="gyFooterArt" aria-hidden="true"></div>
     <b>CodeTutor</b> · 纯静态多语言编程学习网站（HTML + CSS + JavaScript，无后端、无数据库）。<br>
     AI 能力由 DeepSeek / 通义千问 提供，经 Cloudflare Worker 代理转发。API Key 仅存于浏览器内存，刷新即消失，本站不收集、不存储、不上传任何密钥或代码。<br>
     历史对话与学习进度保存在<b>你自己浏览器的 localStorage</b>，不上传服务器，可随时在【学习进度】页导出或清除。<br>
@@ -3341,6 +3753,36 @@ function confirmDanger(btn, doIt, restoreLabel) {
 /* ==========================================================================
  * 12. 对话模块（自由提问 + 历史保存）
  * ========================================================================== */
+/* ==========================================================================
+ * 贵阳纹样（剪影取自 dsh-client-ui-guiyang-theme v0.5.0 的 SVG 母题）
+ * 每套皮肤一个母题：甲秀楼浮玉桥 / 数谷数据流 / 侗寨鼓楼风雨桥 / 青岩城墙垛口 /
+ * 九门四阁 / 三叠纪海百合 / 阳明竹影 / 樱花梯田。仅作装饰，不影响交互。
+ * ========================================================================== */
+const GY_ART = {
+  jiaxiu: '<svg viewBox="0 0 520 132" preserveAspectRatio="xMidYMax meet" aria-hidden="true"><path fill="currentColor" d="M0 132 V98 C20 94 30 70 46 66 C60 62 68 78 82 80 C92 81 98 74 108 76 V132 ZM104 132 V90 C120 86 130 68 148 66 C162 64 170 78 184 80 V132 ZM170 122 H238 V117 H170 ZM195 117 H213 V104 H195 ZM184 104 H224 V96 H184 ZM172 96 Q193.12 82 204 82 Q214.88 82 236 96 ZM189 86 H219 V78 H189 ZM179 78 Q195.5 64 204 64 Q212.5 64 229 78 ZM194 68 H214 V60 H194 ZM185 60 Q197.54 46 204 46 Q210.46 46 223 60 ZM203 40 H205 V48 H203 Z M204 33 A3.4 3.4 0 1 1 204 39.8 A3.4 3.4 0 1 1 204 33 ZM330 132 V40 H340 L342 31 L344 40 H354 V132 ZM362 132 V56 H370 L372 48 L374 56 H382 V132 ZM256 132 V118 C286 100 330 100 360 118 V132 ZM392 132 V78 H404 L407 71 L410 78 H422 V132 ZM428 132 V92 H454 V132 ZM462 132 V70 H472 L474 64 L476 70 H486 V132 ZM492 132 V100 H520 V132 Z"/></svg>',
+  shugu: '<svg viewBox="0 0 520 132" preserveAspectRatio="xMidYMax meet" aria-hidden="true"><path fill="currentColor" d="M8 132V80h11v52zM27 132V54h11v78zM46 132V94h11v38zM65 132V42h11v90zM84 132V68h11v64zM103 132V88h11v44zM122 132V60h11v72zM141 132V100h11v32z"/><path fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" d="M170 106l30-22 30 10 32-30 30 8 32-26 30 6 34-24"/><path fill="currentColor" d="M162 108a7 7 0 1014 0 7 7 0 10-14 0zM224 86a7 7 0 1014 0 7 7 0 10-14 0zM286 64a7 7 0 1014 0 7 7 0 10-14 0zM348 42a7 7 0 1014 0 7 7 0 10-14 0z"/></svg>',
+  dong: '<svg viewBox="0 0 520 132" preserveAspectRatio="xMidYMax meet" aria-hidden="true"><path fill="currentColor" d="M0 132 V108 C18 104 30 112 44 110 C58 108 66 100 82 102 V132 ZM62 132 V116 C80 112 92 120 108 118 C120 116 128 110 142 112 V132 ZM146 132 H198 V118 H146 ZM157 118 H187 L178 66 H166 ZM139 118 Q160.78 108 172 108 Q183.22 108 205 118 ZM141 108 Q161.46 98 172 98 Q182.54 98 203 108 ZM143 98 Q162.14 88 172 88 Q181.86 88 201 98 ZM146 88 Q163.16 78 172 78 Q180.84 78 198 88 ZM149 78 Q164.18 68 172 68 Q179.82 68 195 78 ZM152 69 Q165.2 59 172 59 Q178.8 59 192 69 ZM171 56 H173 V66 H171 Z M172 49 A3.4 3.4 0 1 1 172 55.8 A3.4 3.4 0 1 1 172 49 ZM236 132 H262 V120 H236 Z M306 132 H332 V120 H306 ZM226 120 H342 V114 H226 ZM224 114 Q263.6 102 284 102 Q304.4 102 344 114 ZM252 128 V110 H262 V128 Z M294 128 V104 H304 V128 Z M322 128 V110 H332 V128 ZM296 104 H302 V96 H296 ZM277 96 Q291.52 86 299 86 Q306.48 86 321 96 ZM297 88 H301 V96 H297 ZM284 88 Q293.9 79 299 79 Q304.1 79 314 88 ZM298 80 H300 V88 H298 Z M299 75 A2.6 2.6 0 1 1 299 80.2 A2.6 2.6 0 1 1 299 75 ZM342 132 V104 C356 100 366 88 380 86 C392 84 400 94 410 96 V132 ZM412 132 V112 C430 108 442 116 456 114 C468 112 476 106 490 108 V132 ZM436 132 H470 V118 H436 ZM436 118 Q447.22 110 453 110 Q458.78 110 470 118 ZM439 109 Q448.24 101 453 101 Q457.76 101 467 109 ZM442 100 Q449.26 92 453 92 Q456.74 92 464 100 Z"/></svg>',
+  qingyan: '<svg viewBox="0 0 520 132" preserveAspectRatio="xMidYMax meet" aria-hidden="true"><path fill="currentColor" d="M0 132 V96 H14 V88 H28 V96 H42 V88 H56 V96 H70 V88 H84 V96 H98 V88 H112 V96 H126 V88 H140 V96 H154 V88 H168 V96 H182 V132 ZM182 132 V86 H226 V132 ZM196 132 V116 A8 8 0 0 1 212 116 V132 ZM174 86 Q193.8 73 204 73 Q214.2 73 234 86 ZM190 86 V74 H218 V86 ZM180 74 Q195.84 62 204 62 Q212.16 62 228 74 ZM202 62 H206 V74 H202 Z M204 56 A3 3 0 1 1 204 62 A3 3 0 1 1 204 56 ZM232 132 V112 H268 V132 ZM228 112 L250 100 L272 112 ZM276 132 V118 H308 V132 ZM272 118 L292 106 L312 118 ZM316 132 V104 H352 V132 ZM312 104 L334 92 L356 104 ZM366 132 V74 H372 V132 Z M426 132 V74 H432 V132 ZM360 74 H438 V80 H360 ZM366 96 H432 V101 H366 ZM355 74 Q384.04 64 399 64 Q413.96 64 443 74 ZM446 132 V100 C462 96 476 84 492 86 C504 88 512 96 520 98 V132 Z"/></svg>',
+  jiubamen: '<svg viewBox="0 0 520 132" preserveAspectRatio="xMidYMax meet" aria-hidden="true"><path fill="currentColor" d="M430 30 A17 17 0 1 1 430 64 A17 17 0 1 1 430 30 ZM0 132 V92 H12 V84 H24 V92 H36 V84 H48 V92 H60 V84 H72 V92 H84 V84 H96 V92 H108 V84 H120 V92 H132 V84 H144 V92 H156 V84 H168 V92 H180 V84 H192 V92 H204 V84 H216 V92 H228 V84 H240 V92 H252 V84 H264 V92 H276 V84 H288 V92 H300 V84 H312 V92 H324 V84 H336 V92 H348 V84 H360 V92 H372 V84 H384 V92 H396 V84 H408 V92 H420 V84 H432 V92 H444 V84 H456 V92 H468 V84 H480 V92 H492 V84 H504 V92 H516 V84 H528 V92 V132 ZM132 132 V78 H200 V132 ZM152 132 V114 A18 18 0 0 0 188 114 V132 ZM134 78 Q157.76 65 170 65 Q182.24 65 206 78 ZM148 78 V66 H192 V78 ZM142 66 Q160.48 54 170 54 Q179.52 54 198 66 ZM168 52 H172 V66 H168 Z M170 45 A3.6 3.6 0 1 1 170 52.2 A3.6 3.6 0 1 1 170 45 ZM252 132 H288 V118 H252 ZM238 118 Q259.12 110 270 110 Q280.88 110 302 118 ZM260 118 V106 H280 V118 ZM242 106 Q260.48 98 270 98 Q279.52 98 298 106 ZM263 106 V94 H277 V106 ZM245 94 Q261.5 87 270 87 Q278.5 87 295 94 ZM266 94 V84 H274 V94 ZM265 84 L270 68 L275 84 Z M270 61 A3.6 3.6 0 1 1 270 68.2 A3.6 3.6 0 1 1 270 61 ZM95 52 H97 V70 H95 Z M233 52 H235 V70 H233 ZM89 70 A8 10 0 1 1 89 90 A8 10 0 1 1 89 70 ZM227 70 A8 10 0 1 1 227 90 A8 10 0 1 1 227 70 Z"/></svg>',
+  sanyu: '<svg viewBox="0 0 520 132" preserveAspectRatio="xMidYMax meet" aria-hidden="true"><path fill="currentColor" d="M0 132 V118 C40 112 80 124 120 118 C160 112 200 124 240 118 C280 112 320 124 360 118 C400 112 440 124 480 118 C500 115 512 118 520 117 V132 ZM93 118 H97 V80 H93 ZM93.8 82.7 L72.8 70.9 L73.4 69.6 L96.2 77.3 ZM92.8 82.1 L77.8 63.3 L78.9 62.2 L97.2 77.9 ZM92.2 81.1 L85.3 58 L86.7 57.5 L97.8 78.9 ZM92 80 L94.3 50 L95.8 50 L98 80 ZM92.2 78.9 L103.3 57.5 L104.7 58 L97.8 81.1 ZM92.8 77.9 L111.1 62.2 L112.2 63.3 L97.2 82.1 ZM93.8 77.3 L116.6 69.6 L117.2 70.9 L96.2 82.7 ZM160 46 A3 3 0 1 1 160 52 A3 3 0 1 1 160 46 ZM172 62 A2.2 2.2 0 1 1 172 66.4 A2.2 2.2 0 1 1 172 62 ZM184 38 A2.6 2.6 0 1 1 184 43.2 A2.6 2.6 0 1 1 184 38 ZM236 80 C246 66 312 64 322 78 C312 92 246 94 236 80 ZM240 72 C224 68 212 56 206 42 C202 32 204 24 210 20 C208 30 210 40 215 50 C222 62 232 70 242 74 ZM200 18 L218 14 L222 24 L206 28 ZM318 78 C334 76 346 68 356 56 C348 72 334 82 316 90 ZM272 88 C274 100 282 106 292 106 C284 102 278 96 276 88 ZM304 88 C306 98 312 104 320 104 C314 100 308 94 306 88 ZM282 92 C284 102 290 108 300 108 C292 104 288 98 286 92 ZM424 74 C438 64 462 64 476 74 C462 84 438 84 424 74 ZM476 74 L494 62 L494 86 ZM442 66 L448 54 L454 64 ZM380 132 V112 C400 108 412 96 430 94 C444 92 454 102 468 104 V132 ZM466 132 V104 C484 100 500 108 520 106 V132 Z"/></svg>',
+  yangming: '<svg viewBox="0 0 520 132" preserveAspectRatio="xMidYMax meet" aria-hidden="true"><path fill="currentColor" d="M0 132 V40 L34 44 L62 30 L86 44 L112 40 V132 ZM196 132 V36 L224 42 L250 28 L276 44 L300 38 V132 ZM120 132 L156 132 L196 24 L172 20 ZM100 132 V64 H106 V132 Z M114 132 V76 H120 V132 ZM103 66 L82 48 L101 58 Z M117 78 L138 60 L121 72 Z M103 92 L84 80 L103 86 Z M117 104 L136 94 L119 100 ZM300 132 V96 C318 92 330 80 348 78 C362 76 372 86 386 88 V132 ZM386 132 V108 C404 104 418 112 434 110 C448 108 458 100 472 102 V132 ZM470 132 V84 L492 88 L508 76 L520 82 V132 Z"/></svg>',
+  yinghua: '<svg viewBox="0 0 520 132" preserveAspectRatio="xMidYMax meet" aria-hidden="true"><path fill="currentColor" d="M0 132 V104 C14 100 24 88 40 86 C54 84 62 94 74 96 C86 98 92 92 104 94 V132 ZM96 132 V80 C114 76 126 62 146 60 C162 58 172 70 186 72 V132 ZM186 132 V118 C222 112 258 122 294 116 C330 110 366 120 402 114 C438 108 478 118 520 112 V132 ZM240 132 V108 C276 102 312 112 348 106 C384 100 424 110 460 104 C486 100 504 104 520 102 V132 ZM300 132 V98 C336 92 372 102 408 96 C444 90 484 100 520 94 V132 ZM148 132 H330 V126 C260 122 210 126 148 126 ZM0 16 C64 22 106 42 142 60 C150 64 150 72 142 70 C104 62 60 42 0 32 ZM96 40 C112 44 124 54 132 64 C122 62 108 54 96 48 ZM38 24 A8 8 0 1 1 54 24 A8 8 0 1 1 38 24 ZM59.5 30 A6.5 6.5 0 1 1 72.5 30 A6.5 6.5 0 1 1 59.5 30 ZM53 36 A5 5 0 1 1 63 36 A5 5 0 1 1 53 36 ZM80 42 A8 8 0 1 1 96 42 A8 8 0 1 1 80 42 ZM98 48 A6 6 0 1 1 110 48 A6 6 0 1 1 98 48 ZM77.5 48 A4.5 4.5 0 1 1 86.5 48 A4.5 4.5 0 1 1 77.5 48 ZM110.5 56 A7.5 7.5 0 1 1 125.5 56 A7.5 7.5 0 1 1 110.5 56 ZM128 62 A6 6 0 1 1 140 62 A6 6 0 1 1 128 62 ZM143 70 A7 7 0 1 1 157 70 A7 7 0 1 1 143 70 ZM160.5 58 A5.5 5.5 0 1 1 171.5 58 A5.5 5.5 0 1 1 160.5 58 ZM171.5 46 A4.5 4.5 0 1 1 180.5 46 A4.5 4.5 0 1 1 171.5 46 ZM125 44 A5 5 0 1 1 135 44 A5 5 0 1 1 125 44 ZM330 132 V110 C352 106 366 94 386 92 C400 90 410 100 424 102 V132 Z"/></svg>'
+};
+const SKIN_ART = {
+  lin: 'jiaxiu', jiaxiu: 'jiaxiu', shugu: 'shugu', dong: 'dong', qingyan: 'qingyan',
+  yangming: 'yangming', jiubamen: 'jiubamen', sanyu: 'sanyu', yinghua: 'yinghua'
+};
+function gyArtId(skinId) { return GY_ART[SKIN_ART[skinId]] ? SKIN_ART[skinId] : 'jiaxiu'; }
+function gyArtSvg(id, cls) {
+  var g = GY_ART[id] || GY_ART.jiaxiu;
+  return '<div class="gy-art ' + (cls || '') + '">' + g + '</div>';
+}
+/** 页脚天际线：跟着当前皮肤换母题 */
+function paintGuiyangArt() {
+  var el = $('#gyFooterArt');
+  if (el) el.innerHTML = GY_ART[gyArtId(currentSkinId())] || '';
+}
+
 /** 按当前语言给出的快捷提问 */
 const CHAT_CHIPS = {
   python: ['列表推导式是什么？给个例子', '== 和 is 有什么区别？', '怎么优雅地读写文件？', '考试常考的 Python 易错点'],
@@ -3358,7 +3800,9 @@ function chatEmptyHtml() {
       '本站不提供密钥，需要你自己去服务商申请一个（免费额度即可）。' +
       '<div style="margin-top:8px"><button class="btn sm primary" data-goto="api">去 API 设置</button></div></div>'
     : '';
-  return '<div class="chat-empty">' + noKey +
+  const art = gyArtSvg(gyArtId(currentSkinId()), 'gy-hero');
+  return '<div class="chat-empty">' + noKey + art +
+    '<div class="gy-seal">知行合一 · 协力争先</div>' +
     '<div>有什么想问的？我会按 <b>' + esc(L.name) + '</b> 的语言上下文回答，' +
     '历史会自动保存在你这台电脑的浏览器里。</div>' +
     '<div class="chips">' + chips + '</div></div>';
@@ -4049,6 +4493,7 @@ function init() {
   // 外观与交互增强：主题、皮肤、分段控件、快捷键弹窗、趋势范围
   initTheme();
   initEggBar();
+  paintGuiyangArt();
   $('#themeBtn').addEventListener('click', cycleTheme);
   if ($('#skinBtn')) {
     updateSkinButton();
@@ -4194,6 +4639,7 @@ function renderSkinGrid() {
       '<span class="nm">' + esc(s.name) + (s.id === cur ? '<span class="chk">使用中</span>' : '') + '</span>' +
       '<span class="tg">' + esc(s.tag) + '</span>' +
       '<span class="dots"><i style="background:' + esc(s.p[0]) + '"></i><i style="background:' + esc(s.a[0]) + '"></i><i style="background:' + esc(s.w[0]) + '"></i><i style="background:' + esc(s.surface[0]) + '"></i></span>' +
+      (GY_ART[SKIN_ART[s.id]] ? '<div class="gy-art" style="color:' + esc(s.p[0]) + '">' + GY_ART[SKIN_ART[s.id]] + '</div>' : '') +
       '</button>';
   }).join('');
 }
@@ -4205,6 +4651,7 @@ function pickSkin(id) {
   const s = gy.apply(id);          // 应用并写入 localStorage
   renderSkinGrid();
   updateSkinButton();
+  paintGuiyangArt();               // 页脚天际线跟着换母题
   const hint = $('#skinHint');
   if (hint) hint.textContent = '已切换到「' + s.name + '」';
   toast('皮肤已切换：' + s.name, 'ok');
