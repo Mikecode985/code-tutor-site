@@ -3,10 +3,161 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#2563eb">
+<meta name="theme-color" content="#4176e6">
 <title>CodeTutor · 多语言编程学习助手（Python / C / C++）</title>
 <meta name="description" content="纯静态多语言编程学习网站：AI 代码 Bug 诊断、习题生成、在线代码批改，支持 Python、C、C++。API Key 仅存浏览器内存，绝不落盘。">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='88'>&#128187;</text></svg>">
+
+<!-- 提前应用外观：主题（明/暗）+ 贵阳多彩皮肤，避免刷新时闪一下默认色 -->
+<script>
+(function () {
+  'use strict';
+  /* ==========================================================================
+   * 贵阳 · 多彩主题 —— 皮肤表与令牌推衍
+   * 移植自插件 dsh-client-ui-guiyang-theme v0.5.0（色值与 mix/alpha 公式保持一致）
+   * 每套皮肤：主色 p / 呼应色 a / 暖色 w / 金属色 m（各带浅深两版）+ surface 底色
+   * ========================================================================== */
+  var SKINS = [
+    { id: 'lin',      name: '林城晨雾',   tag: '贵阳的早晨：森林绿 + 南明河的水汽',
+      p: ['#0f9d6f', '#2fbf8f'], a: ['#0e7490', '#5eead4'], w: ['#c8352c', '#fb7185'], m: ['#c8cdd3', '#e6ecef'], surface: ['#f5faf6', '#101613'] },
+    { id: 'jiaxiu',   name: '甲秀夜月',   tag: '甲秀楼的月色：碧瓦青 + 水青 + 朱梁',
+      p: ['#0d7a6a', '#37c39c'], a: ['#3e8e93', '#7fd1c1'], w: ['#a8322a', '#e2726a'], m: ['#d8dee2', '#eef3f5'], surface: ['#f3f8f7', '#0c1315'] },
+    { id: 'shugu',    name: '数谷蓝调',   tag: '中国数谷：科技蓝 + 数据青（国家大数据综合试验区）',
+      p: ['#0a66c2', '#5b93ff'], a: ['#0093ad', '#4dd0e1'], w: ['#c8352c', '#fb7185'], m: ['#c8cdd3', '#dbe6f0'], surface: ['#f4f7fc', '#0d1116'] },
+    { id: 'dong',     name: '侗乡蓝',     tag: '侗布靛蓝 + 苗绣红 + 银饰白（侗族大歌 / 蜡染）',
+      p: ['#2b4a6f', '#8fb6e0'], a: ['#4a6fa5', '#a9c4e8'], w: ['#c8102e', '#e0457b'], m: ['#c8cdd3', '#e6eaf0'], surface: ['#f4f6fa', '#0e1219'] },
+    { id: 'qingyan',  name: '青岩古韵',   tag: '青岩古镇的青石 + 苗绣红 + 石牌坊',
+      p: ['#4f6a72', '#9fb9c0'], a: ['#7a8a8f', '#b9c8cc'], w: ['#a8322a', '#d0746b'], m: ['#cfc7b5', '#e2dccd'], surface: ['#f7f6f2', '#14130f'] },
+    { id: 'yangming', name: '阳明心源',   tag: '修文龙场悟道：一线天光 + 竹影（知行合一）',
+      p: ['#6a4c93', '#a98fd6'], a: ['#7c8c6a', '#b5c79a'], w: ['#b03a2e', '#e07a6a'], m: ['#e6e0d0', '#efe9dc'], surface: ['#f6f2ea', '#131210'] },
+    { id: 'jiubamen', name: '九门夜灯',   tag: '老贵阳九门四阁：城门灯影 + 文昌阁九角攒尖顶',
+      p: ['#8c6d46', '#d8b06a'], a: ['#9a7b1f', '#e8b100'], w: ['#c8102e', '#f07167'], m: ['#ddd6c8', '#efe7d8'], surface: ['#f7f4ee', '#16130f'] },
+    { id: 'sanyu',    name: '三叠纪之海', tag: '2.4 亿年前的兴义海底：胡氏贵州龙 + 海百合',
+      p: ['#2f6d63', '#5fb3a1'], a: ['#3f7f96', '#8fd0dd'], w: ['#c96f68', '#e79a92'], m: ['#cfe3df', '#e6f2ef'], surface: ['#f2f8f7', '#0c1416'] },
+    { id: 'yinghua',  name: '樱花梯田',   tag: '贵安樱花园与黔中梯田：樱花粉 + 梯田绿',
+      p: ['#c95f88', '#f2a0bd'], a: ['#5f8c42', '#a8cf7a'], w: ['#b8446f', '#e88bb0'], m: ['#f7e7ed', '#f7ecef'], surface: ['#fdf6f8', '#151013'] }
+  ];
+
+  function hex2rgb(h) {
+    h = String(h).replace('#', '');
+    if (h.length === 3) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
+    var n = parseInt(h, 16);
+    return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  }
+  function rgb2hex(r) {
+    function q(v) { var s = Math.max(0, Math.min(255, Math.round(v))).toString(16); return s.length === 1 ? '0' + s : s; }
+    return '#' + q(r[0]) + q(r[1]) + q(r[2]);
+  }
+  /** t=0 → a，t=1 → b（与插件一致） */
+  function mix(a, b, t) {
+    var x = hex2rgb(a), y = hex2rgb(b);
+    return rgb2hex([x[0] + (y[0] - x[0]) * t, x[1] + (y[1] - x[1]) * t, x[2] + (y[2] - x[2]) * t]);
+  }
+  function alpha(hex, a) {
+    var c = hex2rgb(hex);
+    return 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + a + ')';
+  }
+
+  /** 由皮肤推出本站的整套令牌（浅色 mode=0 / 深色 mode=1） */
+  function tokens(s, mode) {
+    var p = s.p[mode], a = s.a[mode], w = s.w[mode], surface = s.surface[mode];
+    var ink = mode === 0 ? '#182b21' : '#e6f1ea';
+    var white = '#ffffff', black = '#000000', L = mode === 0;
+    var t = {};
+    t['--bg'] = surface;
+    t['--bg-2'] = L ? mix(surface, p, 0.05) : mix(surface, p, 0.12);
+    t['--card'] = L ? white : mix(surface, p, 0.16);
+    t['--card-2'] = L ? mix(surface, p, 0.06) : mix(surface, black, 0.18);
+    t['--line'] = L ? alpha(mix(p, black, 0.3), 0.16) : 'rgba(255,255,255,0.12)';
+    t['--line-2'] = L ? alpha(mix(p, black, 0.35), 0.1) : 'rgba(255,255,255,0.07)';
+    t['--text'] = mix(ink, p, L ? 0.09 : 0.1);
+    t['--text-2'] = mix(ink, p, L ? 0.34 : 0.42);
+    t['--muted'] = L ? mix(ink, p, 0.55) : '#7e988a';
+    t['--muted-2'] = L ? mix(ink, p, 0.66) : '#64796d';
+    t['--brand'] = p;
+    t['--brand-deep'] = L ? mix(p, black, 0.16) : mix(p, white, 0.14);
+    t['--brand-soft'] = L ? mix(surface, p, 0.16) : mix(surface, p, 0.24);
+    t['--brand-line'] = L ? mix(p, black, 0.1) : mix(p, white, 0.3);
+    t['--accent'] = a;
+    t['--on-brand'] = L ? white : mix(surface, black, 0.35);
+    t['--ok'] = L ? '#22c55e' : '#4ed17e';
+    t['--ok-soft'] = L ? '#e6faed' : '#233c2c';
+    t['--ok-line'] = alpha(L ? '#22c55e' : '#4ed17e', 0.32);
+    t['--warn'] = L ? '#f59e0b' : '#f7ad31';
+    t['--warn-soft'] = L ? '#fef5e7' : '#27241f';
+    t['--warn-line'] = alpha(L ? '#f59e0b' : '#f7ad31', 0.32);
+    t['--err'] = w;
+    t['--err-soft'] = L ? mix(surface, w, 0.12) : mix(surface, w, 0.22);
+    t['--err-line'] = alpha(w, L ? 0.3 : 0.34);
+    t['--focus-ring'] = '0 0 0 3px ' + alpha(p, L ? 0.22 : 0.3);
+    t['--grad'] = 'linear-gradient(135deg,' + p + ',' + a + ')';
+    t['--glass'] = alpha(surface, L ? 0.84 : 0.82);
+    var edge = mix(p, black, 0.35);
+    t['--shadow'] = L ? ('0 1px 2px ' + alpha(edge, 0.05) + ', 0 8px 22px -16px ' + alpha(edge, 0.3))
+                      : '0 1px 2px rgba(0,0,0,.45), 0 10px 26px -16px rgba(0,0,0,.8)';
+    t['--shadow-lg'] = L ? ('0 2px 6px ' + alpha(edge, 0.07) + ', 0 22px 44px -26px ' + alpha(edge, 0.38))
+                         : '0 2px 8px rgba(0,0,0,.5), 0 26px 52px -26px rgba(0,0,0,.9)';
+    return t;
+  }
+  function decls(obj) {
+    var out = [];
+    for (var k in obj) if (Object.prototype.hasOwnProperty.call(obj, k)) out.push(k + ':' + obj[k]);
+    return out.join(';');
+  }
+  function skinById(id) {
+    for (var i = 0; i < SKINS.length; i++) if (SKINS[i].id === id) return SKINS[i];
+    return null;
+  }
+  /** 与插件一致：按节令给默套皮肤（春樱花 / 夏林城 / 秋九门 / 冬甲秀） */
+  function seasonal(d) {
+    var m = (d || new Date()).getMonth() + 1;
+    if (m >= 3 && m <= 5) return 'yinghua';
+    if (m >= 6 && m <= 8) return 'lin';
+    if (m >= 9 && m <= 11) return 'jiubamen';
+    return 'jiaxiu';
+  }
+
+  function currentThemePref() {
+    try { return localStorage.getItem('codetutor.theme.v1') || 'auto'; } catch (e) { return 'auto'; }
+  }
+  function isDarkMode(pref) {
+    pref = pref || currentThemePref();
+    return pref === 'dark' || (pref === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  }
+  function applyThemeAttr(pref) {
+    document.documentElement.setAttribute('data-theme', isDarkMode(pref) ? 'dark' : 'light');
+  }
+  /** 应用一套皮肤：把浅色与深色两套令牌一起写进 <head> 里的 <style> */
+  function applySkin(id, opts) {
+    var s = skinById(id) || skinById(seasonal()) || SKINS[0];
+    var el = document.getElementById('gySkinStyle');
+    if (!el) {
+      el = document.createElement('style');
+      el.id = 'gySkinStyle';
+      document.head.appendChild(el);
+    }
+    // 用 html:root / html[data-theme] 提高特异性，这样无论 <style> 插在哪都能覆盖静态兜底令牌
+    el.textContent = 'html:root{' + decls(tokens(s, 0)) + '}\nhtml[data-theme="dark"]{' + decls(tokens(s, 1)) + '}';
+    document.documentElement.setAttribute('data-skin', s.id);
+    var meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute('content', s.p[isDarkMode() ? 1 : 0]);
+    if (!opts || !opts.silent) { try { localStorage.setItem('codetutor.skin.v1', s.id); } catch (e) {} }
+    return s;
+  }
+
+  var savedSkin = null;
+  try { savedSkin = localStorage.getItem('codetutor.skin.v1'); } catch (e) { /* 隐私模式 */ }
+  applyThemeAttr();
+  // 启动时只应用不落盘：没人选过就按节令走（用户一旦手动选皮才写入 localStorage）
+  applySkin(savedSkin || seasonal(), { silent: true });
+
+  /* 供主脚本复用 */
+  window.__gySkin = {
+    SKINS: SKINS, apply: applySkin, seasonal: seasonal, isDark: isDarkMode, applyThemeAttr: applyThemeAttr,
+    current: function () { return document.documentElement.getAttribute('data-skin'); }
+  };
+})();
+</script>
 
 <!-- CodeMirror 5 由 CDN 加载；若加载失败，脚本会自动降级为原生 textarea，网站仍可用 -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
@@ -15,48 +166,111 @@
 /* ============================================================
  * 1. 设计变量与基础样式
  * ============================================================ */
+/* ============================================================
+ * 1.1 设计令牌 —— 配色对齐 DeepSeek Harness 本身
+ *      取值来源：DSH 前端主题插件 dsh-client-ui-theme
+ *      浅色：bg #fff / 文字 #0f1115 / 边框 rgba(0,0,0,.10) / 链接 #4176e6
+ *      深色：bg #151517 / 层级 #232324 #2c2c2e / 文字 #f9fafb / 链接 #679efe
+ *      （DeepSeek 品牌蓝阶：50 #edf3fe · 200 #d3e2ff · 300 #b7c8fe · 400 #679efe · 500 #4176e6 · 600 #4868b2）
+ * ============================================================ */
 :root{
-  --bg:#f4f6fb;            /* 页面底色 */
-  --card:#ffffff;          /* 卡片底色 */
-  --line:#e4e8f0;          /* 分隔线 */
-  --line-2:#eef1f7;
-  --text:#1f2937;          /* 主文字 */
-  --muted:#6b7280;         /* 次要文字 */
-  --brand:#2563eb;         /* 主色 */
-  --brand-deep:#1d4ed8;
-  --brand-soft:#eff4ff;    /* 主色浅底 */
-  --ok:#16a34a; --ok-soft:#eafaf0;
-  --warn:#d97706; --warn-soft:#fff7e8;
-  --err:#dc2626; --err-soft:#fdeeee;
-  --radius:14px;
-  --shadow:0 1px 2px rgba(16,24,40,.04), 0 10px 26px -14px rgba(16,24,40,.18);
+  color-scheme: light;
+  /* —— 底层（DSH: bg-base / code-block）—— */
+  --bg:#f7f8fa;
+  --bg-2:#eef0f4;
+  --card:#ffffff;
+  --card-2:#f9fafb;
+  --line:rgba(0,0,0,.10);
+  --line-2:rgba(0,0,0,.055);
+  /* —— 文字（DSH: label-primary/secondary/tertiary = #0f1115 / #61666b / #81858c）—— */
+  --text:#0f1115;
+  --text-2:#43454a;
+  --muted:#61666b;
+  --muted-2:#81858c;
+  /* —— 品牌（DeepSeek 蓝）—— */
+  --brand:#4176e6;
+  --brand-deep:#4868b2;
+  --brand-soft:#edf3fe;
+  --brand-line:#d3e2ff;
+  --accent:#679efe;
+  --on-brand:#ffffff;
+  /* —— 语义色（DSH: green/amber/red）—— */
+  --ok:#22c55e;   --ok-soft:#e6faed;   --ok-line:rgba(34,197,94,.30);
+  --warn:#f59e0b; --warn-soft:#fef5e7; --warn-line:rgba(245,158,11,.32);
+  --err:#ef4444;  --err-soft:#fef2f2;  --err-line:rgba(239,68,68,.28);
+  /* —— 形状 / 阴影（DSH 偏扁平、克制）—— */
+  --radius:14px; --radius-sm:9px;
+  --shadow:0 1px 2px rgba(15,17,21,.04), 0 8px 22px -16px rgba(15,17,21,.22);
+  --shadow-lg:0 2px 6px rgba(15,17,21,.06), 0 22px 44px -26px rgba(15,17,21,.34);
+  --focus-ring:0 0 0 3px rgba(65,118,230,.22);
+  --grad:linear-gradient(135deg,#4176e6,#679efe);
+  --glass:rgba(255,255,255,.84);
   --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono","Courier New",monospace;
 }
+/* 深色主题：只覆盖令牌，组件样式全部跟着变（由 <html data-theme="dark"> 触发） */
+[data-theme="dark"]{
+  color-scheme: dark;
+  --bg:#151517;
+  --bg-2:#1b1b1c;
+  --card:#232324;
+  --card-2:#1b1b1c;
+  --line:rgba(255,255,255,.12);
+  --line-2:rgba(255,255,255,.06);
+  --text:#f9fafb;
+  --text-2:#cfd3d6;
+  --muted:#adb2b8;
+  --muted-2:#81858c;
+  --brand:#679efe;
+  --brand-deep:#5686fe;
+  --brand-soft:#283142;
+  --brand-line:#34415b;
+  --accent:#4d93f8;
+  --on-brand:#151517;
+  --ok:#4ed17e;   --ok-soft:#233c2c;   --ok-line:rgba(78,209,126,.32);
+  --warn:#f7ad31; --warn-soft:#27241f; --warn-line:rgba(247,173,49,.32);
+  --err:#f25a5a;  --err-soft:#570c0c;  --err-line:rgba(242,90,90,.32);
+  --shadow:0 1px 2px rgba(0,0,0,.45), 0 10px 26px -16px rgba(0,0,0,.8);
+  --shadow-lg:0 2px 8px rgba(0,0,0,.5), 0 26px 52px -26px rgba(0,0,0,.9);
+  --focus-ring:0 0 0 3px rgba(103,158,254,.3);
+  --grad:linear-gradient(135deg,#4176e6,#679efe);
+  --glass:rgba(21,21,23,.82);
+}
 *{box-sizing:border-box}
+html{scroll-behavior:smooth}
 html,body{margin:0;padding:0}
 body{
-  background:var(--bg); color:var(--text); overflow-x:hidden;
+  background:var(--bg);
+  background-attachment:fixed;
+  color:var(--text); overflow-x:hidden;
   font:15px/1.68 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
   -webkit-text-size-adjust:100%;
+  transition:background-color .25s ease, color .25s ease;
 }
 a{color:var(--brand);text-decoration:none}
 a:hover{text-decoration:underline}
 code,kbd,pre{font-family:var(--mono)}
 .wrap{max-width:1180px;margin:0 auto;padding:0 16px}
+/* 键盘可达性：只在键盘导航时显示焦点圈 */
+:focus-visible{outline:none;box-shadow:var(--focus-ring);border-radius:var(--radius-sm)}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+/* 尊重系统「减少动态效果」 */
+@media (prefers-reduced-motion: reduce){
+  *{animation-duration:.001ms !important;animation-iteration-count:1 !important;transition-duration:.001ms !important;scroll-behavior:auto !important}
+}
 
 /* ============================================================
  * 2. 顶部栏 + 标签页导航
  * ============================================================ */
 .topbar{
   position:sticky;top:0;z-index:40;
-  background:rgba(255,255,255,.92);backdrop-filter:blur(10px);
+  background:var(--glass);backdrop-filter:blur(16px) saturate(1.5);
   border-bottom:1px solid var(--line);
 }
 .topbar-inner{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:10px 0}
 .brand{display:flex;align-items:center;gap:9px;font-weight:700;font-size:17px;letter-spacing:.2px;white-space:nowrap}
 .brand .logo{
   width:30px;height:30px;border-radius:9px;display:grid;place-items:center;font-size:16px;
-  background:linear-gradient(135deg,#2563eb,#38bdf8);color:#fff;box-shadow:0 6px 14px -6px rgba(37,99,235,.8)
+  background:var(--grad);color:#fff;box-shadow:0 6px 14px -6px rgba(37,99,235,.8)
 }
 .brand small{display:block;font-weight:400;font-size:11px;color:var(--muted);letter-spacing:0}
 .spacer{flex:1 1 auto}
@@ -66,12 +280,12 @@ code,kbd,pre{font-family:var(--mono)}
 .tabs{display:flex;gap:6px;overflow-x:auto;padding:0 0 10px;-webkit-overflow-scrolling:touch}
 .tabs::-webkit-scrollbar{height:0}
 .tab{
-  flex:0 0 auto;border:1px solid var(--line);background:#fff;color:var(--muted);
+  flex:0 0 auto;border:1px solid var(--line);background:var(--card);color:var(--muted);
   padding:8px 15px;border-radius:999px;font-size:14px;cursor:pointer;white-space:nowrap;
   transition:.15s;font-weight:500
 }
-.tab:hover{color:var(--brand);border-color:#c7d7fb}
-.tab.active{background:var(--brand);border-color:var(--brand);color:#fff;box-shadow:0 8px 18px -10px rgba(37,99,235,.9)}
+.tab:hover{color:var(--brand);border-color:var(--brand-line)}
+.tab.active{background:var(--brand);border-color:var(--brand);color:var(--on-brand);box-shadow:0 8px 18px -10px rgba(37,99,235,.9)}
 .tab .dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--ok);margin-left:6px;vertical-align:middle}
 
 /* ============================================================
@@ -98,10 +312,10 @@ main{padding:18px 0 40px}
 .field .hint{font-size:12px;color:var(--muted);font-weight:400;line-height:1.5}
 
 input[type=text],input[type=password],input[type=number],select,textarea{
-  width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:10px;background:#fcfdff;
+  width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:10px;background:var(--card);
   font-size:14px;color:var(--text);font-family:inherit;outline:none;transition:.15s
 }
-input:focus,select:focus,textarea:focus{border-color:var(--brand);background:#fff;box-shadow:0 0 0 3px rgba(37,99,235,.12)}
+input:focus,select:focus,textarea:focus{border-color:var(--brand);background:var(--card);box-shadow:0 0 0 3px rgba(37,99,235,.12)}
 textarea{resize:vertical;line-height:1.6}
 textarea.code-ish{font-family:var(--mono);font-size:13px}
 select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2 4l4 4 4-4' fill='none' stroke='%236b7280' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E");
@@ -110,34 +324,34 @@ select.compact{width:auto;min-width:120px;padding:6px 28px 6px 10px;font-size:13
 
 .btn{
   display:inline-flex;align-items:center;justify-content:center;gap:6px;
-  border:1px solid var(--line);background:#fff;color:var(--text);border-radius:10px;
+  border:1px solid var(--line);background:var(--card);color:var(--text);border-radius:10px;
   padding:9px 14px;font-size:14px;font-weight:600;cursor:pointer;transition:.15s;white-space:nowrap;font-family:inherit
 }
-.btn:hover{border-color:#c7d7fb;background:#f8faff}
+.btn:hover{border-color:var(--brand-line);background:var(--brand-soft)}
 .btn:active{transform:translateY(1px)}
 .btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
-.btn.primary{background:var(--brand);border-color:var(--brand);color:#fff;box-shadow:0 8px 18px -10px rgba(37,99,235,.9)}
+.btn.primary{background:var(--brand);border-color:var(--brand);color:var(--on-brand);box-shadow:0 8px 18px -10px rgba(37,99,235,.9)}
 .btn.primary:hover{background:var(--brand-deep);border-color:var(--brand-deep)}
 .btn.ghost{background:transparent;border-color:transparent;color:var(--muted)}
 .btn.ghost:hover{background:var(--brand-soft);color:var(--brand)}
-.btn.danger{color:var(--err);border-color:#f6cccc}
+.btn.danger{color:var(--err);border-color:var(--err-line)}
 .btn.danger:hover{background:var(--err-soft);border-color:var(--err)}
 .btn.sm{padding:6px 11px;font-size:13px;border-radius:9px}
 .btn-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 
 .badge{display:inline-flex;align-items:center;gap:5px;padding:2.5px 9px;border-radius:999px;font-size:12px;font-weight:600;background:var(--brand-soft);color:var(--brand-deep)}
-.badge.lang{background:#eef7ee;color:#166534}
-.badge.gray{background:#f1f3f7;color:var(--muted)}
+.badge.lang{background:var(--ok-soft);color:var(--ok)}
+.badge.gray{background:var(--card-2);color:var(--muted)}
 .badge.ok{background:var(--ok-soft);color:var(--ok)}
 .badge.warn{background:var(--warn-soft);color:var(--warn)}
 .badge.err{background:var(--err-soft);color:var(--err)}
-.badge.line{background:#fff;border:1px solid var(--line);color:var(--muted)}
+.badge.line{background:var(--card);border:1px solid var(--line);color:var(--muted)}
 
 .note{border-radius:12px;padding:11px 13px;font-size:13px;line-height:1.65;border:1px solid}
-.note.info{background:var(--brand-soft);border-color:#d3e0fd;color:#1e3a8a}
-.note.warn{background:var(--warn-soft);border-color:#f6e0b8;color:#8a5a08}
-.note.err{background:var(--err-soft);border-color:#f6cccc;color:#8f1d1d}
-.note.ok{background:var(--ok-soft);border-color:#c4ecd4;color:#14532d}
+.note.info{background:var(--brand-soft);border-color:var(--brand-line);color:var(--brand-deep)}
+.note.warn{background:var(--warn-soft);border-color:var(--warn-line);color:var(--warn)}
+.note.err{background:var(--err-soft);border-color:var(--err-line);color:var(--err)}
+.note.ok{background:var(--ok-soft);border-color:var(--ok-line);color:var(--ok)}
 .note b{font-weight:700}
 .note ol,.note ul{margin:6px 0 0;padding-left:20px}
 
@@ -150,24 +364,24 @@ select.compact{width:auto;min-width:120px;padding:6px 28px 6px 10px;font-size:13
 .editor-card{padding:0;overflow:hidden}
 .editor-bar{
   display:flex;align-items:center;gap:10px;flex-wrap:wrap;
-  padding:9px 13px;border-bottom:1px solid var(--line);background:#fafbfe
+  padding:9px 13px;border-bottom:1px solid var(--line);background:var(--card-2)
 }
 .editor-bar .spacer{flex:1 1 auto}
 .editor-host{position:relative}
 .editor-host.drag{outline:2px dashed var(--brand);outline-offset:-4px;background:var(--brand-soft)}
 .CodeMirror{
   height:auto;min-height:260px;font-family:var(--mono);font-size:13.5px;line-height:1.62;
-  background:#fff;color:var(--text)
+  background:var(--card);color:var(--text)
 }
 .CodeMirror-scroll{min-height:260px}
-.CodeMirror-gutters{background:#fafbfe;border-right:1px solid var(--line)}
-.CodeMirror-linenumber{color:#a3adbd}
+.CodeMirror-gutters{background:var(--card-2);border-right:1px solid var(--line)}
+.CodeMirror-linenumber{color:var(--muted-2)}
 .CodeMirror-cursor{border-left:2px solid var(--brand)}
 .CodeMirror-selected{background:#dbe6ff !important}
 .CodeMirror-activeline-background{background:#f7f9ff}
 .CodeMirror-matchingbracket{color:var(--brand-deep) !important;font-weight:700;background:#e2ebff}
 textarea.fallback-editor{
-  width:100%;min-height:260px;border:0;border-radius:0;background:#fff;padding:12px 14px;
+  width:100%;min-height:260px;border:0;border-radius:0;background:var(--card);padding:12px 14px;
   font-family:var(--mono);font-size:13.5px;line-height:1.62;resize:vertical
 }
 textarea.fallback-editor:focus{box-shadow:none}
@@ -186,30 +400,30 @@ textarea.fallback-editor:focus{box-shadow:none}
 .md ul,.md ol{margin:8px 0;padding-left:22px}
 .md li{margin:4px 0}
 .md hr{border:0;border-top:1px solid var(--line);margin:16px 0}
-.md blockquote{margin:10px 0;padding:6px 12px;border-left:3px solid #c7d7fb;background:#f8faff;color:#374151;border-radius:0 8px 8px 0}
-.md strong{font-weight:700;color:#111827}
-.md code.inline{background:#f1f4f9;border:1px solid var(--line);border-radius:6px;padding:1px 5px;font-size:.9em;color:#b91c1c;word-break:break-all}
+.md blockquote{margin:10px 0;padding:6px 12px;border-left:3px solid var(--brand-line);background:var(--brand-soft);color:var(--text-2);border-radius:0 8px 8px 0}
+.md strong{font-weight:700;color:var(--text)}
+.md code.inline{background:var(--card-2);border:1px solid var(--line);border-radius:6px;padding:1px 5px;font-size:.9em;color:var(--err);word-break:break-all}
 .md table{border-collapse:collapse;width:100%;margin:10px 0;font-size:13.5px;display:block;overflow-x:auto}
 .md th,.md td{border:1px solid var(--line);padding:7px 9px;text-align:left;vertical-align:top}
-.md th{background:#f7f9fd;font-weight:600;white-space:nowrap}
-.md tbody tr:nth-child(even){background:#fcfdff}
+.md th{background:var(--card-2);font-weight:600;white-space:nowrap}
+.md tbody tr:nth-child(even){background:var(--card)}
 
 /* 代码块：独立展示 + 一键复制 */
-.code-block{border:1px solid var(--line);border-radius:11px;overflow:hidden;margin:12px 0;background:#fbfcfe}
-.code-head{display:flex;align-items:center;gap:8px;padding:6px 10px;background:#f4f7fc;border-bottom:1px solid var(--line);font-size:12px;color:var(--muted)}
-.code-head .code-lang{font-family:var(--mono);font-weight:700;color:#475467;text-transform:lowercase}
-.code-block pre{margin:0;padding:12px 13px;overflow-x:auto;background:#fbfcfe}
-.code-block pre code{font-size:13px;line-height:1.62;color:#111827;white-space:pre;display:block;min-width:min-content}
+.code-block{border:1px solid var(--line);border-radius:11px;overflow:hidden;margin:12px 0;background:var(--card-2)}
+.code-head{display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--card-2);border-bottom:1px solid var(--line);font-size:12px;color:var(--muted)}
+.code-head .code-lang{font-family:var(--mono);font-weight:700;color:var(--text-2);text-transform:lowercase}
+.code-block pre{margin:0;padding:12px 13px;overflow-x:auto;background:var(--card-2)}
+.code-block pre code{font-size:13px;line-height:1.62;color:var(--text);white-space:pre;display:block;min-width:min-content}
 .code-block.streaming .code-head::after{content:"生成中…";color:var(--brand);font-weight:600}
 
 /* 批改评分卡 */
-.score-card{display:flex;gap:18px;align-items:center;flex-wrap:wrap;padding:16px;border:1px solid var(--line);border-radius:13px;background:linear-gradient(135deg,#f8fbff,#ffffff);margin-bottom:14px}
+.score-card{display:flex;gap:18px;align-items:center;flex-wrap:wrap;padding:16px;border:1px solid var(--line);border-radius:13px;background:linear-gradient(135deg,var(--card-2),var(--card));margin-bottom:14px}
 .score-ring{
   width:112px;height:112px;border-radius:50%;flex:0 0 auto;display:grid;place-items:center;
-  background:conic-gradient(var(--ring) calc(var(--pct)*1%),#e9edf5 0);position:relative
+  background:conic-gradient(var(--ring) calc(var(--pct)*1%),var(--line-2) 0);position:relative
 }
 /* 白心圆用 ::after 画在中间，必须给它下方的数字更高的层级，否则数字会被白圆盖住 */
-.score-ring::after{content:"";position:absolute;inset:9px;background:#fff;border-radius:50%;z-index:1}
+.score-ring::after{content:"";position:absolute;inset:9px;background:var(--card);border-radius:50%;z-index:1}
 .score-ring .inner{position:relative;z-index:2;text-align:center;line-height:1.15}
 .score-ring .inner b{font-size:29px;font-variant-numeric:tabular-nums}
 .score-ring .inner span{display:block;font-size:11px;color:var(--muted)}
@@ -217,7 +431,7 @@ textarea.fallback-editor:focus{box-shadow:none}
 .score-meta .verdict{font-size:17px;font-weight:700;margin-bottom:6px}
 .bars{display:flex;flex-direction:column;gap:8px;margin-top:12px}
 .bar-row{display:grid;grid-template-columns:minmax(96px,150px) 1fr auto;gap:10px;align-items:center;font-size:13px}
-.bar-track{display:block;height:8px;border-radius:99px;background:#eceff6;overflow:hidden}
+.bar-track{display:block;height:8px;border-radius:99px;background:var(--line-2);overflow:hidden}
 .bar-fill{display:block;height:100%;border-radius:99px;background:var(--brand);transition:width .35s ease}
 .bar-row .num{font-variant-numeric:tabular-nums;color:var(--muted);white-space:nowrap;font-size:12.5px}
 .bar-reason{grid-column:2 / -1;font-size:12.5px;color:var(--muted);margin-top:-2px}
@@ -227,40 +441,40 @@ textarea.fallback-editor:focus{box-shadow:none}
  * 6. 对话页
  * ============================================================ */
 .chat-shell{display:grid;grid-template-columns:238px minmax(0,1fr);padding:0;overflow:hidden;height:min(74vh,780px);min-height:520px}
-.chat-side{border-right:1px solid var(--line);background:#fafbfe;display:flex;flex-direction:column;min-width:0}
+.chat-side{border-right:1px solid var(--line);background:var(--card-2);display:flex;flex-direction:column;min-width:0}
 .chat-side-head{padding:10px;border-bottom:1px solid var(--line)}
 .chat-list{flex:1;overflow-y:auto;padding:8px;display:flex;flex-direction:column;gap:6px}
 .chat-item{position:relative;border:1px solid transparent;border-radius:10px;padding:8px 28px 8px 10px;cursor:pointer;transition:.15s}
-.chat-item:hover{background:#fff;border-color:var(--line)}
-.chat-item.active{background:#fff;border-color:#c7d7fb;box-shadow:0 4px 12px -8px rgba(37,99,235,.6)}
+.chat-item:hover{background:var(--card);border-color:var(--line)}
+.chat-item.active{background:var(--card);border-color:var(--brand-line);box-shadow:0 4px 12px -8px rgba(37,99,235,.6)}
 .chat-item .t{font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .chat-item .m{font-size:11.5px;color:var(--muted);margin-top:2px}
-.chat-item .del{position:absolute;right:5px;top:50%;transform:translateY(-50%);border:0;background:transparent;color:#b9c1cf;cursor:pointer;font-size:13px;padding:4px;border-radius:6px;line-height:1}
+.chat-item .del{position:absolute;right:5px;top:50%;transform:translateY(-50%);border:0;background:transparent;color:var(--muted-2);cursor:pointer;font-size:13px;padding:4px;border-radius:6px;line-height:1}
 .chat-item .del:hover{color:var(--err);background:var(--err-soft)}
 .chat-side-foot{padding:8px;border-top:1px solid var(--line);display:flex;gap:6px}
-.chat-main{display:flex;flex-direction:column;min-width:0;background:#fff}
-.chat-head{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1px solid var(--line);background:#fafbfe;flex-wrap:wrap}
+.chat-main{display:flex;flex-direction:column;min-width:0;background:var(--card)}
+.chat-head{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1px solid var(--line);background:var(--card-2);flex-wrap:wrap}
 .chat-title-input{border:1px solid transparent;background:transparent;font-weight:600;font-size:14px;padding:5px 8px;border-radius:8px;max-width:260px;width:auto}
-.chat-title-input:hover{border-color:var(--line);background:#fff}
-.chat-body{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;background:#fbfcfe}
+.chat-title-input:hover{border-color:var(--line);background:var(--card)}
+.chat-body{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;background:var(--card-2)}
 .chat-empty{margin:auto;text-align:center;color:var(--muted);font-size:13.5px;max-width:560px;padding:10px}
 .chat-empty b{color:var(--text)}
 .chat-empty .chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:14px}
-.chip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:7px 13px;font-size:12.5px;color:var(--text);cursor:pointer;transition:.15s;font-family:inherit}
+.chip{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:7px 13px;font-size:12.5px;color:var(--text);cursor:pointer;transition:.15s;font-family:inherit}
 .chip:hover{border-color:var(--brand);color:var(--brand);background:var(--brand-soft)}
 .msg{display:flex;gap:9px;max-width:100%}
 .msg.user{flex-direction:row-reverse}
 .msg .avatar{flex:0 0 auto;width:28px;height:28px;border-radius:9px;display:grid;place-items:center;font-size:14px;background:var(--brand-soft)}
-.msg.user .avatar{background:#eef7ee}
-.msg .bubble{border:1px solid var(--line);background:#fff;border-radius:12px;padding:10px 13px;min-width:0;max-width:min(760px,86%)}
-.msg.user .bubble{background:var(--brand);border-color:var(--brand);color:#fff}
+.msg.user .avatar{background:var(--ok-soft)}
+.msg .bubble{border:1px solid var(--line);background:var(--card);border-radius:12px;padding:10px 13px;min-width:0;max-width:min(760px,86%)}
+.msg.user .bubble{background:var(--brand);border-color:var(--brand);color:var(--on-brand)}
 .msg.user .bubble .txt{white-space:pre-wrap;word-break:break-word;font-size:14.5px}
-.msg .bubble.err-bubble{background:var(--err-soft);border-color:#f6cccc}
+.msg .bubble.err-bubble{background:var(--err-soft);border-color:var(--err-line)}
 .msg .meta{font-size:11px;color:var(--muted);margin-top:6px}
-.msg.user .bubble .meta{color:#dbe6ff}
+.msg.user .bubble .meta{color:color-mix(in srgb, var(--on-brand) 72%, transparent)}
 .msg .bubble .md{font-size:14.5px}
 .msg .bubble .md > *:first-child{margin-top:0}
-.chat-compose{border-top:1px solid var(--line);padding:10px 12px;background:#fff}
+.chat-compose{border-top:1px solid var(--line);padding:10px 12px;background:var(--card)}
 .chat-compose textarea{min-height:64px;max-height:180px}
 .chat-compose-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:8px}
 .chk{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--muted);cursor:pointer}
@@ -273,20 +487,20 @@ textarea.fallback-editor:focus{box-shadow:none}
 /* ============================================================
  * 7. 学习进度页
  * ============================================================ */
-.stat-card{border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:linear-gradient(135deg,#f8fbff,#fff)}
+.stat-card{border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:linear-gradient(135deg,var(--card-2),var(--card))}
 .stat-card .k{font-size:12.5px;color:var(--muted)}
 .stat-card .v{font-size:24px;font-weight:700;font-variant-numeric:tabular-nums;margin-top:2px;line-height:1.2}
 .stat-card .u{font-size:12px;color:var(--muted);font-weight:400;margin-left:3px}
 .trend-svg{width:100%;height:auto;max-height:260px;display:block}
 .trend-empty{color:var(--muted);font-size:13.5px;padding:26px 6px;text-align:center}
 .lang-bar{display:grid;grid-template-columns:64px 1fr auto;gap:10px;align-items:center;font-size:13px;margin:9px 0}
-.grade-item{border:1px solid var(--line);border-radius:11px;padding:10px 12px;margin-bottom:8px;background:#fff}
+.grade-item{border:1px solid var(--line);border-radius:11px;padding:10px 12px;margin-bottom:8px;background:var(--card)}
 .grade-item .row1{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .grade-item .score{font-weight:700;font-variant-numeric:tabular-nums}
-.grade-item .prob{font-size:13px;color:#374151;margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.grade-item .prob{font-size:13px;color:var(--text-2);margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .grade-item .detail{display:none;margin-top:10px;border-top:1px dashed var(--line);padding-top:10px}
 .grade-item.open .detail{display:block}
-.grade-item .detail pre{background:#fbfcfe;border:1px solid var(--line);border-radius:9px;padding:9px 11px;overflow-x:auto;font-size:12.5px;margin:8px 0 0}
+.grade-item .detail pre{background:var(--card-2);border:1px solid var(--line);border-radius:9px;padding:9px 11px;overflow-x:auto;font-size:12.5px;margin:8px 0 0}
 @media (max-width:820px){
   .chat-shell{grid-template-columns:1fr;height:auto;min-height:0}
   .chat-side{border-right:0;border-bottom:1px solid var(--line);max-height:190px}
@@ -303,7 +517,7 @@ textarea.fallback-editor:focus{box-shadow:none}
 
 /* 加载动画 */
 .loading{display:flex;align-items:center;gap:9px;color:var(--muted);font-size:13.5px;padding:8px 0}
-.spinner{width:16px;height:16px;border:2px solid #cfd9ea;border-top-color:var(--brand);border-radius:50%;animation:spin .7s linear infinite}
+.spinner{width:16px;height:16px;border:2px solid var(--line);border-top-color:var(--brand);border-radius:50%;animation:spin .7s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 .caret::after{content:"▍";color:var(--brand);animation:blink 1s steps(1) infinite}
 @keyframes blink{50%{opacity:0}}
@@ -314,8 +528,167 @@ textarea.fallback-editor:focus{box-shadow:none}
 #toast .t.ok{background:#15803d}#toast .t.err{background:#b91c1c}
 @keyframes pop{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 
-footer{border-top:1px solid var(--line);background:#fff;padding:18px 0 30px;color:var(--muted);font-size:12.5px;line-height:1.75}
+footer{border-top:1px solid var(--line);background:var(--card);padding:18px 0 30px;color:var(--muted);font-size:12.5px;line-height:1.75}
 .hidden{display:none !important}
+/* ============================================================
+ * 8. 代码高亮配色（对齐 DSH 的 DeepSeek 蓝 + 中性灰体系）
+ *    CodeMirror 自带的是老式浅色主题，明暗两套都显式覆盖
+ * ============================================================ */
+.CodeMirror{background:var(--card);color:var(--text)}
+.cm-keyword{color:#4176e6}
+.cm-atom{color:#4868b2}
+.cm-number{color:#dd8629}
+.cm-def{color:#34415b}
+.cm-variable{color:var(--text)}
+.cm-variable-2{color:#4176e6}
+.cm-variable-3,.cm-type{color:#4868b2}
+.cm-property{color:#4868b2}
+.cm-operator{color:#61666b}
+.cm-comment{color:#81858c;font-style:italic}
+.cm-string{color:#22c55e}
+.cm-string-2{color:#dd8629}
+.cm-meta{color:#61666b}
+.cm-builtin{color:#4176e6}
+.cm-qualifier{color:#dd8629}
+.cm-tag{color:#ef4444}
+.cm-attribute{color:#dd8629}
+.cm-bracket{color:#81858c}
+.cm-error{color:#ef4444;background:transparent}
+.CodeMirror-cursor{border-left:2px solid var(--brand)}
+.CodeMirror-selected{background:rgba(65,118,230,.16) !important}
+.CodeMirror-activeline-background{background:var(--card-2)}
+.CodeMirror-matchingbracket{color:var(--brand) !important;font-weight:700;background:rgba(65,118,230,.12)}
+.CodeMirror-gutters{background:var(--card-2);border-right:1px solid var(--line)}
+.CodeMirror-linenumber{color:var(--muted-2)}
+
+/* 深色下的代码高亮 */
+[data-theme="dark"] .cm-keyword{color:#679efe}
+[data-theme="dark"] .cm-atom{color:#b7c8fe}
+[data-theme="dark"] .cm-number{color:#f7ad31}
+[data-theme="dark"] .cm-def{color:#b7c8fe}
+[data-theme="dark"] .cm-variable{color:#f9fafb}
+[data-theme="dark"] .cm-variable-2{color:#679efe}
+[data-theme="dark"] .cm-variable-3,[data-theme="dark"] .cm-type{color:#b7c8fe}
+[data-theme="dark"] .cm-property{color:#4d93f8}
+[data-theme="dark"] .cm-operator{color:#cfd3d6}
+[data-theme="dark"] .cm-comment{color:#81858c;font-style:italic}
+[data-theme="dark"] .cm-string{color:#4ed17e}
+[data-theme="dark"] .cm-string-2{color:#f7ad31}
+[data-theme="dark"] .cm-meta{color:#adb2b8}
+[data-theme="dark"] .cm-builtin{color:#4d93f8}
+[data-theme="dark"] .cm-qualifier{color:#f7ad31}
+[data-theme="dark"] .cm-tag{color:#f25a5a}
+[data-theme="dark"] .cm-attribute{color:#f7ad31}
+[data-theme="dark"] .cm-bracket{color:#adb2b8}
+[data-theme="dark"] .cm-error{color:#f25a5a;background:transparent}
+[data-theme="dark"] .CodeMirror-selected{background:rgba(103,158,254,.22) !important}
+[data-theme="dark"] .CodeMirror-activeline-background{background:#26262a}
+[data-theme="dark"] .CodeMirror-matchingbracket{color:#679efe !important;background:rgba(103,158,254,.16)}
+[data-theme="dark"] #toast .t{background:#353638;color:var(--text)}
+[data-theme="dark"] footer{background:var(--card)}
+[data-theme="dark"] .score-ring::after{background:var(--card)}
+[data-theme="dark"] .msg .bubble.err-bubble{background:var(--err-soft)}
+[data-theme="dark"] .topbar{box-shadow:0 1px 0 var(--line)}
+
+/* ============================================================
+ * 9. 交互美化组件：主题切换 / 分段控件 / 骨架屏 / 消息操作 / 弹窗 / tooltip
+ * ============================================================ */
+/* 顶部图标按钮 */
+.icon-btn{
+  min-width:36px;height:36px;padding:0 10px;border-radius:10px;border:1px solid var(--line);
+  background:var(--card);color:var(--text-2);display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  cursor:pointer;font-size:13px;font-family:inherit;transition:.16s
+}
+.icon-btn:hover{border-color:var(--brand-line);color:var(--brand);background:var(--brand-soft);transform:translateY(-1px)}
+.icon-btn:active{transform:translateY(0)}
+@media (max-width:640px){ .icon-btn .lbl{display:none} .icon-btn{padding:0;min-width:36px} }
+
+/* 分段控件（背后仍是一个真实 <select>，由 enhanceSelect 生成并双向同步） */
+.seg{display:inline-flex;gap:3px;padding:3px;border:1px solid var(--line);background:var(--card-2);border-radius:11px;flex-wrap:wrap}
+.seg button{border:0;background:transparent;color:var(--muted);font:inherit;font-size:13px;padding:6px 12px;border-radius:8px;cursor:pointer;transition:.16s;white-space:nowrap}
+.seg button:hover{color:var(--brand);background:var(--card)}
+.seg button[aria-pressed="true"]{background:var(--card);color:var(--brand);font-weight:600;box-shadow:var(--shadow)}
+[data-theme="dark"] .seg button[aria-pressed="true"]{background:var(--brand-soft);color:var(--brand)}
+
+/* 骨架屏（替代单调的"转圈 + 一行字"） */
+.skeleton{display:flex;flex-direction:column;gap:10px;padding:8px 0 4px}
+.sk-line,.sk-block{background:linear-gradient(90deg,var(--line-2),var(--card-2),var(--line-2));background-size:200% 100%;animation:shimmer 1.3s linear infinite;border-radius:7px}
+.sk-line{height:12px}
+.sk-line.w40{width:40%} .sk-line.w70{width:70%} .sk-line.w90{width:92%}
+.sk-block{height:66px;border-radius:12px}
+@keyframes shimmer{from{background-position:200% 0}to{background-position:-200% 0}}
+
+/* 复制成功反馈 */
+.copy-btn.done{color:var(--ok);border-color:var(--ok-line);background:var(--ok-soft)}
+
+/* 对话：滚动到底部 / 消息操作条 / 会话搜索 */
+.chat-body-wrap{position:relative;flex:1;min-height:0;display:flex}
+.chat-body-wrap > .chat-body{flex:1}
+.scroll-bottom{
+  position:absolute;right:16px;bottom:14px;width:38px;height:38px;border-radius:50%;
+  border:1px solid var(--line);background:var(--card);color:var(--brand);box-shadow:var(--shadow-lg);
+  display:none;place-items:center;cursor:pointer;z-index:5;font-size:15px;transition:.16s
+}
+.scroll-bottom.show{display:grid}
+.scroll-bottom:hover{transform:translateY(-2px)}
+.msg .acts{display:flex;gap:2px;margin-top:6px;opacity:.5;transition:.15s;flex-wrap:wrap}
+.msg:hover .acts,.msg:focus-within .acts{opacity:1}
+.msg .acts button{border:0;background:transparent;color:var(--muted);font:inherit;font-size:11.5px;padding:2px 7px;border-radius:7px;cursor:pointer}
+.msg .acts button:hover{background:var(--brand-soft);color:var(--brand)}
+.msg.user .acts{justify-content:flex-end}
+.msg.user .acts button{color:var(--on-brand);opacity:.8}
+.msg.user .acts button:hover{background:color-mix(in srgb, var(--on-brand) 16%, transparent);color:var(--on-brand)}
+.chat-search{width:100%;margin-top:8px;padding:7px 10px;font-size:12.5px;border-radius:8px}
+.chat-empty .ico{font-size:36px;line-height:1;margin-bottom:10px}
+
+/* 趋势图自定义 tooltip */
+.trend-wrap{position:relative}
+.tip{
+  position:absolute;pointer-events:none;background:var(--text);color:var(--bg);font-size:12px;
+  padding:6px 9px;border-radius:8px;white-space:nowrap;opacity:0;transform:translate(-50%,-125%);
+  transition:opacity .12s;z-index:6;box-shadow:var(--shadow)
+}
+.tip.show{opacity:1}
+
+/* 快捷键弹窗 */
+.modal-mask{position:fixed;inset:0;background:rgba(15,17,21,.45);backdrop-filter:blur(3px);display:none;place-items:center;z-index:80;padding:20px}
+.modal-mask.show{display:grid}
+.modal{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow-lg);max-width:470px;width:100%;padding:20px 22px;animation:pop .18s ease}
+.modal h3{margin:0 0 4px;font-size:16.5px}
+.modal .sub{margin:0;color:var(--muted);font-size:13px}
+.modal table{width:100%;border-collapse:collapse;font-size:13.5px;margin:12px 0 4px}
+.modal td{padding:7px 0;border-bottom:1px dashed var(--line)}
+.modal td:last-child{text-align:right;color:var(--muted)}
+kbd{background:var(--card-2);border:1px solid var(--line);border-bottom-width:2px;border-radius:6px;padding:1px 7px;font-size:12px;color:var(--text-2)}
+
+/* 通用微动效与状态 */
+.btn{transition:transform .14s ease,border-color .16s,background .16s,box-shadow .16s}
+.btn:hover{transform:translateY(-1px)}
+.btn:active{transform:translateY(0) scale(.985)}
+.btn.primary:hover{box-shadow:0 10px 22px -12px color-mix(in srgb, var(--brand) 65%, transparent)}
+.stat-card{transition:transform .18s ease,box-shadow .18s ease}
+.stat-card:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
+.stat-card .k{display:flex;align-items:center;gap:5px}
+.stat-delta{font-size:12px;font-weight:600}
+.stat-delta.up{color:var(--ok)} .stat-delta.down{color:var(--err)}
+.empty-ico{font-size:34px;line-height:1;margin-bottom:8px;opacity:.9}
+/* ============================================================
+ * 10. 皮肤选择器（贵阳 · 多彩主题 9 套皮肤）
+ * ============================================================ */
+.icon-btn .sw{width:14px;height:14px;border-radius:5px;display:inline-block;background:var(--grad);box-shadow:inset 0 0 0 1px rgba(0,0,0,.08)}
+.skin-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:14px}
+@media (max-width:640px){ .skin-grid{grid-template-columns:repeat(2,minmax(0,1fr))} }
+.skin-card{
+  border:1px solid var(--line);border-radius:12px;padding:10px;cursor:pointer;text-align:left;
+  background:var(--card-2);transition:transform .16s ease,border-color .16s ease,box-shadow .16s ease;font-family:inherit
+}
+.skin-card:hover{transform:translateY(-2px);border-color:var(--brand-line)}
+.skin-card[aria-pressed="true"]{border-color:var(--brand);box-shadow:var(--focus-ring)}
+.skin-card .nm{font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px;color:var(--text)}
+.skin-card .tg{font-size:11.5px;color:var(--muted);margin-top:4px;line-height:1.5}
+.skin-card .dots{display:flex;gap:4px;margin-top:8px}
+.skin-card .dots i{width:16px;height:16px;border-radius:5px;display:block;box-shadow:inset 0 0 0 1px rgba(0,0,0,.10)}
+.skin-card .chk{font-size:11px;color:var(--brand);font-weight:600;margin-left:auto}
 </style>
 </head>
 <body>
@@ -341,6 +714,15 @@ footer{border-top:1px solid var(--line);background:#fff;padding:18px 0 30px;colo
         <option value="cpp">C++</option>
       </select>
       <span id="apiStatus" class="badge gray" title="配置 API 后此处变绿">未配置 API</span>
+      <button class="icon-btn" id="skinBtn" type="button" title="切换皮肤：贵阳 · 多彩主题（9 套）" aria-label="切换皮肤">
+        <span class="sw" id="skinSw" aria-hidden="true"></span><span class="lbl" id="skinLbl">皮肤</span>
+      </button>
+      <button class="icon-btn" id="themeBtn" type="button" title="切换外观：跟随系统 / 浅色 / 深色" aria-label="切换外观">
+        <span id="themeIco">&#127774;</span><span class="lbl" id="themeLbl">跟随系统</span>
+      </button>
+      <button class="icon-btn" id="helpBtn" type="button" title="快捷键与使用提示（按 ? 打开）" aria-label="快捷键帮助">
+        &#9000;&#65039;<span class="lbl">快捷键</span>
+      </button>
     </div>
   </div>
 
@@ -374,7 +756,16 @@ footer{border-top:1px solid var(--line);background:#fff;padding:18px 0 30px;colo
     <div class="card">
       <h2>&#128201; 批改分数趋势</h2>
       <p class="sub" id="trendSub">每次在【代码批改】提交都会记录一个点，满分 100。</p>
-      <div id="trendBox"></div>
+      <div class="btn-row" style="margin-bottom:12px">
+        <div class="seg" id="trendRangeSeg" role="group" aria-label="趋势显示范围">
+          <button type="button" data-range="10" aria-pressed="true">最近 10 次</button>
+          <button type="button" data-range="all" aria-pressed="false">全部</button>
+        </div>
+      </div>
+      <div class="trend-wrap" id="trendWrap">
+        <div id="trendBox"></div>
+        <div class="tip" id="trendTip" role="status"></div>
+      </div>
     </div>
 
     <div class="card">
@@ -479,6 +870,7 @@ footer{border-top:1px solid var(--line);background:#fff;padding:18px 0 30px;colo
       <aside class="chat-side">
         <div class="chat-side-head">
           <button class="btn primary sm" id="chatNewBtn" style="width:100%">&#10133; 新对话</button>
+          <input class="chat-search" id="chatSearch" type="search" placeholder="搜索会话…" aria-label="搜索会话">
         </div>
         <div class="chat-list" id="chatList"></div>
         <div class="chat-side-foot">
@@ -497,7 +889,10 @@ footer{border-top:1px solid var(--line);background:#fff;padding:18px 0 30px;colo
           <button class="btn sm ghost" id="chatClearBtn">清空本篇</button>
         </div>
 
-        <div class="chat-body" id="chatBody"></div>
+        <div class="chat-body-wrap">
+          <div class="chat-body" id="chatBody"></div>
+          <button class="scroll-bottom" id="scrollBottomBtn" type="button" title="回到最新消息" aria-label="滚动到底部">&#9660;</button>
+        </div>
 
         <div class="chat-compose">
           <textarea id="chatInput" rows="3" placeholder="向 AI 提问…（Enter 发送，Shift+Enter 换行）"></textarea>
@@ -703,6 +1098,45 @@ footer{border-top:1px solid var(--line);background:#fff;padding:18px 0 30px;colo
 
 <div id="toast"></div>
 
+<!-- 皮肤选择弹窗（贵阳 · 多彩主题 9 套皮肤） -->
+<div class="modal-mask" id="skinMask" role="dialog" aria-modal="true" aria-labelledby="skinTitle">
+  <div class="modal" style="max-width:640px">
+    <h3 id="skinTitle">&#127912; 贵阳 · 多彩主题</h3>
+    <p class="sub">
+      配色取自插件 <b>dsh-client-ui-guiyang-theme v0.5.0</b> 的 9 套皮肤；深浅色跟随右上角的「外观」开关。
+      首次访问会按节令自动选一套（春樱花 / 夏林城 / 秋九门 / 冬甲秀）。
+    </p>
+    <div class="skin-grid" id="skinGrid"></div>
+    <div class="btn-row" style="margin-top:16px;justify-content:space-between;align-items:center">
+      <span class="sub" id="skinHint"></span>
+      <button class="btn primary" id="skinCloseBtn" type="button">完成</button>
+    </div>
+  </div>
+</div>
+
+<!-- 快捷键与使用提示弹窗 -->
+<div class="modal-mask" id="helpMask" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
+  <div class="modal">
+    <h3 id="helpTitle">&#9000;&#65039; 快捷键与使用提示</h3>
+    <p class="sub">所有功能都能用鼠标完成，快捷键只是让你更快。</p>
+    <table>
+      <tr><td>切换标签页</td><td><kbd>Alt</kbd> + <kbd>1</kbd>…<kbd>6</kbd></td></tr>
+      <tr><td>对话发送</td><td><kbd>Enter</kbd></td></tr>
+      <tr><td>输入框内换行</td><td><kbd>Shift</kbd> + <kbd>Enter</kbd></td></tr>
+      <tr><td>提交批改 / 开始生成</td><td><kbd>Ctrl</kbd> + <kbd>Enter</kbd></td></tr>
+      <tr><td>打开本帮助</td><td><kbd>?</kbd></td></tr>
+      <tr><td>关闭弹窗</td><td><kbd>Esc</kbd></td></tr>
+    </table>
+    <p class="sub" style="margin-top:12px">
+      对话历史与学习进度都保存在你自己的浏览器里，可在【学习进度】页导出 JSON 备份；
+      API Key 只在内存中，刷新即消失。
+    </p>
+    <div class="btn-row" style="margin-top:16px;justify-content:flex-end">
+      <button class="btn primary" id="helpCloseBtn" type="button">知道了</button>
+    </div>
+  </div>
+</div>
+
 <!-- ============================================================
      CodeMirror 5 依赖（CDN）
      ============================================================ -->
@@ -895,12 +1329,15 @@ let lastQuizText = '';
 const $  = function (sel, root) { return (root || document).querySelector(sel); };
 const $$ = function (sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); };
 
-/** 轻提示 */
+/** 轻提示（带图标；最多同时 3 条，超出自动顶掉最旧的） */
 function toast(msg, type) {
   const box = $('#toast');
+  if (!box) return;
+  while (box.children.length >= 3) box.removeChild(box.firstChild);
   const el = document.createElement('div');
   el.className = 't' + (type ? ' ' + type : '');
-  el.textContent = msg;
+  const ico = type === 'ok' ? '&#9989;' : (type === 'err' ? '&#9888;&#65039;' : '&#128161;');
+  el.innerHTML = '<span aria-hidden="true">' + ico + '</span><span>' + esc(msg) + '</span>';
   box.appendChild(el);
   setTimeout(function () { el.style.opacity = '0'; el.style.transition = 'opacity .3s'; }, 1900);
   setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 2300);
@@ -937,7 +1374,7 @@ async function copyText(text) {
   }
 }
 
-/** 事件委托：所有 .copy-btn 一键复制所在代码块 */
+/** 事件委托：所有 .copy-btn 一键复制所在代码块（成功后按钮临时变成「✓ 已复制」） */
 document.addEventListener('click', function (e) {
   const btn = e.target.closest ? e.target.closest('.copy-btn') : null;
   if (!btn) return;
@@ -946,6 +1383,7 @@ document.addEventListener('click', function (e) {
   const codeEl = block.querySelector('code');
   copyText(codeEl ? codeEl.textContent : '').then(function (ok) {
     toast(ok ? '代码已复制到剪贴板' : '复制失败，请手动选择复制', ok ? 'ok' : 'err');
+    if (ok) flashCopyDone(btn);
   });
 });
 
@@ -1143,10 +1581,14 @@ function paint(el, text, streaming) {
   el.innerHTML = '<div class="md' + (streaming ? ' caret' : '') + '">' + renderMarkdown(text) + '</div>';
 }
 
-/** 显示加载中 */
+/** 显示加载中：转圈 + 文字 + 骨架屏（比原来只有一行字更有"正在生成"的感觉） */
 function showLoading(el, text) {
   el.classList.remove('empty');
-  el.innerHTML = '<div class="loading"><span class="spinner"></span><span>' + esc(text || 'AI 正在思考…') + '</span></div>';
+  el.innerHTML = '<div class="loading"><span class="spinner"></span><span>' + esc(text || 'AI 正在思考…') + '</span></div>' +
+    '<div class="skeleton" aria-hidden="true">' +
+    '<div class="sk-line w70"></div><div class="sk-line w90"></div>' +
+    '<div class="sk-block"></div><div class="sk-line w40"></div>' +
+    '</div>';
 }
 
 /** 显示错误 */
@@ -2035,7 +2477,8 @@ function stripGradeJson(text) {
 function renderScoreCard(data) {
   if (!data) return '';
   const score = Math.max(0, Math.min(100, Number(data.score) || 0));
-  const color = score >= 85 ? '#16a34a' : (score >= 60 ? '#d97706' : '#dc2626');
+  // 颜色统一走令牌，深色主题下自动换色
+  const color = score >= 85 ? 'var(--ok)' : (score >= 60 ? 'var(--warn)' : 'var(--err)');
   const c = color;   // 圆环与文字同色
   const verdict = data.verdict || (score >= 85 ? '优秀，可以提交' : (score >= 60 ? '及格，仍需修改' : '未达标，建议重做'));
 
@@ -2044,7 +2487,7 @@ function renderScoreCard(data) {
     '<div class="score-meta">' +
       '<div class="verdict" style="color:' + color + '">' + esc(verdict) + '</div>' +
       (data.sampleNote ? '<div class="badge ' + (data.samplesPassed === false ? 'err' : (data.samplesPassed ? 'ok' : 'gray')) + '">样例：' + esc(data.sampleNote) + '</div>' : '') +
-      (data.summary ? '<div style="margin-top:8px;font-size:13.5px;color:#374151">' + esc(data.summary) + '</div>' : '') +
+      (data.summary ? '<div style="margin-top:8px;font-size:13.5px;color:var(--text-2)">' + esc(data.summary) + '</div>' : '') +
     '</div></div>';
 
   if (Array.isArray(data.items) && data.items.length) {
@@ -2053,7 +2496,7 @@ function renderScoreCard(data) {
       const max = Number(it.max) || 0;
       const got = Number(it.got) || 0;
       const pct = max > 0 ? Math.max(0, Math.min(100, Math.round(got / max * 100))) : 0;
-      const barColor = pct >= 85 ? '#16a34a' : (pct >= 60 ? '#d97706' : '#dc2626');
+      const barColor = pct >= 85 ? 'var(--ok)' : (pct >= 60 ? 'var(--warn)' : 'var(--err)');
       html += '<div class="bar-row">' +
         '<span title="' + esc(it.name || '') + '">' + esc(it.name || '评分项') + '</span>' +
         '<span class="bar-track"><span class="bar-fill" style="width:' + pct + '%;background:' + barColor + '"></span></span>' +
@@ -2146,6 +2589,7 @@ function bindGradePanel() {
       scoreArea.innerHTML = renderScoreCard(parsed);
       if (parsed) {
         const s = Number(parsed.score);
+        animateRing(Math.max(0, Math.min(100, s || 0)));   // 圆环动画
         toast('批改完成：' + s + ' / 100', s >= 60 ? 'ok' : 'err');
         scoreArea.scrollIntoView({ block: 'start' });
         // 记入学习进度（本地保存，可在【学习进度】页看趋势）
@@ -2477,7 +2921,7 @@ function chatEmptyHtml() {
     '<div class="chips">' + chips + '</div></div>';
 }
 
-function msgHtml(m) {
+function msgHtml(m, i) {
   const isUser = m.role === 'user';
   let inner;
   if (isUser) {
@@ -2487,10 +2931,18 @@ function msgHtml(m) {
   } else {
     inner = '<div class="md' + (m.streaming ? ' caret' : '') + '">' + renderMarkdown(m.content) + '</div>';
   }
+  // 每条消息的操作：复制 / 重新生成（仅 AI）/ 删除
+  const acts = (m.streaming ? '' :
+    '<div class="acts">' +
+      '<button type="button" data-mact="copy" data-i="' + i + '">复制</button>' +
+      (isUser ? '' : '<button type="button" data-mact="regen" data-i="' + i + '">重新生成</button>') +
+      '<button type="button" data-mact="del" data-i="' + i + '">删除</button>' +
+    '</div>');
   return '<div class="msg ' + (isUser ? 'user' : 'ai') + '">' +
     '<div class="avatar">' + (isUser ? '&#128587;' : '&#129302;') + '</div>' +
     '<div class="bubble' + (m.err ? ' err-bubble' : '') + '">' + inner +
     '<div class="meta">' + fmtTime(m.ts) + (m.err ? ' · 调用失败' : '') + '</div>' +
+    acts +
     '</div></div>';
 }
 
@@ -2502,20 +2954,31 @@ function renderChatMessages() {
   box.innerHTML = s.messages.map(msgHtml).join('');
 }
 
+/** 侧栏会话列表（支持按标题/内容搜索） */
 function renderChatSide() {
   const list = $('#chatList');
   if (!list) return;
   if (!store.chat.sessions.length) {
     list.innerHTML = '<div style="color:var(--muted);font-size:12.5px;text-align:center;padding:18px 6px">还没有对话</div>';
-  } else {
-    list.innerHTML = store.chat.sessions.map(function (s) {
-      return '<div class="chat-item' + (s.id === store.chat.activeId ? ' active' : '') + '" data-id="' + esc(s.id) + '">' +
-        '<div class="t">' + esc(s.title || '新对话') + '</div>' +
-        '<div class="m">' + s.messages.length + ' 条 · ' + fmtTime(s.updatedAt) + '</div>' +
-        '<button class="del" data-del="' + esc(s.id) + '" title="删除这个会话">&#10005;</button>' +
-        '</div>';
-    }).join('');
+    return;
   }
+  const q = (($('#chatSearch') && $('#chatSearch').value) || '').trim().toLowerCase();
+  const sessions = store.chat.sessions.filter(function (s) {
+    if (!q) return true;
+    if ((s.title || '').toLowerCase().indexOf(q) >= 0) return true;
+    return s.messages.some(function (m) { return (m.content || '').toLowerCase().indexOf(q) >= 0; });
+  });
+  if (!sessions.length) {
+    list.innerHTML = '<div style="color:var(--muted);font-size:12.5px;text-align:center;padding:18px 6px">没有匹配的会话</div>';
+    return;
+  }
+  list.innerHTML = sessions.map(function (s) {
+    return '<div class="chat-item' + (s.id === store.chat.activeId ? ' active' : '') + '" data-id="' + esc(s.id) + '">' +
+      '<div class="t">' + esc(s.title || '新对话') + '</div>' +
+      '<div class="m">' + s.messages.length + ' 条 · ' + fmtTime(s.updatedAt) + '</div>' +
+      '<button class="del" data-del="' + esc(s.id) + '" title="删除这个会话">&#10005;</button>' +
+      '</div>';
+  }).join('');
 }
 
 function renderChatAll() {
@@ -2531,11 +2994,40 @@ function renderChatAll() {
       : '⚠️ 当前浏览器禁止本地存储，历史不会被保存';
   }
   scrollChatBottom();
+  updateScrollBtn();
 }
 
 function scrollChatBottom() {
   const box = $('#chatBody');
   if (box) box.scrollTop = box.scrollHeight;
+  updateScrollBtn();
+}
+
+/** 重新生成：从最后一条用户消息之后全部丢掉，再问一次 */
+function chatRegenerate() {
+  const s = activeSession();
+  if (!s) return;
+  let lastUser = -1;
+  for (let i = s.messages.length - 1; i >= 0; i--) {
+    if (s.messages[i].role === 'user') { lastUser = i; break; }
+  }
+  if (lastUser < 0) { toast('还没有可以重新生成的问题', 'err'); return; }
+  if (running.chat) { toast('上一轮还在生成中', 'err'); return; }
+  s.messages = s.messages.slice(0, lastUser + 1);
+  persist(LS_KEY.chat, store.chat);
+  renderChatMessages();
+  chatRun();
+}
+
+/** 删除单条消息 */
+function chatDeleteMessage(i) {
+  const s = activeSession();
+  if (!s || !s.messages[i]) return;
+  s.messages.splice(i, 1);
+  s.updatedAt = Date.now();
+  persist(LS_KEY.chat, store.chat);
+  renderChatAll();
+  toast('已删除这条消息', 'ok');
 }
 
 /** 组装发给 AI 的消息（含 system 与最近若干轮历史） */
@@ -2607,8 +3099,9 @@ async function chatRun() {
       onDelta: function (chunk, full) {
         acc = full;
         holder.content = full;
+        const stick = chatNearBottom();      // 用户本来就贴着底部才自动跟随
         renderChatMessages();
-        scrollChatBottom();
+        if (stick) scrollChatBottom(); else updateScrollBtn();
       }
     });
     holder.content = finalText;
@@ -2679,6 +3172,40 @@ function bindChatPanel() {
   $('#chatInput').addEventListener('keydown', function (e) {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); chatSend(); }
   });
+  // 输入框自动增高（最多 180px）
+  function autoGrow(ta) {
+    ta.style.height = 'auto';
+    ta.style.height = Math.min(ta.scrollHeight, 180) + 'px';
+  }
+  $('#chatInput').addEventListener('input', function () { autoGrow(this); });
+
+  // 会话搜索
+  $('#chatSearch').addEventListener('input', function () { renderChatSide(); });
+
+  // 滚动到底部按钮 + 滚动时切换显隐
+  $('#scrollBottomBtn').addEventListener('click', function () { scrollChatBottom(); });
+  $('#chatBody').addEventListener('scroll', updateScrollBtn);
+
+  // 单条消息的操作：复制 / 重新生成 / 删除
+  $('#chatBody').addEventListener('click', function (e) {
+    const b = e.target.closest('[data-mact]');
+    if (!b) return;
+    e.stopPropagation();
+    const s = activeSession();
+    const i = Number(b.dataset.i);
+    const m = s && s.messages[i];
+    if (!m) return;
+    if (b.dataset.mact === 'copy') {
+      copyText(m.content || '').then(function (ok) {
+        toast(ok ? '这条消息已复制' : '复制失败', ok ? 'ok' : 'err');
+        if (ok) flashCopyDone(b);
+      });
+    } else if (b.dataset.mact === 'del') {
+      chatDeleteMessage(i);
+    } else if (b.dataset.mact === 'regen') {
+      chatRegenerate();
+    }
+  });
 
   // 空状态里的快捷提问 / 去设置
   $('#chatBody').addEventListener('click', function (e) {
@@ -2726,7 +3253,7 @@ function bindChatPanel() {
  * ========================================================================== */
 function trendSvgHtml(grades) {
   const pts = grades.slice().reverse();     // 存的是倒序，这里正过来
-  if (!pts.length) return '<div class="trend-empty">还没有批改记录。去【代码批改】提交一份代码，这里就会出现分数曲线。</div>';
+  if (!pts.length) return '<div class="trend-empty"><div class="empty-ico">&#128201;</div>还没有批改记录。去【代码批改】提交一份代码，这里就会出现分数曲线。</div>';
   const W = 640, H = 210, L = 36, R = 16, T = 14, B = 26;
   const n = pts.length;
   const X = function (i) { return n === 1 ? (L + W - R) / 2 : L + (W - L - R) * i / (n - 1); };
@@ -2736,25 +3263,29 @@ function trendSvgHtml(grades) {
   [0, 25, 50, 60, 75, 100].forEach(function (v) {
     const y = Y(v);
     const strong = (v === 0 || v === 100 || v === 60);
-    grid += '<line x1="' + L + '" y1="' + y + '" x2="' + (W - R) + '" y2="' + y + '" stroke="' + (strong ? '#dbe2ee' : '#eef1f7') + '" stroke-width="1"' +
+    grid += '<line x1="' + L + '" y1="' + y + '" x2="' + (W - R) + '" y2="' + y + '" stroke="' + (strong ? 'var(--line)' : 'var(--line-2)') + '" stroke-width="1"' +
             (v === 60 ? ' stroke-dasharray="4 4"' : '') + '/>';
     if (strong) {
-      grid += '<text x="' + (L - 6) + '" y="' + (y + 4) + '" text-anchor="end" font-size="10" fill="#98a2b3">' + v + '</text>';
+      grid += '<text x="' + (L - 6) + '" y="' + (y + 4) + '" text-anchor="end" font-size="10" fill="var(--muted-2)">' + v + '</text>';
     }
   });
   const line = pts.map(function (p, i) { return X(i).toFixed(1) + ',' + Y(p.score).toFixed(1); }).join(' ');
   const area = L + ',' + Y(0) + ' ' + line + ' ' + X(n - 1).toFixed(1) + ',' + Y(0);
   let dots = '';
+  const meta = [];
   pts.forEach(function (p, i) {
-    const c = p.score >= 85 ? '#16a34a' : (p.score >= 60 ? '#d97706' : '#dc2626');
-    dots += '<circle cx="' + X(i).toFixed(1) + '" cy="' + Y(p.score).toFixed(1) + '" r="4" fill="#fff" stroke="' + c + '" stroke-width="2">' +
-      '<title>' + esc(langOf(p.lang).name + ' · ' + p.score + ' 分 · ' + new Date(p.ts).toLocaleString('zh-CN', { hour12: false })) + '</title></circle>';
-    dots += '<text x="' + X(i).toFixed(1) + '" y="' + (Y(p.score) - 9) + '" text-anchor="middle" font-size="10" fill="#667085">' + p.score + '</text>';
+    const c = p.score >= 85 ? 'var(--ok)' : (p.score >= 60 ? 'var(--warn)' : 'var(--err)');
+    const when = new Date(p.ts).toLocaleString('zh-CN', { hour12: false, month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+    const label = langOf(p.lang).name + ' · ' + p.score + ' 分 · ' + when;
+    dots += '<circle cx="' + X(i).toFixed(1) + '" cy="' + Y(p.score).toFixed(1) + '" r="4" fill="var(--card)" stroke="' + c + '" stroke-width="2">' +
+      '<title>' + esc(label) + '</title></circle>';
+    dots += '<text x="' + X(i).toFixed(1) + '" y="' + (Y(p.score) - 9) + '" text-anchor="middle" font-size="10" fill="var(--muted)">' + p.score + '</text>';
+    meta.push({ x: Number(X(i).toFixed(1)), y: Number(Y(p.score).toFixed(1)), label: label });
   });
-  return '<svg class="trend-svg" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="批改分数趋势">' +
+  return '<svg class="trend-svg" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="批改分数趋势" data-pts="' + esc(JSON.stringify(meta)) + '">' +
     grid +
-    '<polygon points="' + area + '" fill="rgba(37,99,235,.07)"/>' +
-    '<polyline points="' + line + '" fill="none" stroke="#2563eb" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>' +
+    '<polygon points="' + area + '" fill="var(--brand-soft)"/>' +
+    '<polyline points="' + line + '" fill="none" stroke="var(--brand)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>' +
     dots + '</svg>';
 }
 
@@ -2772,7 +3303,7 @@ function gradeDetailHtml(g) {
     g.items.forEach(function (it) {
       const max = Number(it.max) || 0, got = Number(it.got) || 0;
       const pct = max > 0 ? Math.max(0, Math.min(100, Math.round(got / max * 100))) : 0;
-      const c = pct >= 85 ? '#16a34a' : (pct >= 60 ? '#d97706' : '#dc2626');
+      const c = pct >= 85 ? 'var(--ok)' : (pct >= 60 ? 'var(--warn)' : 'var(--err)');
       h += '<div class="bar-row"><span>' + esc(it.name || '评分项') + '</span>' +
         '<span class="bar-track"><span class="bar-fill" style="width:' + pct + '%;background:' + c + '"></span></span>' +
         '<span class="num">' + got + ' / ' + max + '</span>' +
@@ -2800,13 +3331,29 @@ function renderProgress() {
     statCard('平均代码行数', st.avgCode, '行', '按提交批改的代码统计'),
     statCard('本地存储', store.available ? '可用' : '不可用', '', store.available ? '数据保存在本机浏览器' : '隐私模式或已被禁用')
   ].join('');
+  // 与上一次相比的涨跌（拼进「批改次数」卡的提示行，这里单独用 innerHTML 以免被转义）
+  const firstCard = grid.firstElementChild;
+  if (firstCard && store.progress.grades.length >= 2) {
+    const hintEl = firstCard.lastElementChild;
+    const g = store.progress.grades;
+    const d = g[0].score - g[1].score;
+    const tail = d === 0 ? ' · 与上次持平'
+      : (d > 0 ? ' · 较上次 <span class="stat-delta up">▲ ' + d + '</span>'
+               : ' · 较上次 <span class="stat-delta down">▼ ' + Math.abs(d) + '</span>');
+    if (hintEl) hintEl.innerHTML = esc('最近一次 ' + g[0].score + ' 分') + tail;
+  }
 
   const trendBox = $('#trendBox');
-  if (trendBox) trendBox.innerHTML = trendSvgHtml(store.progress.grades);
+  if (trendBox) {
+    const all = store.progress.grades;
+    const shown = progressRange === 'all' ? all : all.slice(0, 10);
+    trendBox.innerHTML = trendSvgHtml(shown);
+    bindTrendTooltip();
+  }
   const sub = $('#trendSub');
   if (sub) {
     sub.textContent = st.count
-      ? ('共 ' + st.count + ' 次批改，平均 ' + st.avg + ' 分；虚线是 60 分及格线。鼠标悬停圆点可看时间。')
+      ? ('共 ' + st.count + ' 次批改，平均 ' + st.avg + ' 分；虚线是 60 分及格线，把鼠标移到圆点上可看时间与语言。')
       : '每次在【代码批改】提交都会记录一个点，满分 100。';
   }
 
@@ -2976,6 +3523,10 @@ function switchTab(name) {
     const on = t.dataset.panel === name;
     t.classList.toggle('active', on);
     t.setAttribute('aria-selected', on ? 'true' : 'false');
+    // 手机端标签栏是横向滚动的，切页后把当前页签滚到可见处
+    if (on && t.scrollIntoView) {
+      try { t.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' }); } catch (e) { /* 忽略 */ }
+    }
   });
   $$('.panel').forEach(function (p) { p.classList.toggle('active', p.id === 'panel-' + name); });
   // CodeMirror 在隐藏容器里初始化会算错尺寸，切回来必须 refresh
@@ -3040,6 +3591,43 @@ function init() {
   bindChatPanel();
   bindProgressPanel();
 
+  // 外观与交互增强：主题、皮肤、分段控件、快捷键弹窗、趋势范围
+  initTheme();
+  $('#themeBtn').addEventListener('click', cycleTheme);
+  if ($('#skinBtn')) {
+    updateSkinButton();
+    $('#skinBtn').addEventListener('click', openSkin);
+    if ($('#skinCloseBtn')) $('#skinCloseBtn').addEventListener('click', closeSkin);
+    if ($('#skinMask')) $('#skinMask').addEventListener('click', function (e) { if (e.target === this) closeSkin(); });
+    if ($('#skinGrid')) $('#skinGrid').addEventListener('click', function (e) {
+      const b = e.target.closest('[data-skin]');
+      if (b) pickSkin(b.dataset.skin);
+    });
+  }
+  $('#helpBtn').addEventListener('click', openHelp);
+  if ($('#helpCloseBtn')) $('#helpCloseBtn').addEventListener('click', closeHelp);
+  if ($('#helpMask')) {
+    $('#helpMask').addEventListener('click', function (e) { if (e.target === this) closeHelp(); });
+  }
+  // 把几个原生下拉变成分段按钮（原 select 保留为真值来源，测试与旧逻辑都不受影响）
+  enhanceSelect('langSelect', '编程语言');
+  enhanceSelect('providerSelect', 'AI 服务商');
+  enhanceSelect('quizLevel', '习题难度');
+  enhanceSelect('quizType', '习题题型');
+  enhanceSelect('quizCount', '题目数量');
+  // 趋势图显示范围
+  if ($('#trendRangeSeg')) {
+    $('#trendRangeSeg').addEventListener('click', function (e) {
+      const b = e.target.closest('button[data-range]');
+      if (!b) return;
+      progressRange = b.dataset.range;
+      Array.prototype.forEach.call(this.children, function (x) {
+        x.setAttribute('aria-pressed', String(x === b));
+      });
+      renderProgress();
+    });
+  }
+
   // 初始化时统一语言状态
   onLangChanged();
   refreshApiStatus();
@@ -3059,21 +3647,226 @@ function init() {
   // 页面关闭/刷新时主动清空内存中的密钥（双保险；key 本身不落盘）
   window.addEventListener('pagehide', function () { state.apiKey = ''; });
 
-  // 键盘快捷键：Alt+1~6 切换标签页
+  // 键盘：Alt+1~6 切标签；? 打开帮助；Esc 关闭弹窗
   document.addEventListener('keydown', function (e) {
     if (e.altKey && !e.ctrlKey && !e.metaKey) {
       const map = { '1': 'chat', '2': 'assistant', '3': 'quiz', '4': 'grade', '5': 'progress', '6': 'api' };
       if (map[e.key]) { e.preventDefault(); switchTab(map[e.key]); }
+      return;
     }
+    const tag = (e.target && e.target.tagName) || '';
+    const typing = tag === 'INPUT' || tag === 'TEXTAREA' || (e.target && e.target.isContentEditable);
+    if (!typing && (e.key === '?' || e.key === '？')) { e.preventDefault(); openHelp(); return; }
+    if (e.key === 'Escape') { closeHelp(); closeSkin(); }
   });
 
-  console.log('%cCodeTutor 已就绪', 'color:#2563eb;font-weight:700', '｜纯静态前端，API Key 仅存内存。');
+  console.log('%cCodeTutor 已就绪', 'color:#4176e6;font-weight:700', '｜纯静态前端，API Key 仅存内存。');
+  // 首次访问给一点引导
+  try {
+    if (store.available && !localStorage.getItem('codetutor.welcomed')) {
+      localStorage.setItem('codetutor.welcomed', '1');
+      setTimeout(function () { toast('提示：右上角可切换深色外观，按 ? 看快捷键', 'ok'); }, 1500);
+    }
+  } catch (e) { /* 忽略 */ }
 
   // 最后：自动探测本站是否带同源代理（让访客零配置即可使用）
   autoDetectProxy();
 }
 
-// DOM 就绪后启动
+/* ==========================================================================
+ * 15. 外观与交互增强
+ *     · 主题（跟随系统 / 浅色 / 深色，配色对齐 DeepSeek Harness 本身）
+ *     · 分段控件：把 <select> 隐形后生成按钮组，双向同步（不影响原有逻辑与测试）
+ *     · 骨架屏、复制反馈、对话消息操作、趋势 tooltip、快捷键弹窗
+ * ========================================================================== */
+const THEME_KEY = 'codetutor.theme.v1';
+const THEME_ORDER = ['auto', 'light', 'dark'];
+const THEME_LABEL = { auto: '跟随系统', light: '浅色', dark: '深色' };
+const THEME_ICON = { auto: '&#127774;', light: '&#9728;&#65039;', dark: '&#127769;' };
+let progressRange = '10';                       // 趋势图显示范围：10 / all
+
+function themePref() {
+  try { return localStorage.getItem(THEME_KEY) || 'auto'; } catch (e) { return 'auto'; }
+}
+function systemPrefersDark() {
+  try { return !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches); } catch (e) { return false; }
+}
+function applyTheme(pref) {
+  const dark = pref === 'dark' || (pref === 'auto' && systemPrefersDark());
+  document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+  const ico = $('#themeIco'), lbl = $('#themeLbl');
+  if (ico) ico.innerHTML = THEME_ICON[pref] || THEME_ICON.auto;
+  if (lbl) lbl.textContent = THEME_LABEL[pref] || THEME_LABEL.auto;
+  refreshThemeColor();
+}
+/** 地址栏/移动端状态栏颜色跟随当前皮肤的对应明暗主色 */
+function refreshThemeColor() {
+  const gy = window.__gySkin;
+  if (!gy) return;
+  const meta = document.querySelector('meta[name="theme-color"]');
+  const s = gy.SKINS.filter(function (x) { return x.id === gy.current(); })[0];
+  if (meta && s) meta.setAttribute('content', s.p[gy.isDark() ? 1 : 0]);
+}
+
+/* ---------- 皮肤选择器（贵阳 · 多彩主题） ---------- */
+function skinList() { return (window.__gySkin && window.__gySkin.SKINS) || []; }
+function currentSkinId() { return (window.__gySkin && window.__gySkin.current()) || 'lin'; }
+function currentSkinObj() {
+  const list = skinList();
+  const id = currentSkinId();
+  for (let i = 0; i < list.length; i++) if (list[i].id === id) return list[i];
+  return list[0] || null;
+}
+function updateSkinButton() {
+  const s = currentSkinObj();
+  const sw = $('#skinSw'), lbl = $('#skinLbl');
+  if (sw && s) sw.style.background = 'linear-gradient(135deg,' + s.p[0] + ',' + s.a[0] + ')';
+  if (lbl && s) lbl.textContent = s.name;
+}
+function renderSkinGrid() {
+  const grid = $('#skinGrid');
+  if (!grid) return;
+  const cur = currentSkinId();
+  grid.innerHTML = skinList().map(function (s) {
+    return '<button class="skin-card" type="button" data-skin="' + esc(s.id) + '" aria-pressed="' + (s.id === cur) + '" title="' + esc(s.tag) + '">' +
+      '<span class="nm">' + esc(s.name) + (s.id === cur ? '<span class="chk">使用中</span>' : '') + '</span>' +
+      '<span class="tg">' + esc(s.tag) + '</span>' +
+      '<span class="dots"><i style="background:' + esc(s.p[0]) + '"></i><i style="background:' + esc(s.a[0]) + '"></i><i style="background:' + esc(s.w[0]) + '"></i><i style="background:' + esc(s.surface[0]) + '"></i></span>' +
+      '</button>';
+  }).join('');
+}
+function openSkin() { renderSkinGrid(); const m = $('#skinMask'); if (m) m.classList.add('show'); }
+function closeSkin() { const m = $('#skinMask'); if (m) m.classList.remove('show'); }
+function pickSkin(id) {
+  const gy = window.__gySkin;
+  if (!gy) return;
+  const s = gy.apply(id);          // 应用并写入 localStorage
+  renderSkinGrid();
+  updateSkinButton();
+  const hint = $('#skinHint');
+  if (hint) hint.textContent = '已切换到「' + s.name + '」';
+  toast('皮肤已切换：' + s.name, 'ok');
+}
+function cycleTheme() {
+  const cur = themePref();
+  const next = THEME_ORDER[(THEME_ORDER.indexOf(cur) + 1) % THEME_ORDER.length];
+  try { localStorage.setItem(THEME_KEY, next); } catch (e) { /* 隐私模式 */ }
+  applyTheme(next);
+  toast('外观已切换为「' + THEME_LABEL[next] + '」', 'ok');
+}
+function initTheme() {
+  applyTheme(themePref());
+  try {
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const onChange = function () { if (themePref() === 'auto') applyTheme('auto'); };
+    if (mq.addEventListener) mq.addEventListener('change', onChange);
+    else if (mq.addListener) mq.addListener(onChange);
+  } catch (e) { /* 忽略 */ }
+}
+
+/**
+ * 把一个原生 <select> 变成「分段按钮组」：
+ * 原 select 加 .sr-only（视觉隐藏但仍是真值来源），旁边插入按钮组；
+ * 点按钮 → 写回 select.value 并派发 change；select 变化 → 高亮同步。
+ * 这样原有代码、测试里对 select 的读写全部继续有效。
+ */
+function enhanceSelect(id, label) {
+  const el = document.getElementById(id);
+  if (!el || el.dataset.enhanced === '1') return;
+  el.dataset.enhanced = '1';
+  const seg = document.createElement('div');
+  seg.className = 'seg';
+  seg.setAttribute('role', 'group');
+  seg.setAttribute('aria-label', label || el.getAttribute('aria-label') || '选项');
+  seg.innerHTML = Array.prototype.map.call(el.options, function (o) {
+    return '<button type="button" data-v="' + esc(o.value) + '">' + esc(o.textContent) + '</button>';
+  }).join('');
+  function sync() {
+    Array.prototype.forEach.call(seg.children, function (b) {
+      b.setAttribute('aria-pressed', String(b.dataset.v === el.value));
+    });
+  }
+  sync();
+  seg.addEventListener('click', function (e) {
+    const b = e.target.closest('button[data-v]');
+    if (!b || b.dataset.v === el.value) return;
+    el.value = b.dataset.v;
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+    sync();
+  });
+  el.addEventListener('change', sync);
+  el.classList.add('sr-only');
+  el.parentNode.insertBefore(seg, el);
+}
+
+/* 快捷键弹窗 */
+function openHelp() { const m = $('#helpMask'); if (m) m.classList.add('show'); }
+function closeHelp() { const m = $('#helpMask'); if (m) m.classList.remove('show'); }
+
+/* 对话：只在用户本来就在底部时才自动跟随，避免打断向上翻阅 */
+function chatNearBottom() {
+  const b = $('#chatBody');
+  if (!b) return true;
+  return b.scrollHeight - b.scrollTop - b.clientHeight < 120;
+}
+function updateScrollBtn() {
+  const b = $('#chatBody'), btn = $('#scrollBottomBtn');
+  if (!b || !btn) return;
+  btn.classList.toggle('show', b.scrollHeight - b.scrollTop - b.clientHeight > 160);
+}
+/** 复制成功时把按钮临时改成「已复制」 */
+function flashCopyDone(btn) {
+  if (!btn || btn.dataset.flashing === '1') return;
+  btn.dataset.flashing = '1';
+  const old = btn.innerHTML;
+  btn.classList.add('done');
+  btn.innerHTML = '&#10003; 已复制';
+  setTimeout(function () {
+    btn.classList.remove('done');
+    btn.innerHTML = old;
+    btn.dataset.flashing = '0';
+  }, 1400);
+}
+/** 评分圆环从 0 动画到目标分 */
+function animateRing(target) {
+  const ring = $('#gradeScoreArea .score-ring');
+  if (!ring || typeof requestAnimationFrame !== 'function') return;
+  const t0 = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+  const dur = 620;
+  function step() {
+    const now = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+    const k = Math.min(1, (now - t0) / dur);
+    const eased = 1 - Math.pow(1 - k, 3);
+    ring.style.setProperty('--pct', String(Math.round(target * eased)));
+    if (k < 1) requestAnimationFrame(step);
+  }
+  try { requestAnimationFrame(step); } catch (e) { ring.style.setProperty('--pct', String(target)); }
+}
+/** 趋势图：悬停显示自定义 tooltip */
+function bindTrendTooltip() {
+  const box = $('#trendBox'), tip = $('#trendTip');
+  if (!box || !tip) return;
+  const svg = box.querySelector('svg');
+  if (!svg || !svg.dataset.pts) return;
+  let pts = [];
+  try { pts = JSON.parse(svg.dataset.pts); } catch (e) { return; }
+  if (!pts.length) return;
+  svg.addEventListener('mousemove', function (e) {
+    const r = svg.getBoundingClientRect();
+    if (!r.width) return;
+    const vx = (e.clientX - r.left) / r.width * 640;      // 换算到 viewBox 坐标
+    let best = 0, bd = 1e9;
+    pts.forEach(function (p, i) { const d = Math.abs(p.x - vx); if (d < bd) { bd = d; best = i; } });
+    const p = pts[best];
+    tip.textContent = p.label;
+    tip.style.left = (p.x / 640 * r.width) + 'px';
+    tip.style.top = (p.y / 210 * r.height) + 'px';
+    tip.classList.add('show');
+  });
+  svg.addEventListener('mouseleave', function () { tip.classList.remove('show'); });
+}
+
+/* DOM 就绪后启动 */
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
 else init();
 
