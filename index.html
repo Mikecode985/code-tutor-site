@@ -223,6 +223,84 @@ textarea.fallback-editor:focus{box-shadow:none}
 .bar-reason{grid-column:2 / -1;font-size:12.5px;color:var(--muted);margin-top:-2px}
 @media (max-width:560px){.bar-row{grid-template-columns:1fr auto}.bar-reason{grid-column:1 / -1}}
 
+/* ============================================================
+ * 6. 对话页
+ * ============================================================ */
+.chat-shell{display:grid;grid-template-columns:238px minmax(0,1fr);padding:0;overflow:hidden;height:min(74vh,780px);min-height:520px}
+.chat-side{border-right:1px solid var(--line);background:#fafbfe;display:flex;flex-direction:column;min-width:0}
+.chat-side-head{padding:10px;border-bottom:1px solid var(--line)}
+.chat-list{flex:1;overflow-y:auto;padding:8px;display:flex;flex-direction:column;gap:6px}
+.chat-item{position:relative;border:1px solid transparent;border-radius:10px;padding:8px 28px 8px 10px;cursor:pointer;transition:.15s}
+.chat-item:hover{background:#fff;border-color:var(--line)}
+.chat-item.active{background:#fff;border-color:#c7d7fb;box-shadow:0 4px 12px -8px rgba(37,99,235,.6)}
+.chat-item .t{font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chat-item .m{font-size:11.5px;color:var(--muted);margin-top:2px}
+.chat-item .del{position:absolute;right:5px;top:50%;transform:translateY(-50%);border:0;background:transparent;color:#b9c1cf;cursor:pointer;font-size:13px;padding:4px;border-radius:6px;line-height:1}
+.chat-item .del:hover{color:var(--err);background:var(--err-soft)}
+.chat-side-foot{padding:8px;border-top:1px solid var(--line);display:flex;gap:6px}
+.chat-main{display:flex;flex-direction:column;min-width:0;background:#fff}
+.chat-head{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1px solid var(--line);background:#fafbfe;flex-wrap:wrap}
+.chat-title-input{border:1px solid transparent;background:transparent;font-weight:600;font-size:14px;padding:5px 8px;border-radius:8px;max-width:260px;width:auto}
+.chat-title-input:hover{border-color:var(--line);background:#fff}
+.chat-body{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;background:#fbfcfe}
+.chat-empty{margin:auto;text-align:center;color:var(--muted);font-size:13.5px;max-width:560px;padding:10px}
+.chat-empty b{color:var(--text)}
+.chat-empty .chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:14px}
+.chip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:7px 13px;font-size:12.5px;color:var(--text);cursor:pointer;transition:.15s;font-family:inherit}
+.chip:hover{border-color:var(--brand);color:var(--brand);background:var(--brand-soft)}
+.msg{display:flex;gap:9px;max-width:100%}
+.msg.user{flex-direction:row-reverse}
+.msg .avatar{flex:0 0 auto;width:28px;height:28px;border-radius:9px;display:grid;place-items:center;font-size:14px;background:var(--brand-soft)}
+.msg.user .avatar{background:#eef7ee}
+.msg .bubble{border:1px solid var(--line);background:#fff;border-radius:12px;padding:10px 13px;min-width:0;max-width:min(760px,86%)}
+.msg.user .bubble{background:var(--brand);border-color:var(--brand);color:#fff}
+.msg.user .bubble .txt{white-space:pre-wrap;word-break:break-word;font-size:14.5px}
+.msg .bubble.err-bubble{background:var(--err-soft);border-color:#f6cccc}
+.msg .meta{font-size:11px;color:var(--muted);margin-top:6px}
+.msg.user .bubble .meta{color:#dbe6ff}
+.msg .bubble .md{font-size:14.5px}
+.msg .bubble .md > *:first-child{margin-top:0}
+.chat-compose{border-top:1px solid var(--line);padding:10px 12px;background:#fff}
+.chat-compose textarea{min-height:64px;max-height:180px}
+.chat-compose-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:8px}
+.chk{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--muted);cursor:pointer}
+.chk input{width:15px;height:15px}
+.typing{display:inline-flex;gap:3px;padding:3px 0}
+.typing i{width:5px;height:5px;border-radius:50%;background:var(--muted);animation:blink 1s infinite}
+.typing i:nth-child(2){animation-delay:.2s}
+.typing i:nth-child(3){animation-delay:.4s}
+
+/* ============================================================
+ * 7. 学习进度页
+ * ============================================================ */
+.stat-card{border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:linear-gradient(135deg,#f8fbff,#fff)}
+.stat-card .k{font-size:12.5px;color:var(--muted)}
+.stat-card .v{font-size:24px;font-weight:700;font-variant-numeric:tabular-nums;margin-top:2px;line-height:1.2}
+.stat-card .u{font-size:12px;color:var(--muted);font-weight:400;margin-left:3px}
+.trend-svg{width:100%;height:auto;max-height:260px;display:block}
+.trend-empty{color:var(--muted);font-size:13.5px;padding:26px 6px;text-align:center}
+.lang-bar{display:grid;grid-template-columns:64px 1fr auto;gap:10px;align-items:center;font-size:13px;margin:9px 0}
+.grade-item{border:1px solid var(--line);border-radius:11px;padding:10px 12px;margin-bottom:8px;background:#fff}
+.grade-item .row1{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.grade-item .score{font-weight:700;font-variant-numeric:tabular-nums}
+.grade-item .prob{font-size:13px;color:#374151;margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.grade-item .detail{display:none;margin-top:10px;border-top:1px dashed var(--line);padding-top:10px}
+.grade-item.open .detail{display:block}
+.grade-item .detail pre{background:#fbfcfe;border:1px solid var(--line);border-radius:9px;padding:9px 11px;overflow-x:auto;font-size:12.5px;margin:8px 0 0}
+@media (max-width:820px){
+  .chat-shell{grid-template-columns:1fr;height:auto;min-height:0}
+  .chat-side{border-right:0;border-bottom:1px solid var(--line);max-height:190px}
+  .chat-body{min-height:300px;max-height:54vh}
+  .chat-head{row-gap:6px}
+  .chat-title-input{max-width:none;flex:1 1 120px;min-width:0}
+  .chat-head .btn{font-size:12px;padding:5px 10px}
+}
+/* 窄屏下让对话里的代码换行显示，避免横向溢出要左右拖 */
+@media (max-width:560px){
+  .msg .bubble .code-block pre code{white-space:pre-wrap;word-break:break-word}
+  .msg .bubble{max-width:92%}
+}
+
 /* 加载动画 */
 .loading{display:flex;align-items:center;gap:9px;color:var(--muted);font-size:13.5px;padding:8px 0}
 .spinner{width:16px;height:16px;border:2px solid #cfd9ea;border-top-color:var(--brand);border-radius:50%;animation:spin .7s linear infinite}
@@ -269,10 +347,12 @@ footer{border-top:1px solid var(--line);background:#fff;padding:18px 0 30px;colo
   <!-- 标签页导航 -->
   <div class="wrap">
     <nav class="tabs" id="tabs" role="tablist" aria-label="功能切换">
-      <button class="tab" role="tab" data-panel="api"      aria-selected="false">&#9881;&#65039; API 设置</button>
-      <button class="tab active" role="tab" data-panel="assistant" aria-selected="true">&#128295; 代码助手</button>
+      <button class="tab active" role="tab" data-panel="chat"   aria-selected="true">&#128172; 对话</button>
+      <button class="tab" role="tab" data-panel="assistant" aria-selected="false">&#128295; 代码助手</button>
       <button class="tab" role="tab" data-panel="quiz"     aria-selected="false">&#128221; 习题生成</button>
       <button class="tab" role="tab" data-panel="grade"    aria-selected="false">&#127919; 代码批改</button>
+      <button class="tab" role="tab" data-panel="progress" aria-selected="false">&#128200; 学习进度</button>
+      <button class="tab" role="tab" data-panel="api"      aria-selected="false">&#9881;&#65039; API 设置</button>
     </nav>
   </div>
 </header>
@@ -280,7 +360,42 @@ footer{border-top:1px solid var(--line);background:#fff;padding:18px 0 30px;colo
 <main class="wrap">
 
   <!-- ============================================================
-       面板 1：API 设置
+       面板 5：学习进度（本地数据统计 + 历史记录管理）
+       ============================================================ -->
+  <section class="panel" id="panel-progress" role="tabpanel" aria-labelledby="tab-progress">
+    <div class="card">
+      <h2>&#128200; 学习进度</h2>
+      <p class="sub">
+        所有数据只保存在<b>你自己的浏览器</b>里（localStorage），不上传任何服务器；清理浏览器数据或换设备会丢失，可随时导出备份。
+      </p>
+      <div class="grid c4" id="statGrid"></div>
+    </div>
+
+    <div class="card">
+      <h2>&#128201; 批改分数趋势</h2>
+      <p class="sub" id="trendSub">每次在【代码批改】提交都会记录一个点，满分 100。</p>
+      <div id="trendBox"></div>
+    </div>
+
+    <div class="card">
+      <h2>&#128208; 按语言统计</h2>
+      <div id="langStats"></div>
+    </div>
+
+    <div class="card">
+      <h2>&#128203; 批改历史 <span class="badge gray" id="gradeCount">0 条</span></h2>
+      <div class="btn-row" style="margin-bottom:12px">
+        <button class="btn sm" id="gradeExportBtn">&#11015;&#65039; 导出数据（JSON）</button>
+        <button class="btn sm" id="gradeImportBtn">&#11014;&#65039; 导入数据</button>
+        <input type="file" id="gradeImportFile" class="hidden" accept=".json,application/json">
+        <button class="btn sm danger" id="gradeClearBtn">清空学习进度</button>
+      </div>
+      <div id="gradeList"></div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       面板 6：API 设置
        ============================================================ -->
   <section class="panel" id="panel-api" role="tabpanel" aria-labelledby="tab-api">
     <div class="card">
@@ -348,6 +463,7 @@ footer{border-top:1px solid var(--line);background:#fff;padding:18px 0 30px;colo
           <li><b>建议使用独立/限额 Key</b>：请在服务商控制台设置消费限额、并在用完后及时销毁或轮换密钥；不要使用主账号的高权限密钥。</li>
           <li><b>生成内容需自行核对</b>：AI 输出可能存在错误、过时的语法或与题目要求不一致的解法，请以编译器运行结果和教材/考试大纲为准，切勿直接照搬用于正式考试提交。</li>
           <li><b>隐私</b>：你粘贴的代码与题目会发送给 AI 服务商，请勿提交含个人隐私、商业机密或涉及保密的代码。</li>
+          <li><b>历史对话与学习进度</b>：这部分数据（聊天记录、批改分数、使用次数）保存在<b>你自己浏览器的 localStorage</b>（键名前缀 <code>codetutor.</code>），<b>不会</b>上传到任何服务器；清理浏览器数据或更换设备/浏览器会丢失，可在【学习进度】页导出 JSON 备份。<b>API Key 依然只在内存中，两者分开存放。</b></li>
           <li><b>费用与可用性</b>：AI 接口调用产生的费用由你的账号承担；本网站为纯静态教学演示项目，不提供任何形式的可用性、准确性担保，因使用本网站造成的任何损失（包括但不限于 API 费用、成绩影响）由使用者自行承担。</li>
         </ol>
       </div>
@@ -355,9 +471,53 @@ footer{border-top:1px solid var(--line);background:#fff;padding:18px 0 30px;colo
   </section>
 
   <!-- ============================================================
+       面板 1：对话（默认首页）—— 自由提问，自动保存历史到浏览器本地
+       ============================================================ -->
+  <section class="panel active" id="panel-chat" role="tabpanel" aria-labelledby="tab-chat">
+    <div class="card chat-shell">
+      <!-- 左侧：会话列表 -->
+      <aside class="chat-side">
+        <div class="chat-side-head">
+          <button class="btn primary sm" id="chatNewBtn" style="width:100%">&#10133; 新对话</button>
+        </div>
+        <div class="chat-list" id="chatList"></div>
+        <div class="chat-side-foot">
+          <button class="btn sm ghost" id="chatExportAllBtn" title="把全部会话导出为一个 Markdown 文件">导出全部</button>
+          <button class="btn sm danger" id="chatClearAllBtn" title="删除本机保存的全部对话">清空</button>
+        </div>
+      </aside>
+
+      <!-- 右侧：聊天区 -->
+      <div class="chat-main">
+        <div class="chat-head">
+          <span class="badge lang" id="chatLangBadge">Python</span>
+          <input class="chat-title-input" id="chatTitle" placeholder="会话标题" title="可重命名，自动保存">
+          <div class="spacer"></div>
+          <button class="btn sm ghost" id="chatExportBtn">导出本篇</button>
+          <button class="btn sm ghost" id="chatClearBtn">清空本篇</button>
+        </div>
+
+        <div class="chat-body" id="chatBody"></div>
+
+        <div class="chat-compose">
+          <textarea id="chatInput" rows="3" placeholder="向 AI 提问…（Enter 发送，Shift+Enter 换行）"></textarea>
+          <div class="chat-compose-bar">
+            <label class="chk"><input type="checkbox" id="chatUseCode"> 带入当前代码</label>
+            <label class="chk"><input type="checkbox" id="chatUseProblem"> 带入当前题目</label>
+            <div class="spacer"></div>
+            <span class="hint" style="font-size:12px;color:var(--muted)" id="chatHint"></span>
+            <button class="btn" id="chatStopBtn" disabled>&#9632; 停止</button>
+            <button class="btn primary" id="chatSendBtn">发送</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
        面板 2：代码助手
        ============================================================ -->
-  <section class="panel active" id="panel-assistant" role="tabpanel" aria-labelledby="tab-assistant">
+  <section class="panel" id="panel-assistant" role="tabpanel" aria-labelledby="tab-assistant">
     <div class="card">
       <h2>&#128295; 代码助手 <span class="badge lang" id="assistantLangBadge">Python</span></h2>
       <p class="sub">上传或粘贴代码，让 AI 帮你查 Bug、讲原理、给出修复后的完整代码，并指出考试/练习中的常见扣分陷阱。</p>
@@ -536,6 +696,7 @@ footer{border-top:1px solid var(--line);background:#fff;padding:18px 0 30px;colo
   <div class="wrap">
     <b>CodeTutor</b> · 纯静态多语言编程学习网站（HTML + CSS + JavaScript，无后端、无数据库）。<br>
     AI 能力由 DeepSeek / 通义千问 提供，经 Cloudflare Worker 代理转发。API Key 仅存于浏览器内存，刷新即消失，本站不收集、不存储、不上传任何密钥或代码。<br>
+    历史对话与学习进度保存在<b>你自己浏览器的 localStorage</b>，不上传服务器，可随时在【学习进度】页导出或清除。<br>
     AI 生成内容仅供参考，请以编译器运行结果与教材 / 考试大纲为准。使用本网站即表示你已阅读并同意「API 设置」页的完整免责声明。
   </div>
 </footer>
@@ -723,7 +884,7 @@ const state = {
 const conv = { assistant: [], quiz: [], grade: [] };
 
 /** 当前正在进行的请求控制器，用于「停止生成」 */
-const running = { assistant: null, quiz: null, grade: null };
+const running = { assistant: null, quiz: null, grade: null, chat: null };
 
 /** 最近一次生成的题目文本，供「送去批改」使用 */
 let lastQuizText = '';
@@ -1645,6 +1806,7 @@ function bindAssistantPanel() {
       });
       paint(out, finalText, false);
       conv.assistant.push({ role: 'assistant', content: finalText });
+      recordAssist();
     } catch (e) {
       if (e && e.name === 'AbortError') {
         if (acc) { paint(out, acc, false); toast('已停止生成（保留已生成内容）'); }
@@ -1772,6 +1934,7 @@ function bindQuizPanel() {
       });
       paint(out, finalText, false);
       lastQuizText = finalText;
+      recordQuiz();
       $('#quizMeta').textContent = '生成完成：' + L.name + ' · ' + QUIZ_TYPES[typeKey] + ' · ' + QUIZ_LEVELS[levelKey] +
         ' · ' + finalText.length + ' 字。可直接点「送去批改」开始作答。';
     } catch (e) {
@@ -1985,6 +2148,19 @@ function bindGradePanel() {
         const s = Number(parsed.score);
         toast('批改完成：' + s + ' / 100', s >= 60 ? 'ok' : 'err');
         scoreArea.scrollIntoView({ block: 'start' });
+        // 记入学习进度（本地保存，可在【学习进度】页看趋势）
+        recordGrade({
+          ts: Date.now(),
+          lang: state.lang,
+          problem: problem.slice(0, 2000),
+          code: code.slice(0, LS_LIMIT.codeChars),
+          score: Math.max(0, Math.min(100, s || 0)),
+          grade: String(parsed.verdict || '').slice(0, 20),
+          items: (Array.isArray(parsed.items) ? parsed.items : []).slice(0, 10).map(function (it) {
+            return { name: String(it.name || '').slice(0, 40), max: Number(it.max) || 0, got: Number(it.got) || 0, reason: String(it.reason || '').slice(0, 200) };
+          }),
+          summary: String(parsed.summary || '').slice(0, 300)
+        });
       } else {
         toast('批改完成，但未能解析评分明细');
       }
@@ -2009,11 +2185,750 @@ function bindGradePanel() {
 }
 
 /* ==========================================================================
- * 11. 运行状态控制 / 标签页 / 语言切换 / 初始化
+ * 11. 本地存储层：历史对话 + 学习进度
+ *     · 数据全部存在用户自己的浏览器 localStorage，绝不上传（apiKey 依然只在内存）
+ *     · 带容量保护：写入失败（QuotaExceededError）时自动裁剪最旧数据后重试
+ *     · 读取时做结构自检，手工改坏 / 旧版本数据也不会让页面崩溃
+ * ========================================================================== */
+const LS_KEY = { chat: 'codetutor.chat.v1', progress: 'codetutor.progress.v1' };
+const LS_LIMIT = {
+  sessions: 20,      // 最多保留的会话数
+  msgs: 120,         // 单个会话最多消息数
+  grades: 100,       // 最多保留的批改记录
+  codeChars: 2500,   // 单条批改记录里代码的最大长度（超出截断）
+  ctxMsgs: 16        // 每次发给 AI 的历史消息条数（防止 prompt 无限增长）
+};
+
+const store = {
+  available: true,
+  chat: { sessions: [], activeId: null },
+  progress: { grades: [], quiz: 0, assist: 0, chat: 0, days: {} }
+};
+let quotaWarned = false;
+
+/** 短 id */
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+
+/** 本地日期键（用于连续学习天数统计，注意不能用 toISOString，那是 UTC） */
+function todayKey(d) {
+  d = d || new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+
+/** 人性化时间 */
+function fmtTime(ts) {
+  if (!ts) return '';
+  const d = new Date(ts);
+  const now = new Date();
+  const hm = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+  if (d.toDateString() === now.toDateString()) return '今天 ' + hm;
+  const y = new Date(now.getTime() - 86400000);
+  if (d.toDateString() === y.toDateString()) return '昨天 ' + hm;
+  return (d.getMonth() + 1) + '/' + d.getDate() + ' ' + hm;
+}
+
+/** 浏览器是否允许本地存储（隐私模式或被策略禁用时返回 false） */
+function lsOk() {
+  try { localStorage.setItem('__ct_probe', '1'); localStorage.removeItem('__ct_probe'); return true; }
+  catch (e) { return false; }
+}
+
+/** 写入 localStorage；容量不足时先裁旧数据再重试 */
+function persist(key, val) {
+  if (!store.available) return false;
+  try {
+    localStorage.setItem(key, JSON.stringify(val));
+    return true;
+  } catch (e) {
+    if (trimStorage()) {
+      try { localStorage.setItem(key, JSON.stringify(val)); return true; } catch (e2) { /* 还是不行 */ }
+    }
+    if (!quotaWarned) {
+      quotaWarned = true;
+      toast('本地存储空间不足，已停止保存新历史（旧记录尽量保留）', 'err');
+    }
+    return false;
+  }
+}
+
+/** 裁剪最旧的数据腾空间，返回是否真的裁掉了东西 */
+function trimStorage() {
+  const sessions = store.chat.sessions;
+  if (sessions.length > 1) {                       // ① 丢掉最旧的、非当前会话
+    for (let i = sessions.length - 1; i >= 0; i--) {
+      if (sessions[i].id !== store.chat.activeId) { sessions.splice(i, 1); break; }
+    }
+    try { localStorage.setItem(LS_KEY.chat, JSON.stringify(store.chat)); return true; } catch (e) { /* 继续 */ }
+  }
+  if (sessions.length === 1 && sessions[0].messages.length > 20) {   // ② 当前会话只留最近 20 条
+    sessions[0].messages = sessions[0].messages.slice(-20);
+    try { localStorage.setItem(LS_KEY.chat, JSON.stringify(store.chat)); return true; } catch (e) { /* 继续 */ }
+  }
+  if (store.progress.grades.length > 5) {          // ③ 批改历史砍掉一半
+    store.progress.grades = store.progress.grades.slice(0, Math.ceil(store.progress.grades.length / 2));
+    try { localStorage.setItem(LS_KEY.progress, JSON.stringify(store.progress)); return true; } catch (e) { /* 继续 */ }
+  }
+  return false;
+}
+
+/** 载入并自检本地数据 */
+function loadStore() {
+  store.available = lsOk();
+  if (!store.available) return;
+  try {
+    const c = JSON.parse(localStorage.getItem(LS_KEY.chat) || 'null');
+    if (c && Array.isArray(c.sessions)) {
+      const sessions = c.sessions.filter(function (s) {
+        return s && typeof s.id === 'string' && Array.isArray(s.messages);
+      }).slice(0, LS_LIMIT.sessions).map(function (s) {
+        return {
+          id: s.id,
+          title: String(s.title || '新对话').slice(0, 60),
+          lang: s.lang || 'python',
+          createdAt: Number(s.createdAt) || Date.now(),
+          updatedAt: Number(s.updatedAt) || Date.now(),
+          messages: s.messages.filter(function (m) {
+            return m && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string';
+          }).slice(-LS_LIMIT.msgs).map(function (m) {
+            return { role: m.role, content: m.content, ts: Number(m.ts) || Date.now(), err: !!m.err };
+          })
+        };
+      });
+      store.chat = { sessions: sessions, activeId: c.activeId || null };
+      if (!sessions.some(function (s) { return s.id === store.chat.activeId; })) {
+        store.chat.activeId = sessions.length ? sessions[0].id : null;
+      }
+    }
+  } catch (e) { /* 数据损坏 → 当作空数据 */ }
+  try {
+    const p = JSON.parse(localStorage.getItem(LS_KEY.progress) || 'null');
+    if (p && typeof p === 'object') {
+      store.progress.grades = (Array.isArray(p.grades) ? p.grades : []).filter(function (g) {
+        return g && typeof g.score === 'number' && !isNaN(g.score) && g.score >= 0 && g.score <= 100;
+      }).slice(0, LS_LIMIT.grades);
+      store.progress.quiz = Math.max(0, Number(p.quiz) || 0);
+      store.progress.assist = Math.max(0, Number(p.assist) || 0);
+      store.progress.chat = Math.max(0, Number(p.chat) || 0);
+      store.progress.days = (p.days && typeof p.days === 'object') ? p.days : {};
+    }
+  } catch (e) { /* 同上 */ }
+}
+
+/* ---------- 会话读写 ---------- */
+function activeSession() {
+  return store.chat.sessions.filter(function (s) { return s.id === store.chat.activeId; })[0] || null;
+}
+function chatNewSession(silent) {
+  const s = { id: uid(), title: '新对话', lang: state.lang, createdAt: Date.now(), updatedAt: Date.now(), messages: [] };
+  store.chat.sessions.unshift(s);
+  while (store.chat.sessions.length > LS_LIMIT.sessions) store.chat.sessions.pop();
+  store.chat.activeId = s.id;
+  persist(LS_KEY.chat, store.chat);
+  if (!silent) { renderChatAll(); const inp = $('#chatInput'); if (inp) inp.focus(); }
+  return s;
+}
+function chatDeleteSession(id) {
+  const i = store.chat.sessions.findIndex(function (s) { return s.id === id; });
+  if (i < 0) return;
+  store.chat.sessions.splice(i, 1);
+  if (store.chat.activeId === id) {
+    store.chat.activeId = store.chat.sessions.length ? store.chat.sessions[0].id : null;
+  }
+  persist(LS_KEY.chat, store.chat);
+  renderChatAll();
+}
+function chatAdd(role, content) {
+  let s = activeSession();
+  if (!s) s = chatNewSession(true);
+  s.messages.push({ role: role, content: content, ts: Date.now() });
+  if (s.messages.length > LS_LIMIT.msgs) s.messages = s.messages.slice(-LS_LIMIT.msgs);
+  s.updatedAt = Date.now();
+  if (role === 'user' && (!s.title || s.title === '新对话')) {
+    s.title = (content.replace(/\s+/g, ' ').trim().slice(0, 18)) || '新对话';
+  }
+  persist(LS_KEY.chat, store.chat);
+  return s;
+}
+
+/* ---------- 学习进度记录 ---------- */
+function bumpDay() {
+  const k = todayKey();
+  store.progress.days[k] = (store.progress.days[k] || 0) + 1;
+  // 只保留最近 400 天，防止无限增长
+  const keys = Object.keys(store.progress.days).sort();
+  if (keys.length > 400) {
+    keys.slice(0, keys.length - 400).forEach(function (kk) { delete store.progress.days[kk]; });
+  }
+}
+function recordQuiz() { store.progress.quiz++; bumpDay(); persist(LS_KEY.progress, store.progress); renderProgress(); }
+function recordAssist() { store.progress.assist++; bumpDay(); persist(LS_KEY.progress, store.progress); renderProgress(); }
+function recordChatTurn() { store.progress.chat++; bumpDay(); persist(LS_KEY.progress, store.progress); renderProgress(); }
+function recordGrade(g) {
+  store.progress.grades.unshift(g);
+  if (store.progress.grades.length > LS_LIMIT.grades) store.progress.grades.length = LS_LIMIT.grades;
+  bumpDay();
+  persist(LS_KEY.progress, store.progress);
+  renderProgress();
+}
+
+/** 统计汇总 */
+function computeStats() {
+  const g = store.progress.grades;
+  const scores = g.map(function (x) { return x.score; });
+  const sum = scores.reduce(function (a, b) { return a + b; }, 0);
+  const byLang = {};
+  g.forEach(function (x) {
+    const k = langOf(x.lang).id;
+    byLang[k] = byLang[k] || { n: 0, sum: 0, best: 0 };
+    byLang[k].n++;
+    byLang[k].sum += x.score;
+    byLang[k].best = Math.max(byLang[k].best, x.score);
+  });
+  return {
+    count: g.length,
+    avg: scores.length ? Math.round(sum / scores.length * 10) / 10 : null,
+    best: scores.length ? Math.max.apply(null, scores) : null,
+    last: scores.length ? scores[scores.length - 1] : null,     // 最早一次
+    latest: scores.length ? scores[0] : null,                   // 最近一次
+    byLang: byLang,
+    streak: computeStreak(store.progress.days),
+    daysActive: Object.keys(store.progress.days).length,
+    quiz: store.progress.quiz,
+    assist: store.progress.assist,
+    chat: store.progress.chat,
+    avgCode: (function () {                                     // 代码助手平均代码行数（趣味指标）
+      let n = 0, lines = 0;
+      g.forEach(function (x) { if (x.code) { n++; lines += String(x.code).split('\n').length; } });
+      return n ? Math.round(lines / n) : null;
+    })()
+  };
+}
+
+/** 连续学习天数（今天没学则从昨天开始算） */
+function computeStreak(days) {
+  let streak = 0;
+  const cur = new Date();
+  if (!days[todayKey(cur)]) cur.setDate(cur.getDate() - 1);
+  while (days[todayKey(cur)]) { streak++; cur.setDate(cur.getDate() - 1); }
+  return streak;
+}
+
+/** 下载文本文件（jsdom 等环境不支持时静默失败） */
+function downloadText(text, filename, mime) {
+  try {
+    const blob = new Blob([text], { type: mime || 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function () { URL.revokeObjectURL(url); a.remove(); }, 0);
+    return true;
+  } catch (e) {
+    toast('当前浏览器不支持直接下载，请手动复制内容', 'err');
+    return false;
+  }
+}
+
+/** 危险操作二次确认（避免用 confirm()，jsdom/部分环境不支持） */
+function confirmDanger(btn, doIt, restoreLabel) {
+  if (btn.dataset.armed === '1') {
+    btn.dataset.armed = '0';
+    btn.textContent = restoreLabel || btn.dataset.label || '执行';
+    btn.classList.remove('danger');
+    doIt();
+    return;
+  }
+  btn.dataset.armed = '1';
+  if (!btn.dataset.label) btn.dataset.label = btn.textContent;
+  btn.textContent = '再点一次确认';
+  setTimeout(function () {
+    if (btn.dataset.armed === '1') {
+      btn.dataset.armed = '0';
+      btn.textContent = btn.dataset.label;
+    }
+  }, 3500);
+}
+
+/* ==========================================================================
+ * 12. 对话模块（自由提问 + 历史保存）
+ * ========================================================================== */
+/** 按当前语言给出的快捷提问 */
+const CHAT_CHIPS = {
+  python: ['列表推导式是什么？给个例子', '== 和 is 有什么区别？', '怎么优雅地读写文件？', '考试常考的 Python 易错点'],
+  c: ['指针和数组到底有什么区别？', 'scanf 为什么必须加 & ？', 'malloc/free 的使用要点', '考试常考的 C 语言易错点'],
+  cpp: ['vector 和普通数组该怎么选？', '引用和指针的区别？', 'sort 自定义比较器怎么写？', '考试常考的 C++ 易错点']
+};
+
+function chatEmptyHtml() {
+  const L = langOf(state.lang);
+  const chips = (CHAT_CHIPS[L.id] || CHAT_CHIPS.python).map(function (q) {
+    return '<button class="chip" data-q="' + esc(q) + '">' + esc(q) + '</button>';
+  }).join('');
+  const noKey = !state.apiKey
+    ? '<div class="note warn" style="text-align:left;margin:0 auto 14px;max-width:460px"><b>还没有配置 API Key。</b><br>' +
+      '本站不提供密钥，需要你自己去服务商申请一个（免费额度即可）。' +
+      '<div style="margin-top:8px"><button class="btn sm primary" data-goto="api">去 API 设置</button></div></div>'
+    : '';
+  return '<div class="chat-empty">' + noKey +
+    '<div>有什么想问的？我会按 <b>' + esc(L.name) + '</b> 的语言上下文回答，' +
+    '历史会自动保存在你这台电脑的浏览器里。</div>' +
+    '<div class="chips">' + chips + '</div></div>';
+}
+
+function msgHtml(m) {
+  const isUser = m.role === 'user';
+  let inner;
+  if (isUser) {
+    inner = '<div class="txt">' + esc(m.content) + '</div>';
+  } else if (m.streaming && !m.content) {
+    inner = '<div class="typing"><i></i><i></i><i></i></div>';
+  } else {
+    inner = '<div class="md' + (m.streaming ? ' caret' : '') + '">' + renderMarkdown(m.content) + '</div>';
+  }
+  return '<div class="msg ' + (isUser ? 'user' : 'ai') + '">' +
+    '<div class="avatar">' + (isUser ? '&#128587;' : '&#129302;') + '</div>' +
+    '<div class="bubble' + (m.err ? ' err-bubble' : '') + '">' + inner +
+    '<div class="meta">' + fmtTime(m.ts) + (m.err ? ' · 调用失败' : '') + '</div>' +
+    '</div></div>';
+}
+
+function renderChatMessages() {
+  const box = $('#chatBody');
+  if (!box) return;
+  const s = activeSession();
+  if (!s || !s.messages.length) { box.innerHTML = chatEmptyHtml(); return; }
+  box.innerHTML = s.messages.map(msgHtml).join('');
+}
+
+function renderChatSide() {
+  const list = $('#chatList');
+  if (!list) return;
+  if (!store.chat.sessions.length) {
+    list.innerHTML = '<div style="color:var(--muted);font-size:12.5px;text-align:center;padding:18px 6px">还没有对话</div>';
+  } else {
+    list.innerHTML = store.chat.sessions.map(function (s) {
+      return '<div class="chat-item' + (s.id === store.chat.activeId ? ' active' : '') + '" data-id="' + esc(s.id) + '">' +
+        '<div class="t">' + esc(s.title || '新对话') + '</div>' +
+        '<div class="m">' + s.messages.length + ' 条 · ' + fmtTime(s.updatedAt) + '</div>' +
+        '<button class="del" data-del="' + esc(s.id) + '" title="删除这个会话">&#10005;</button>' +
+        '</div>';
+    }).join('');
+  }
+}
+
+function renderChatAll() {
+  renderChatSide();
+  renderChatMessages();
+  const s = activeSession();
+  const title = $('#chatTitle');
+  if (title) { title.value = s ? (s.title || '') : ''; title.disabled = !s; }
+  const hint = $('#chatHint');
+  if (hint) {
+    hint.textContent = store.available
+      ? (s ? ('共 ' + s.messages.length + ' 条 · 已自动保存') : '')
+      : '⚠️ 当前浏览器禁止本地存储，历史不会被保存';
+  }
+  scrollChatBottom();
+}
+
+function scrollChatBottom() {
+  const box = $('#chatBody');
+  if (box) box.scrollTop = box.scrollHeight;
+}
+
+/** 组装发给 AI 的消息（含 system 与最近若干轮历史） */
+function buildChatMessages() {
+  const s = activeSession();
+  const L = langOf(state.lang);
+  const sys = buildSystemPrompt(
+    '你现在在一个"对话"面板里和学生自由聊天。回答要求：简洁、口语化、直接给结论与例子；' +
+    '代码用 ```' + L.fence + ' 围栏；涉及多个要点时用列表或表格；不确定的语法不要编造，可以说明不确定。'
+  );
+  const msgs = [{ role: 'system', content: sys }];
+  if (s) {
+    s.messages
+      .filter(function (m) { return !m.err; })          // 失败的调用不进入上下文
+      .slice(-LS_LIMIT.ctxMsgs)
+      .forEach(function (m) { msgs.push({ role: m.role, content: m.content }); });
+  }
+  return msgs;
+}
+
+async function chatSend() {
+  const input = $('#chatInput');
+  const text = (input.value || '').trim();
+  if (!text) { toast('先输入你想问的问题', 'err'); input.focus(); return; }
+  const cfgErr = configError();
+  if (cfgErr) { toast(cfgErr, 'err'); switchTab('api'); return; }
+  if (running.chat) { toast('上一轮还在生成中，请先停止', 'err'); return; }
+
+  // 可选：把界面上的代码 / 题目一起带进提问
+  const L = langOf(state.lang);
+  const extra = [];
+  if ($('#chatUseCode') && $('#chatUseCode').checked && assistantEditor.api) {
+    const code = assistantEditor.api.getValue().trim();
+    if (code) extra.push('【我当前的代码】\n```' + L.fence + '\n' + code + '\n```');
+  }
+  if ($('#chatUseProblem') && $('#chatUseProblem').checked) {
+    const p = ($('#gradeProblem').value || '').trim();
+    if (p) extra.push('【我当前的题目】\n' + p);
+  }
+  const full = extra.length ? (extra.join('\n\n') + '\n\n【我的问题】\n' + text) : text;
+
+  chatAdd('user', full);
+  recordChatTurn();
+  input.value = '';
+  renderChatAll();
+
+  await chatRun();
+}
+
+/** 执行一轮对话（流式） */
+async function chatRun() {
+  const s = activeSession();
+  if (!s) return;
+  const holder = { role: 'assistant', content: '', ts: Date.now(), streaming: true };
+  s.messages.push(holder);
+  renderChatMessages();
+  scrollChatBottom();
+
+  startRunUI('chat', 'AI 正在回答…');
+  const btn = $('#chatSendBtn');
+  if (btn) btn.disabled = true;
+  let acc = '';
+  try {
+    const finalText = await callAI({
+      messages: buildChatMessages(),
+      which: 'chat',
+      temperature: 0.4,
+      maxTokens: 6000,
+      onDelta: function (chunk, full) {
+        acc = full;
+        holder.content = full;
+        renderChatMessages();
+        scrollChatBottom();
+      }
+    });
+    holder.content = finalText;
+    holder.streaming = false;
+  } catch (e) {
+    if (e && e.name === 'AbortError') {
+      holder.content = acc || '（已停止生成）';
+      holder.streaming = false;
+    } else {
+      holder.content = '⚠️ ' + (e && e.message ? e.message : '调用失败');
+      holder.err = true;                 // 标成失败：会显示出来，但不会进入后续上下文
+      holder.streaming = false;
+      toast('调用失败，详情见对话气泡', 'err');
+    }
+  } finally {
+    s.updatedAt = Date.now();
+    persist(LS_KEY.chat, store.chat);
+    renderChatAll();
+    endRunUI('chat');
+    if (btn) btn.disabled = false;
+  }
+}
+
+function chatExportMarkdown(list) {
+  const stamp = new Date().toISOString().slice(0, 10);
+  const md = list.map(function (s) {
+    const head = '# ' + (s.title || '对话') + '\n\n> ' + langOf(s.lang).name + ' · ' +
+      new Date(s.createdAt).toLocaleString('zh-CN', { hour12: false }) + ' · 共 ' + s.messages.length + ' 条\n';
+    const body = s.messages.map(function (m) {
+      return '## ' + (m.role === 'user' ? '我' : '编程助教') + '\n\n' + (m.content || '') ;
+    }).join('\n\n---\n\n');
+    return head + '\n' + body;
+  }).join('\n\n\n<!-- ===== 会话分隔 ===== -->\n\n\n');
+  downloadText(md, 'codetutor-chat-' + stamp + '.md', 'text/markdown;charset=utf-8');
+}
+
+function bindChatPanel() {
+  // 会话列表：点击切换 / 点击 ✕ 删除
+  $('#chatList').addEventListener('click', function (e) {
+    const del = e.target.closest('[data-del]');
+    if (del) {
+      e.stopPropagation();
+      chatDeleteSession(del.dataset.del);
+      toast('已删除该会话', 'ok');
+      return;
+    }
+    const item = e.target.closest('.chat-item');
+    if (item) {
+      store.chat.activeId = item.dataset.id;
+      persist(LS_KEY.chat, store.chat);
+      renderChatAll();
+    }
+  });
+
+  $('#chatNewBtn').addEventListener('click', function () { chatNewSession(false); toast('已新建对话', 'ok'); });
+
+  $('#chatTitle').addEventListener('input', function () {
+    const s = activeSession();
+    if (!s) return;
+    s.title = this.value.slice(0, 60) || '新对话';
+    s.updatedAt = Date.now();
+    persist(LS_KEY.chat, store.chat);
+    renderChatSide();
+  });
+
+  $('#chatSendBtn').addEventListener('click', chatSend);
+  $('#chatStopBtn').addEventListener('click', function () { stopRun('chat'); });
+  $('#chatInput').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); chatSend(); }
+  });
+
+  // 空状态里的快捷提问 / 去设置
+  $('#chatBody').addEventListener('click', function (e) {
+    const chip = e.target.closest('.chip');
+    if (chip) { $('#chatInput').value = chip.dataset.q; chatSend(); return; }
+    const goto = e.target.closest('[data-goto]');
+    if (goto) switchTab(goto.dataset.goto);
+  });
+
+  $('#chatExportBtn').addEventListener('click', function () {
+    const s = activeSession();
+    if (!s || !s.messages.length) { toast('当前会话还没有内容', 'err'); return; }
+    chatExportMarkdown([s]);
+  });
+  $('#chatExportAllBtn').addEventListener('click', function () {
+    if (!store.chat.sessions.length) { toast('还没有任何对话', 'err'); return; }
+    chatExportMarkdown(store.chat.sessions);
+  });
+  $('#chatClearBtn').addEventListener('click', function () {
+    const s = activeSession();
+    if (!s) { toast('当前没有会话', 'err'); return; }
+    this.dataset.label = this.textContent;
+    confirmDanger(this, function () {
+      s.messages = [];
+      s.title = '新对话';
+      persist(LS_KEY.chat, store.chat);
+      renderChatAll();
+      toast('已清空本篇对话', 'ok');
+    });
+  });
+  $('#chatClearAllBtn').addEventListener('click', function () {
+    if (!store.chat.sessions.length) { toast('还没有任何对话', 'err'); return; }
+    this.dataset.label = this.textContent;
+    confirmDanger(this, function () {
+      store.chat = { sessions: [], activeId: null };
+      if (store.available) { try { localStorage.removeItem(LS_KEY.chat); } catch (e) {} }
+      renderChatAll();
+      toast('已清空全部对话历史', 'ok');
+    });
+  });
+}
+
+/* ==========================================================================
+ * 13. 学习进度模块（统计 + 趋势 + 历史记录 + 备份导入导出）
+ * ========================================================================== */
+function trendSvgHtml(grades) {
+  const pts = grades.slice().reverse();     // 存的是倒序，这里正过来
+  if (!pts.length) return '<div class="trend-empty">还没有批改记录。去【代码批改】提交一份代码，这里就会出现分数曲线。</div>';
+  const W = 640, H = 210, L = 36, R = 16, T = 14, B = 26;
+  const n = pts.length;
+  const X = function (i) { return n === 1 ? (L + W - R) / 2 : L + (W - L - R) * i / (n - 1); };
+  const Y = function (v) { return T + (H - T - B) * (1 - Math.max(0, Math.min(100, v)) / 100); };
+  let grid = '';
+  // 只给 0 / 60 / 100 标注刻度，其余画淡线即可，避免和分数标签挤在一起
+  [0, 25, 50, 60, 75, 100].forEach(function (v) {
+    const y = Y(v);
+    const strong = (v === 0 || v === 100 || v === 60);
+    grid += '<line x1="' + L + '" y1="' + y + '" x2="' + (W - R) + '" y2="' + y + '" stroke="' + (strong ? '#dbe2ee' : '#eef1f7') + '" stroke-width="1"' +
+            (v === 60 ? ' stroke-dasharray="4 4"' : '') + '/>';
+    if (strong) {
+      grid += '<text x="' + (L - 6) + '" y="' + (y + 4) + '" text-anchor="end" font-size="10" fill="#98a2b3">' + v + '</text>';
+    }
+  });
+  const line = pts.map(function (p, i) { return X(i).toFixed(1) + ',' + Y(p.score).toFixed(1); }).join(' ');
+  const area = L + ',' + Y(0) + ' ' + line + ' ' + X(n - 1).toFixed(1) + ',' + Y(0);
+  let dots = '';
+  pts.forEach(function (p, i) {
+    const c = p.score >= 85 ? '#16a34a' : (p.score >= 60 ? '#d97706' : '#dc2626');
+    dots += '<circle cx="' + X(i).toFixed(1) + '" cy="' + Y(p.score).toFixed(1) + '" r="4" fill="#fff" stroke="' + c + '" stroke-width="2">' +
+      '<title>' + esc(langOf(p.lang).name + ' · ' + p.score + ' 分 · ' + new Date(p.ts).toLocaleString('zh-CN', { hour12: false })) + '</title></circle>';
+    dots += '<text x="' + X(i).toFixed(1) + '" y="' + (Y(p.score) - 9) + '" text-anchor="middle" font-size="10" fill="#667085">' + p.score + '</text>';
+  });
+  return '<svg class="trend-svg" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="批改分数趋势">' +
+    grid +
+    '<polygon points="' + area + '" fill="rgba(37,99,235,.07)"/>' +
+    '<polyline points="' + line + '" fill="none" stroke="#2563eb" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>' +
+    dots + '</svg>';
+}
+
+function statCard(k, v, unit, hint) {
+  return '<div class="stat-card"><div class="k">' + esc(k) + '</div>' +
+    '<div class="v">' + (v === null || v === undefined ? '—' : esc(String(v))) +
+    (unit ? '<span class="u">' + esc(unit) + '</span>' : '') + '</div>' +
+    (hint ? '<div class="k" style="margin-top:4px">' + esc(hint) + '</div>' : '') + '</div>';
+}
+
+function gradeDetailHtml(g) {
+  let h = '';
+  if (Array.isArray(g.items) && g.items.length) {
+    h += '<div class="bars">';
+    g.items.forEach(function (it) {
+      const max = Number(it.max) || 0, got = Number(it.got) || 0;
+      const pct = max > 0 ? Math.max(0, Math.min(100, Math.round(got / max * 100))) : 0;
+      const c = pct >= 85 ? '#16a34a' : (pct >= 60 ? '#d97706' : '#dc2626');
+      h += '<div class="bar-row"><span>' + esc(it.name || '评分项') + '</span>' +
+        '<span class="bar-track"><span class="bar-fill" style="width:' + pct + '%;background:' + c + '"></span></span>' +
+        '<span class="num">' + got + ' / ' + max + '</span>' +
+        (it.reason ? '<span class="bar-reason">' + esc(it.reason) + '</span>' : '') + '</div>';
+    });
+    h += '</div>';
+  }
+  if (g.summary) h += '<div class="note info" style="margin-top:10px">' + esc(g.summary) + '</div>';
+  if (g.code) h += '<div style="font-size:12px;color:var(--muted);margin-top:8px">当时提交的代码：</div><pre>' + esc(g.code) + '</pre>';
+  return h || '<div style="color:var(--muted);font-size:13px">这条记录没有明细（早期版本或模型未返回评分表）。</div>';
+}
+
+function renderProgress() {
+  const grid = $('#statGrid');
+  if (!grid) return;
+  const st = computeStats();
+
+  grid.innerHTML = [
+    statCard('批改次数', st.count, '次', st.latest !== null ? ('最近一次 ' + st.latest + ' 分') : '还没有记录'),
+    statCard('平均分', st.avg, '分', st.best !== null ? ('最高 ' + st.best + ' 分') : ''),
+    statCard('连续学习', st.streak, '天', '累计 ' + st.daysActive + ' 天有活动'),
+    statCard('对话轮数', st.chat, '轮', '提问即 +1'),
+    statCard('生成习题', st.quiz, '套', '在【习题生成】页触发'),
+    statCard('代码分析', st.assist, '次', '在【代码助手】页触发'),
+    statCard('平均代码行数', st.avgCode, '行', '按提交批改的代码统计'),
+    statCard('本地存储', store.available ? '可用' : '不可用', '', store.available ? '数据保存在本机浏览器' : '隐私模式或已被禁用')
+  ].join('');
+
+  const trendBox = $('#trendBox');
+  if (trendBox) trendBox.innerHTML = trendSvgHtml(store.progress.grades);
+  const sub = $('#trendSub');
+  if (sub) {
+    sub.textContent = st.count
+      ? ('共 ' + st.count + ' 次批改，平均 ' + st.avg + ' 分；虚线是 60 分及格线。鼠标悬停圆点可看时间。')
+      : '每次在【代码批改】提交都会记录一个点，满分 100。';
+  }
+
+  const langBox = $('#langStats');
+  if (langBox) {
+    const ids = ['python', 'c', 'cpp'];
+    langBox.innerHTML = ids.map(function (id) {
+      const d = st.byLang[id];
+      const n = d ? d.n : 0;
+      const avg = n ? Math.round(d.sum / n * 10) / 10 : 0;
+      const pct = n ? Math.max(4, Math.min(100, Math.round(avg))) : 0;
+      return '<div class="lang-bar"><span class="badge lang">' + esc(LANGS[id].name) + '</span>' +
+        '<span class="bar-track"><span class="bar-fill" style="width:' + pct + '%"></span></span>' +
+        '<span style="color:var(--muted);font-size:12.5px">' + (n ? (n + ' 次 · 平均 ' + avg + ' 分') : '暂无记录') + '</span></div>';
+    }).join('');
+  }
+
+  const cnt = $('#gradeCount');
+  if (cnt) cnt.textContent = store.progress.grades.length + ' 条';
+  const list = $('#gradeList');
+  if (list) {
+    list.innerHTML = store.progress.grades.length
+      ? store.progress.grades.map(function (g, i) { return gradeItemHtml(g, i); }).join('')
+      : '<div style="color:var(--muted);font-size:13.5px;padding:14px 4px">还没有批改记录。</div>';
+  }
+}
+
+function gradeItemHtml(g, idx) {
+  const c = g.score >= 85 ? 'var(--ok)' : (g.score >= 60 ? 'var(--warn)' : 'var(--err)');
+  return '<div class="grade-item" data-idx="' + idx + '">' +
+    '<div class="row1">' +
+      '<span class="badge lang">' + esc(langOf(g.lang).name) + '</span>' +
+      '<span class="score" style="color:' + c + '">' + g.score + ' / 100</span>' +
+      (g.grade ? '<span class="badge gray">' + esc(g.grade) + '</span>' : '') +
+      '<span style="flex:1"></span>' +
+      '<span style="font-size:12px;color:var(--muted)">' + new Date(g.ts).toLocaleString('zh-CN', { hour12: false }) + '</span>' +
+      '<button class="btn sm ghost" data-act="toggle">明细</button>' +
+      '<button class="btn sm ghost" data-act="redo">重新批改</button>' +
+    '</div>' +
+    '<div class="prob">' + esc((g.problem || '').replace(/\s+/g, ' ').slice(0, 140) || '(未记录题目)') + '</div>' +
+    '<div class="detail">' + gradeDetailHtml(g) + '</div>' +
+  '</div>';
+}
+
+function bindProgressPanel() {
+  $('#gradeList').addEventListener('click', function (e) {
+    const item = e.target.closest('.grade-item');
+    if (!item) return;
+    const g = store.progress.grades[Number(item.dataset.idx)];
+    if (!g) return;
+    const act = e.target.closest('[data-act]');
+    if (act && act.dataset.act === 'toggle') { item.classList.toggle('open'); return; }
+    if (act && act.dataset.act === 'redo') {
+      $('#gradeProblem').value = g.problem || '';
+      gradeEditor.api.setValue(g.code || '');
+      switchTab('grade');
+      toast('已把这条记录带回【代码批改】', 'ok');
+    }
+  });
+
+  $('#gradeExportBtn').addEventListener('click', function () {
+    const data = { app: 'CodeTutor', version: 1, exportedAt: new Date().toISOString(), progress: store.progress, chat: store.chat };
+    downloadText(JSON.stringify(data, null, 2), 'codetutor-backup-' + todayKey() + '.json', 'application/json');
+    toast('已导出（含对话与进度）', 'ok');
+  });
+
+  $('#gradeImportBtn').addEventListener('click', function () { $('#gradeImportFile').click(); });
+  $('#gradeImportFile').addEventListener('change', function (e) {
+    const f = e.target.files && e.target.files[0];
+    e.target.value = '';
+    if (!f) return;
+    const reader = new FileReader();
+    reader.onload = function () {
+      try {
+        const d = JSON.parse(String(reader.result || '{}'));
+        if (!d || typeof d !== 'object') throw new Error('格式不正确');
+        if (d.progress && typeof d.progress === 'object') {
+          store.progress = Object.assign({ grades: [], quiz: 0, assist: 0, chat: 0, days: {} }, d.progress);
+          persist(LS_KEY.progress, store.progress);
+        }
+        if (d.chat && Array.isArray(d.chat.sessions)) {
+          store.chat = d.chat;
+          persist(LS_KEY.chat, store.chat);
+        }
+        // 重新走一遍自检，避免导入脏数据
+        const keepProgress = store.progress, keepChat = store.chat;
+        store.progress = { grades: [], quiz: 0, assist: 0, chat: 0, days: {} };
+        store.chat = { sessions: [], activeId: null };
+        if (store.available) {
+          try { localStorage.setItem(LS_KEY.progress, JSON.stringify(keepProgress)); } catch (e2) {}
+          try { localStorage.setItem(LS_KEY.chat, JSON.stringify(keepChat)); } catch (e2) {}
+        }
+        loadStore();
+        renderChatAll();
+        renderProgress();
+        toast('导入成功', 'ok');
+      } catch (err) {
+        toast('导入失败：' + (err && err.message ? err.message : '文件无法解析'), 'err');
+      }
+    };
+    reader.onerror = function () { toast('读取文件失败', 'err'); };
+    reader.readAsText(f, 'utf-8');
+  });
+
+  $('#gradeClearBtn').addEventListener('click', function () {
+    if (!store.progress.grades.length && !store.progress.quiz && !store.progress.chat) { toast('没有可清空的进度', 'err'); return; }
+    this.dataset.label = this.textContent;
+    confirmDanger(this, function () {
+      store.progress = { grades: [], quiz: 0, assist: 0, chat: 0, days: {} };
+      if (store.available) { try { localStorage.removeItem(LS_KEY.progress); } catch (e) {} }
+      renderProgress();
+      toast('已清空学习进度（对话历史保留）', 'ok');
+    });
+  });
+}
+
+/* ==========================================================================
+ * 14. 运行状态控制 / 标签页 / 语言切换 / 初始化
  * ========================================================================== */
 function startRunUI(which, text) {
-  const map = { assistant: 'assistantStopBtn', quiz: 'quizStopBtn', grade: 'gradeStopBtn' };
-  const submitMap = { assistant: 'assistantAskBtn', quiz: 'quizGenBtn', grade: 'gradeSubmitBtn' };
+  const map = { assistant: 'assistantStopBtn', quiz: 'quizStopBtn', grade: 'gradeStopBtn', chat: 'chatStopBtn' };
+  const submitMap = { assistant: 'assistantAskBtn', quiz: 'quizGenBtn', grade: 'gradeSubmitBtn', chat: 'chatSendBtn' };
   const stopBtn = document.getElementById(map[which]);
   const submitBtn = document.getElementById(submitMap[which]);
   if (stopBtn) { stopBtn.disabled = false; stopBtn.textContent = '■ 停止生成'; }
@@ -2022,8 +2937,8 @@ function startRunUI(which, text) {
   document.querySelectorAll('#assistantActions .btn').forEach(function (b) { b.disabled = true; });
 }
 function endRunUI(which) {
-  const map = { assistant: 'assistantStopBtn', quiz: 'quizStopBtn', grade: 'gradeStopBtn' };
-  const submitMap = { assistant: 'assistantAskBtn', quiz: 'quizGenBtn', grade: 'gradeSubmitBtn' };
+  const map = { assistant: 'assistantStopBtn', quiz: 'quizStopBtn', grade: 'gradeStopBtn', chat: 'chatStopBtn' };
+  const submitMap = { assistant: 'assistantAskBtn', quiz: 'quizGenBtn', grade: 'gradeSubmitBtn', chat: 'chatSendBtn' };
   const stopBtn = document.getElementById(map[which]);
   const submitBtn = document.getElementById(submitMap[which]);
   if (stopBtn) { stopBtn.disabled = true; }
@@ -2036,7 +2951,7 @@ function stopRun(which) {
   else toast('当前没有正在进行的任务');
 }
 
-/** 语言切换：全局联动（编辑器高亮 + 徽标 + 示例代码提示） */
+/** 语言切换：全局联动（编辑器高亮 + 徽标 + 对话页快捷提问 + 示例代码提示） */
 function onLangChanged() {
   const L = langOf(state.lang);
   if (assistantEditor.api) assistantEditor.api.setLang(L.id);
@@ -2045,6 +2960,14 @@ function onLangChanged() {
   $('#quizLangBadge').textContent = L.name;
   $('#gradeLangBadge').textContent = L.name;
   $('#gradeEditorLang').textContent = L.name;
+  const cb = $('#chatLangBadge');
+  if (cb) {
+    cb.textContent = L.name;
+    // 会话语言跟随全局切换；若当前会话为空，顺手把它的语言标记更新掉
+    const s = activeSession();
+    if (s && !s.messages.length) { s.lang = L.id; persist(LS_KEY.chat, store.chat); }
+    if (s && !s.messages.length) renderChatMessages();   // 刷新快捷提问
+  }
   saveSettings(true);
 }
 
@@ -2090,6 +3013,12 @@ async function autoDetectProxy() {
 function init() {
   loadSettings();
 
+  // 载入本地历史与进度（失败也能正常用，只是不保存）
+  loadStore();
+  if (!store.available) {
+    setTimeout(function () { toast('当前浏览器禁止本地存储，对话与进度不会被保存', 'err'); }, 1200);
+  }
+
   // 顶部语言选择器
   $('#langSelect').value = state.lang;
   $('#langSelect').addEventListener('change', function () {
@@ -2108,14 +3037,19 @@ function init() {
   bindAssistantPanel();
   bindQuizPanel();
   bindGradePanel();
+  bindChatPanel();
+  bindProgressPanel();
 
   // 初始化时统一语言状态
   onLangChanged();
   refreshApiStatus();
+  renderChatAll();
+  renderProgress();
 
-  // 从 URL hash 打开指定标签页
+  // 从 URL hash 打开指定标签页（没有则默认落在「对话」）
+  const TABS = ['chat', 'assistant', 'quiz', 'grade', 'progress', 'api'];
   const hash = (location.hash || '').replace('#', '');
-  if (['api', 'assistant', 'quiz', 'grade'].indexOf(hash) >= 0) switchTab(hash);
+  switchTab(TABS.indexOf(hash) >= 0 ? hash : 'chat');
 
   // 降级提示
   if (!window.CodeMirror) {
@@ -2125,10 +3059,10 @@ function init() {
   // 页面关闭/刷新时主动清空内存中的密钥（双保险；key 本身不落盘）
   window.addEventListener('pagehide', function () { state.apiKey = ''; });
 
-  // 键盘快捷键：Alt+1~4 切换标签页
+  // 键盘快捷键：Alt+1~6 切换标签页
   document.addEventListener('keydown', function (e) {
     if (e.altKey && !e.ctrlKey && !e.metaKey) {
-      const map = { '1': 'api', '2': 'assistant', '3': 'quiz', '4': 'grade' };
+      const map = { '1': 'chat', '2': 'assistant', '3': 'quiz', '4': 'grade', '5': 'progress', '6': 'api' };
       if (map[e.key]) { e.preventDefault(); switchTab(map[e.key]); }
     }
   });
