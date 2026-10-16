@@ -4095,6 +4095,12 @@ function init() {
   const hash = (location.hash || '').replace('#', '');
   switchTab(TABS.indexOf(hash) >= 0 ? hash : 'chat');
 
+  // 地址栏 hash 变化（浏览器前进/后退、手改 hash）也要跟着切页
+  window.addEventListener('hashchange', function () {
+    const h2 = (location.hash || '').replace('#', '');
+    if (TABS.indexOf(h2) >= 0) switchTab(h2);
+  });
+
   // 降级提示
   if (!window.CodeMirror) {
     toast('CodeMirror CDN 未加载成功，已降级为普通编辑器', 'err');
