@@ -689,6 +689,41 @@ kbd{background:var(--card-2);border:1px solid var(--line);border-bottom-width:2p
 .skin-card .dots{display:flex;gap:4px;margin-top:8px}
 .skin-card .dots i{width:16px;height:16px;border-radius:5px;display:block;box-shadow:inset 0 0 0 1px rgba(0,0,0,.10)}
 .skin-card .chk{font-size:11px;color:var(--brand);font-weight:600;margin-left:auto}
+/* ============================================================
+ * 11. 彩蛋栏（代码写累了，看看贵州发展吧）
+ * ============================================================ */
+.egg-bar{
+  position:relative;overflow:hidden;border-top:1px solid var(--line);
+  background:linear-gradient(100deg,
+    color-mix(in srgb, var(--brand) 12%, var(--card)) 0%,
+    color-mix(in srgb, var(--accent) 14%, var(--card)) 55%,
+    color-mix(in srgb, var(--warn) 10%, var(--card)) 100%);
+}
+.egg-bar.hide{display:none}
+/* 一道缓慢扫过的高光，制造"彩蛋"的小惊喜（prefers-reduced-motion 下会被全局规则关掉） */
+.egg-bar::after{
+  content:"";position:absolute;top:0;left:0;width:38%;height:100%;pointer-events:none;
+  transform:translateX(-120%);
+  background:linear-gradient(100deg,transparent,rgba(255,255,255,.5),transparent);
+  animation:eggSweep 5.6s ease-in-out infinite
+}
+[data-theme="dark"] .egg-bar::after{background:linear-gradient(100deg,transparent,rgba(255,255,255,.09),transparent)}
+@keyframes eggSweep{0%{transform:translateX(-120%)}55%{transform:translateX(330%)}100%{transform:translateX(330%)}}
+.egg-inner{display:flex;align-items:center;gap:10px;padding:11px 16px;font-size:13.5px;position:relative;z-index:1}
+.egg-ico{font-size:17px;display:inline-block;animation:eggBob 2.8s ease-in-out infinite}
+@keyframes eggBob{0%,100%{transform:translateY(0) rotate(-5deg)}50%{transform:translateY(-3px) rotate(5deg)}}
+.egg-txt{color:var(--text)}
+.egg-txt b{color:var(--brand);font-weight:700}
+.egg-spacer{flex:1 1 auto}
+.egg-go{text-decoration:none;background:var(--card);box-shadow:var(--shadow);white-space:nowrap}
+.egg-go:hover{text-decoration:none}
+.egg-close{border:0;background:transparent;color:var(--muted);cursor:pointer;font-size:13px;line-height:1;padding:6px;border-radius:8px;transition:.15s}
+.egg-close:hover{color:var(--err);background:var(--err-soft)}
+@media (max-width:640px){
+  .egg-inner{flex-wrap:wrap;gap:8px;padding:10px 14px;font-size:13px}
+  .egg-spacer{display:none}
+  .egg-go{margin-left:auto}
+}
 </style>
 </head>
 <body>
@@ -1087,12 +1122,29 @@ kbd{background:var(--card-2);border:1px solid var(--line);border-bottom-width:2p
 
 </main>
 
+<!-- ============================================================
+     彩蛋栏：写代码累了，去「贵州发展吧」逛逛
+     可收起（记住状态），页脚有「显示彩蛋栏」可以再打开
+     ============================================================ -->
+<div class="egg-bar" id="eggBar">
+  <div class="wrap egg-inner">
+    <span class="egg-ico" aria-hidden="true">&#127880;</span>
+    <span class="egg-txt">代码写累了，看看<b>贵州发展吧</b>休息一下吧～</span>
+    <span class="egg-spacer"></span>
+    <a class="btn sm egg-go" id="eggGo"
+       href="https://tieba.baidu.com/f?kw=%E8%B4%B5%E5%B7%9E%E5%8F%91%E5%B1%95&amp;fr=personalize_page"
+       target="_blank" rel="noopener noreferrer">去逛逛 &#8599;</a>
+    <button class="egg-close" id="eggClose" type="button" title="收起彩蛋栏" aria-label="收起彩蛋栏">&#10005;</button>
+  </div>
+</div>
+
 <footer>
   <div class="wrap">
     <b>CodeTutor</b> · 纯静态多语言编程学习网站（HTML + CSS + JavaScript，无后端、无数据库）。<br>
     AI 能力由 DeepSeek / 通义千问 提供，经 Cloudflare Worker 代理转发。API Key 仅存于浏览器内存，刷新即消失，本站不收集、不存储、不上传任何密钥或代码。<br>
     历史对话与学习进度保存在<b>你自己浏览器的 localStorage</b>，不上传服务器，可随时在【学习进度】页导出或清除。<br>
-    AI 生成内容仅供参考，请以编译器运行结果与教材 / 考试大纲为准。使用本网站即表示你已阅读并同意「API 设置」页的完整免责声明。
+    AI 生成内容仅供参考，请以编译器运行结果与教材 / 考试大纲为准。使用本网站即表示你已阅读并同意「API 设置」页的完整免责声明。<br>
+    <a href="#" id="eggRestore" style="font-size:12.5px">&#127880; 显示彩蛋栏</a>
   </div>
 </footer>
 
@@ -3593,6 +3645,7 @@ function init() {
 
   // 外观与交互增强：主题、皮肤、分段控件、快捷键弹窗、趋势范围
   initTheme();
+  initEggBar();
   $('#themeBtn').addEventListener('click', cycleTheme);
   if ($('#skinBtn')) {
     updateSkinButton();
@@ -3864,6 +3917,34 @@ function bindTrendTooltip() {
     tip.classList.add('show');
   });
   svg.addEventListener('mouseleave', function () { tip.classList.remove('show'); });
+}
+
+/* ---------- 彩蛋栏（写代码累了，去贵州发展吧逛逛） ---------- */
+const EGG_KEY = 'codetutor.eggbar.v1';
+function setEggBar(show) {
+  const bar = $('#eggBar');
+  if (!bar) return;
+  bar.classList.toggle('hide', !show);
+  try { localStorage.setItem(EGG_KEY, show ? '1' : '0'); } catch (e) { /* 隐私模式 */ }
+}
+function initEggBar() {
+  const bar = $('#eggBar');
+  if (!bar) return;
+  let show = true;
+  try { show = localStorage.getItem(EGG_KEY) !== '0'; } catch (e) { /* 默认展示 */ }
+  bar.classList.toggle('hide', !show);
+  const close = $('#eggClose');
+  if (close) close.addEventListener('click', function () {
+    setEggBar(false);
+    toast('彩蛋栏已收起，页脚可以再打开 🎈', 'ok');
+  });
+  const restore = $('#eggRestore');
+  if (restore) restore.addEventListener('click', function (e) {
+    e.preventDefault();
+    setEggBar(true);
+    if (bar.scrollIntoView) { try { bar.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch (err) { /* 忽略 */ } }
+    toast('彩蛋栏回来啦 🎈', 'ok');
+  });
 }
 
 /* DOM 就绪后启动 */
