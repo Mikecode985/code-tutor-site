@@ -1160,6 +1160,43 @@ footer a:hover{text-decoration:underline}
   .gy-hero,.gy-hero svg{width:220px;height:56px}
   .gy-footer-art,.gy-footer-art svg{width:220px;height:32px}
 }
+
+/* ============================================================
+ * 14. 学习知识（分组折叠卡 + 掌握进度）
+ * ============================================================ */
+.kb-progress{display:flex;align-items:center;gap:10px;min-height:38px}
+.kb-progress-track{flex:1;height:6px;border-radius:99px;background:color-mix(in srgb,var(--muted) 18%,transparent);overflow:hidden}
+.kb-progress-fill{display:block;height:100%;border-radius:99px;background:var(--brand);transition:width .45s var(--ease)}
+.kb-progress-txt{font-size:12.5px;color:var(--muted);white-space:nowrap}
+.kb-card{
+  background:var(--card);border:1px solid var(--line-2);border-radius:var(--r-xl);margin-bottom:12px;
+  overflow:hidden;box-shadow:var(--shadow)
+}
+.kb-head{
+  display:flex;align-items:center;gap:10px;width:100%;border:0;background:transparent;padding:16px 20px;
+  cursor:pointer;font:inherit;text-align:left;color:var(--text);transition:background .2s var(--ease)
+}
+.kb-head:hover{background:color-mix(in srgb,var(--muted) 6%,transparent)}
+.kb-arrow{color:var(--muted);font-size:11px;transition:transform .26s var(--ease);flex:0 0 auto}
+.kb-card.open .kb-arrow{transform:rotate(90deg)}
+.kb-title{font-weight:600;font-size:15px;letter-spacing:-.018em}
+.kb-pts-count{font-size:12px;color:var(--muted);margin-left:auto;white-space:nowrap}
+.kb-done-badge{font-size:11.5px;color:var(--ok);background:var(--ok-soft);border-radius:var(--r-pill);padding:3px 10px;font-weight:500;white-space:nowrap}
+.kb-body{display:none;padding:4px 20px 18px;border-top:1px solid var(--line-2)}
+.kb-card.open .kb-body{display:block}
+.kb-sec{margin-top:14px}
+.kb-sec-t{font-size:11.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.kb-list{margin:0;padding-left:20px;font-size:14px;line-height:1.75}
+.kb-list li{margin:3px 0}
+.kb-text{font-size:13.5px;line-height:1.72;color:var(--text-2)}
+.kb-traps{background:var(--warn-soft);border:1px solid var(--warn-line);border-radius:var(--r-m);padding:12px 14px}
+.kb-traps .kb-sec-t{color:var(--warn)}
+.kb-foot{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+@media (max-width:640px){
+  .kb-head{padding:14px 16px}
+  .kb-body{padding:2px 16px 16px}
+  .kb-list{font-size:13.5px}
+}
 </style>
 </head>
 <body>
@@ -1211,6 +1248,7 @@ footer a:hover{text-decoration:underline}
       <button class="tab active" role="tab" data-panel="chat"   aria-selected="true">&#128172; 对话</button>
       <button class="tab" role="tab" data-panel="assistant" aria-selected="false">&#128295; 代码助手</button>
       <button class="tab" role="tab" data-panel="practice" aria-selected="false">&#127919; 练习（出题 · 作答 · 批改）</button>
+      <button class="tab" role="tab" data-panel="knowledge" aria-selected="false">&#128218; 学习知识</button>
       <button class="tab" role="tab" data-panel="progress" aria-selected="false">&#128200; 学习进度</button>
       <button class="tab" role="tab" data-panel="api"      aria-selected="false">&#9881;&#65039; API 设置</button>
     </nav>
@@ -1584,6 +1622,46 @@ footer a:hover{text-decoration:underline}
       </div>
     </div>
   </section>
+  <!-- ============================================================
+       面板 4：学习知识（四档难度知识点总结，学 → 练 闭环）
+       ============================================================ -->
+  <section class="panel" id="panel-knowledge" role="tabpanel" aria-labelledby="tab-knowledge">
+    <div class="card">
+      <h2>&#128218; 学习知识 <span class="badge lang" id="kbLevelBadge">基础（课后练习）</span></h2>
+      <p class="sub">
+        按难度分档整理的知识点总结：<b>要点 → 易错点 → 典型考法 → 当前语言提示 → 代码示例</b>。
+        点「标记为已掌握」记录进度（只存在你自己的浏览器里），点「练这个知识点」直接去【练习】出这一档的题。
+      </p>
+
+      <div class="grid c2" style="margin-top:14px">
+        <div class="field" style="grid-column:1/-1">
+          <span>难度档位</span>
+          <select id="kbLevel">
+            <option value="basic" selected>基础（课后练习）</option>
+            <option value="mid">中等（计算机二级）</option>
+            <option value="adv">进阶（单人竞赛）</option>
+            <option value="king">王者（蓝桥杯国赛级）</option>
+          </select>
+        </div>
+        <div class="field" style="grid-column:1/-1">
+          <span>掌握进度</span>
+          <div class="kb-progress">
+            <div class="kb-progress-track"><div class="kb-progress-fill" id="kbProgressFill"></div></div>
+            <span class="kb-progress-txt" id="kbProgressTxt"></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="note info" id="kbGoal" style="margin-top:12px"></div>
+
+      <div class="btn-row" style="margin-top:12px">
+        <button class="btn primary" id="kbToPracticeBtn">&#127919; 按本档去练一套</button>
+      </div>
+    </div>
+
+    <div id="kbList"></div>
+  </section>
+
 </main>
 
 <!-- ============================================================
@@ -3484,7 +3562,454 @@ function renderScoreCard(data) {
 }
 
 /* ==========================================================================
- * 11. 本地存储层：历史对话 + 学习进度
+ * 11.5 学习知识：四档难度的知识点总结
+ *   · 与「练习」共用同一套难度定义（基础 / 中等·二级 / 进阶·竞赛 / 王者·蓝桥杯级）
+ *   · 每个模块：要点 pts、易错 traps、典型考法 exam、当前语言的提示 lang、可选代码 code
+ *   · 掌握状态存 localStorage（codetutor.kb.v1），不联网、不上传
+ *   · 「去练一题」把这档难度 + 知识点直接带进【练习】，形成"学 → 练"闭环
+ * ========================================================================== */
+const KB = {
+  basic: {
+    goal: '把一门语言的基本语法用顺：能独立写出 50 行以内、有输入输出的完整程序。',
+    modules: [
+      {
+        id: 'types', t: '变量与数据类型',
+        pts: ['整型 / 实型 / 字符 / 布尔 / 字符串的表示与取值范围', '隐式类型提升与显式强制转换', '变量命名规范、局部与全局作用域', '常量与字面量（十进制/十六进制/字符转义）'],
+        traps: ['两个整数相除在 C/C++ 里结果仍是整数（3/2 == 1）', 'Python 的 / 得浮点、// 才是整除', '字符串不能直接和数字相加/相减'],
+        exam: '选择题常给一个表达式，问它的值或类型；改错题常埋类型不匹配。',
+        lang: {
+          c: 'int 通常 4 字节、范围约 ±21 亿；char 存的是 ASCII 码，可当小整数用。',
+          cpp: 'C++ 多了 bool、string、auto；用 static_cast<double>(a)/b 做显式转换。',
+          python: '变量是引用、类型随值变；int 无上限，float 有 15~17 位有效数字。'
+        },
+        code: { c: 'int a = 7, b = 2;\nprintf("%d %.2f\\n", a / b, (double)a / b);   /* 3 与 3.50 */', python: 'a, b = 7, 2\nprint(a // b, a / b)   # 3 与 3.5' }
+      },
+      {
+        id: 'ops', t: '运算符与表达式',
+        pts: ['算术（含取模 %）、关系、逻辑、赋值与复合赋值', '逻辑短路：&& 左边为假就不再算右边', '自增自减的前后缀区别（C/C++）', '优先级与括号，浮点数不能用 == 比较'],
+        traps: ['把 = 写成 ==（if (a = 0) 恒假）', '短路求值导致的副作用没执行', '浮点误差：用 fabs(a-b) < 1e-9'],
+        exam: '短路求值、自增自减的求值结果，是选择题的高频考点。',
+        lang: {
+          c: '没有布尔类型时用 int，非 0 即真；% 只能用于整型。',
+          cpp: 'bool 参与运算会提升为 int；&& || 结果也是 bool。',
+          python: 'and / or 返回的是操作数本身（不是 True/False），not 返回布尔。'
+        }
+      },
+      {
+        id: 'flow', t: '分支与循环',
+        pts: ['if / else if / else 与嵌套', 'switch-case（C/C++）与 Python 的 if-elif', 'for / while / do-while 三种循环', 'break 跳出、continue 跳过本轮', '循环次数的推导（循环不变式）'],
+        traps: ['switch 忘写 break → 穿透执行', 'for 的边界写错（off-by-one）', 'while 条件永远为真 → 死循环'],
+        exam: '给一段循环问输出序列或循环次数；填空常考循环上界。',
+        lang: {
+          c: 'for (i = 0; i < n; i++) 是最常见写法；do-while 至少执行一次。',
+          cpp: '范围 for：for (auto &x : a) 遍历，引用可改值。',
+          python: 'for 是遍历可迭代对象；range(n) 取 0..n-1，range(1, n+1) 取 1..n。'
+        },
+        code: { c: 'int s = 0;\nfor (int i = 1; i <= n; i++) s += i;', python: 's = sum(range(1, n + 1))' }
+      },
+      {
+        id: 'array', t: '数组与字符串',
+        pts: ['一维数组的定义、初始化与遍历', '下标从 0 开始（C/C++ 不检查越界）', '字符串的存储与常见操作', '三大套路：求和 / 求最值 / 计数'],
+        traps: ['数组越界（a[n] 越界，可能不报错但结果错）', 'C 字符串必须以 \\0 结尾，否则 strlen 会跑飞', 'Python 字符串不可变，修改要生成新串'],
+        exam: '手写数组遍历、逆序输出、求最值；改错题常埋 +1/-1 越界。',
+        lang: {
+          c: 'int a[105]; 习惯把数组开大一点点，避免边界刚好越界。',
+          cpp: 'vector<int> a(n) 动态长度；a.size() 返回无符号数，注意与 int 比较。',
+          python: 'list 可变、长度用 len()；切片 a[1:3] 取下标 1、2（右端不含）。'
+        },
+        code: { c: 'int mx = a[0];\nfor (int i = 1; i < n; i++) if (a[i] > mx) mx = a[i];', python: 'mx = max(a)' }
+      },
+      {
+        id: 'func', t: '函数与递归入门',
+        pts: ['函数的定义、声明、调用与返回值', '形参与实参、值传递', '递归的两个要素：终止条件 + 规模缩小', '经典递归：阶乘、斐波那契、汉诺塔'],
+        traps: ['函数忘记 return，返回随机值', '递归没有终止条件 → 栈溢出', 'C 中函数要先声明后使用'],
+        exam: '程序填空题常留一个函数体让你补全；问递归调用次数。',
+        lang: {
+          c: '函数默认是外部链接；返回值类型必须与 return 匹配。',
+          cpp: '支持默认参数与函数重载（同名不同参）。',
+          python: 'def 定义，可返回多个值（其实是元组）；注意可变默认参数陷阱。'
+        },
+        code: { c: 'int fact(int n) { return n <= 1 ? 1 : n * fact(n - 1); }', python: 'def fact(n):\n    return 1 if n <= 1 else n * fact(n - 1)' }
+      },
+      {
+        id: 'io', t: '输入输出与调试',
+        pts: ['标准输入输出的格式与分隔', 'printf/scanf 的格式符（%d %f %lf %c %s）', 'Python 的 input() / print() / f-string', '多组输入的读法（先读个数再循环）'],
+        traps: ['scanf 忘记取地址符 &', 'Python input() 拿到的是字符串，要 int() 转换', '输出多一个空格或换行就被判格式错误'],
+        exam: '题面给的输入格式必须严格对应；边界输入（n=1、空行）最容易翻车。',
+        lang: {
+          c: 'scanf("%d %d", &a, &b)；读字符串用 %s（遇空格停）。',
+          cpp: 'cin >> a >> b 自动按类型解析；endl 会刷新缓冲，\\n 更快。',
+          python: 'a, b = map(int, input().split())；多行用 for _ in range(n)。'
+        }
+      }
+    ]
+  },
+
+  mid: {
+    goal: '对标全国计算机等级考试二级：选择题 40 分 + 程序填空 18 分 + 程序改错 18 分 + 程序设计 24 分，120 分钟。',
+    modules: [
+      {
+        id: 'm-data', t: '数据类型与运算（大纲范围）',
+        pts: ['基本类型的存储长度与取值范围、溢出规律', '运算符优先级与结合性、强制类型转换', '位运算：& | ^ ~ << >>（二级 C 大纲要求）', '常量：const、宏定义 #define'],
+        traps: ['有符号溢出是未定义行为，比赛里用 long long', '>> 对负数是有符号右移（实现相关）', '宏只是文本替换，缺少括号会算错'],
+        exam: '选择题：表达式求值、位运算结果、sizeof 的值。',
+        lang: {
+          c: 'sizeof(int) 常见 4；1 << 31 会溢出（用 1LL << 31）。',
+          cpp: 'constexpr 编译期常量；引用 & 与取地址 & 注意区分。',
+          python: '没有位运算之外的固定位宽，& | ^ ~ << >> 对整数都可用。'
+        }
+      },
+      {
+        id: 'm-flow', t: '流程控制与程序结构',
+        pts: ['三种基本结构 + 嵌套的组合分析', '循环与 break / continue / goto', '多重循环的复杂度直觉（n² 可接受的上限）', '常见算法结构：累加、累乘、计数、标记'],
+        traps: ['break 只跳出最内层循环', 'continue 在 while 里容易漏掉自增 → 死循环'],
+        exam: '程序填空题常在循环条件、累加语句上留空。',
+        lang: { c: 'switch 的 case 必须是整型常量。', cpp: 'switch 支持枚举；break 同样只跳出一层。', python: 'for-else / while-else 的 else 在没被 break 时执行。' }
+      },
+      {
+        id: 'm-array', t: '数组、字符串与常用算法',
+        pts: ['一维 / 二维数组的遍历与下标换算', '字符串函数：strlen / strcpy / strcat / strcmp', 'Python 字符串：切片、split / join / strip / find', '排序（冒泡 / 选择 / 插入）、查找（顺序 / 二分）'],
+        traps: ['strlen 不含 \\0，sizeof 含；两者别混', 'strcpy 不检查目标空间 → 缓冲区溢出', '二维数组传参要写列数：void f(int a[][5])'],
+        exam: '程序填空题高频：字符串逆序、统计词频、数组排序。',
+        lang: {
+          c: 'strcmp 返回 0 表示相等（不是返回 1/0）。',
+          cpp: 'std::string 可直接 + 与 ==，比 char[] 省心。',
+          python: "'a,b,c'.split(',')、','.join(list)、s[::-1] 逆序。"
+        },
+        code: { c: 'for (i = 0, j = n - 1; i < j; i++, j--) { t = a[i]; a[i] = a[j]; a[j] = t; }', python: 'a.reverse()   # 或 a[::-1]' }
+      },
+      {
+        id: 'm-func', t: '函数、递归与变量作用域',
+        pts: ['函数声明 / 定义 / 调用、返回值与参数传递', '值传递 vs 地址传递（指针作参数）', '局部 / 全局 / static 变量的生命周期与可见性', '递归与栈：调用次数与深度估算'],
+        traps: ['形参改值不会影响实参（除非传地址）', 'static 局部变量只初始化一次，函数间共享', '递归层数太深会爆栈'],
+        exam: '程序填空题：补全函数体或调用；问 static 变量的最终值。',
+        lang: {
+          c: '数组名作参数退化成指针，函数里拿不到长度，要额外传 n。',
+          cpp: '引用传参 void f(int &x) 可直接改实参，比指针干净。',
+          python: '参数是对象引用；不可变对象（int/str/tuple）在函数内改不到外面。'
+        }
+      },
+      {
+        id: 'm-ptr', t: '指针与内存 / 容器与推导式',
+        pts: ['地址与指针、指针与数组的关系、指针运算', '动态内存：malloc/free、new/delete', '指针作函数参数与返回指针', 'Python 侧：list / dict / set 常用操作与推导式'],
+        traps: ['悬垂指针（free 后继续用）', '内存泄漏（malloc 不 free）', 'Python 的 b = a 是引用，浅拷贝要 a[:] 或 copy()'],
+        exam: '二级 C 的选择题最爱考指针与数组的等价写法：*(a+i) 与 a[i]。',
+        lang: {
+          c: 'int *p = &a[0]; *(p + i) 等价 a[i]；malloc 要判空并强转。',
+          cpp: 'new/delete 成对；现代 C++ 用 vector 替代裸 new。',
+          python: '[x * x for x in a if x > 0]、{k: v for k, v in d.items()}、set(a) 去重。'
+        }
+      },
+      {
+        id: 'm-struct', t: '结构体与文件',
+        pts: ['struct 的定义、初始化、成员访问与数组', 'typedef 取别名；结构体指针用 ->', '文件操作：fopen / fclose / fscanf / fprintf / fgets', 'Python 文件：open / with / readlines / write'],
+        traps: ['fopen 返回 NULL 没判断就使用', '文件没关闭导致内容没落盘', 'fscanf 的返回值（成功项数）不检查'],
+        exam: '综合应用题常给一个「读文件 → 处理 → 写文件」的完整流程。',
+        lang: {
+          c: 'struct Student { char name[20]; int score; } s[50];',
+          cpp: 'struct 与 class 唯一区别是默认访问权限；可直接用 vector<Student>。',
+          python: 'with open("in.txt", encoding="utf-8") as f: 自动关闭；dataclass 可替代结构体。'
+        }
+      },
+      {
+        id: 'm-exam', t: '上机规范与评分点',
+        pts: ['程序填空：先读全题，明确每个空考查什么（条件 / 初值 / 累加 / 返回值）', '程序改错：语法错误（分号、括号、类型）与逻辑错误（边界、判断反向）各查一遍', '程序设计题：读入 → 算法 → 输出 → 边界 四段各占分', '编译不过 = 0 分，先保证能编译再优化'],
+        traps: ['改错题只改一处就提交（通常 2~3 处）', '程序填空题改了空位之外的代码导致判错', '输出格式（空格/换行/大小写）不符被扣分'],
+        exam: '二级上机的分值结构就是本模块的检查清单，建议按顺序自检。',
+        lang: {
+          c: '注意 .c 与 .cpp 的编译差异（C99 变量声明位置、bool 需要 stdbool.h）。',
+          cpp: '提交前确认 using namespace std; 与头文件齐全。',
+          python: '注意缩进一致（Tab 与空格混用会报错）。'
+        }
+      }
+    ]
+  },
+
+  adv: {
+    goal: '对标 CSP-J / 普及组单人赛：单文件、标准输入输出，1 ≤ n ≤ 10^5 时要在 1s / 256MB 内跑完。',
+    modules: [
+      {
+        id: 'a-cplx', t: '复杂度与常数优化',
+        pts: ['常见量级：n=10^5 只能 O(n log n)；n=10^6 需 O(n)；n=100 才敢 O(n³)', '约 10^7~10^8 次简单运算 ≈ 1 秒（C++ 参考值）', '读入优化：ios::sync_with_stdio(false) 或快读', '常数优化：少用取模、把循环不变量提到外面'],
+        traps: ['只看循环层数不看实际次数（内层提前 break 会快很多）', '把 O(n²) 当 O(n log n) 提交', '递归函数里开了大数组导致爆栈'],
+        exam: '题面给的数据范围就是算法提示：n ≤ 5000 → O(n²) DP 可行；n ≤ 10^5 → 必须 O(n log n)。',
+        lang: {
+          c: 'getchar() 手写快读；scanf 比 cin 快（未关同步时）。',
+          cpp: 'ios::sync_with_stdio(false); cin.tie(nullptr); 关同步后 cin 足够快。',
+          python: 'sys.stdin.readline 比 input() 快；纯 Python 在 10^6 以上要慎用 O(n log n)。'
+        }
+      },
+      {
+        id: 'a-prefix', t: '前缀和与差分',
+        pts: ['一维前缀和：sum[i] = a[1..i]，区间和 = sum[r] - sum[l-1]，O(1) 查询', '二维前缀和 + 容斥：s[i][j] = a[i][j] + s[i-1][j] + s[i][j-1] - s[i-1][j-1]', '差分：区间加 [l, r] += v → d[l] += v, d[r+1] -= v，最后做前缀和还原', '前缀和的常见变体：异或前缀、计数前缀'],
+        traps: ['下标从 0 开始却用了 l-1（越界）', '累加和可能超过 int，要开 long long', '二维容斥的符号写反'],
+        exam: '「多次询问区间和」几乎一定是前缀和；「多次区间加最后统一查询」用差分。',
+        lang: {
+          c: 'long long s[100005]; s[i] = s[i-1] + a[i];',
+          cpp: 'vector<long long> s(n + 1); 用 n+1 长度避免边界判断。',
+          python: 'itertools.accumulate 或 s = [0] + list(accumulate(a))。'
+        },
+        code: { cpp: 'long long sum = pre[r] - pre[l - 1];', python: 's = pre[r] - pre[l - 1]' }
+      },
+      {
+        id: 'a-binary', t: '二分与双指针',
+        pts: ['二分查找：在有序数组里 O(log n) 找目标 / 左边界 / 右边界', '二分答案：答案单调（满足条件后一直满足）时，二分答案再写 check()', '整数二分两种写法：lower_bound 与 upper_bound 的边界处理', '双指针 / 滑动窗口：有序数组两数之和、最长不重复子串'],
+        traps: ['mid = (l + r) / 2 在 l+r 溢出时出错（写 l + (r-l)/2）', 'while (l < r) 与 l <= r 选错 → 死循环或漏解', '二分答案的 check 必须是单调的'],
+        exam: '「最大化最小值 / 最小化最大值」→ 二分答案；「连续子段满足某性质」→ 双指针。',
+        lang: {
+          c: '手写二分要小心死循环，int mid = l + (r - l) / 2;',
+          cpp: 'lower_bound / upper_bound / binary_search 直接用 STL。',
+          python: 'bisect_left / bisect_right；注意它们返回插入位置而不是布尔。'
+        }
+      },
+      {
+        id: 'a-greedy', t: '排序与贪心',
+        pts: ['排序复杂度与稳定性；结构体多关键字排序', '贪心的两种证明思路：相邻交换（排序题）、取最优（区间题）', '经典模型：区间选点、活动安排、背包的价值密度排序', '离散化：把大值域压缩成排名后做前缀和 / 树状数组'],
+        traps: ['贪心没有证明就直接写（可能被反例卡掉）', '比较函数写了 <= 导致 undefined behavior', '离散化下标与原名对应关系搞反'],
+        exam: '「安排尽可能多的活动」= 按右端点排序；「合并区间」= 按左端点排序。',
+        lang: {
+          c: 'qsort 的比较函数返回负数/零/正数。',
+          cpp: 'sort(a.begin(), a.end(), [](auto &x, auto &y){ return x.v < y.v; });',
+          python: 'sorted(a, key=lambda x: (x.v, x.w))；或 a.sort()。'
+        }
+      },
+      {
+        id: 'a-search', t: '搜索：DFS / BFS',
+        pts: ['递归 DFS + 回溯：全排列、子集、N 皇后、迷宫连通性', 'BFS 用队列求最短步数（边权为 1 时）', '剪枝：可行性剪枝、最优性剪枝、记忆化搜索', '访问标记数组与状态去重'],
+        traps: ['忘记回溯（标记没撤销）', 'BFS 入队时没标记导致重复入队爆队列', '递归深度过大要改成显式栈或迭代'],
+        exam: '「最少几步」→ BFS；「有多少种方案」→ DFS / DP；状态少且合法解多时 DFS 更好写。',
+        lang: {
+          c: '用数组模拟队列：int q[N], hh, tt;',
+          cpp: 'queue<int> q; 或手写数组队列更快。',
+          python: 'collections.deque 做队列；递归深度用 sys.setrecursionlimit 放宽。'
+        }
+      },
+      {
+        id: 'a-dp', t: '动态规划入门',
+        pts: ['四步法：定义状态 → 写转移方程 → 定初始化 → 定遍历顺序', '01 背包（倒序枚举容量）与完全背包（正序）', '线性 DP：LIS（最长上升子序列）、最大子段和', '记忆化搜索 vs 递推：先写记忆化，再考虑改成递推'],
+        traps: ['01 背包写成正序 → 变成完全背包（物品被重复用）', '初始化：求最大值要初始化为 -INF，求方案数初始化为 0', '状态维度不够导致信息丢失'],
+        exam: '「选或不选、容量有限」→ 背包；「以 i 结尾的最优值」→ 线性 DP。',
+        lang: {
+          c: 'int dp[N]; 大数组要开在全局（栈上放不下）。',
+          cpp: 'vector<vector<int>> dp(n + 1, vector<int>(m + 1));',
+          python: '注意列表推导式创建二维数组别用 [[0]*m]*n（会共享行）。'
+        },
+        code: { cpp: 'for (int i = 1; i <= n; i++)\n  for (int j = W; j >= w[i]; j--)\n    dp[j] = max(dp[j], dp[j - w[i]] + v[i]);' }
+      }
+    ]
+  },
+
+  king: {
+    goal: '对标蓝桥杯国赛：结果填空题（只交答案）+ 编程题（交源码、按测试点部分给分），多知识点组合，数据到 10^5~10^6。',
+    modules: [
+      {
+        id: 'k-dp', t: '高级动态规划',
+        pts: ['区间 DP：f[l][r] 由子区间转移（石子合并、括号匹配）', '状压 DP：把集合压成二进制整数（TSP、棋盘覆盖）', '树形 DP：先递归子节点再合并（没有上司的舞会、树的直径）', 'DP 优化：前缀和优化、单调队列优化、滚动数组省空间'],
+        traps: ['区间 DP 的枚举顺序（先长度后起点）写反', '状压的状态数 2^n 忘了算复杂度上限', '树形 DP 忘记处理「不选该节点」的分支'],
+        exam: '「合并代价最小」→ 区间 DP；「n ≤ 20 的选或不选」→ 状压。',
+        lang: {
+          c: 'static int f[1005][1005]; 放全局避免栈溢出。',
+          cpp: 'vector 嵌套或一维数组手算下标（更快）。',
+          python: '纯 Python 写 O(n³) 区间 DP 会超时，要先估复杂度。'
+        }
+      },
+      {
+        id: 'k-graph', t: '图论：存图与最短路',
+        pts: ['存图三件套：邻接矩阵、vector 邻接表、链式前向星', 'Dijkstra（堆优化 O(m log n)）、Floyd（O(n³) 多源）、SPFA（可能被卡）', '并查集：路径压缩 + 按秩合并，判连通 / 环', '拓扑排序（DAG）、最小生成树 Kruskal（排序 + 并查集）'],
+        traps: ['Dijkstra 不能处理负权边', '堆优化的 Dijkstra 出堆要判 vis，否则重复松弛', '链式前向星 head[] 忘初始化 -1'],
+        exam: '「单源最短路且非负权」→ Dijkstra；「n ≤ 300 多源最短路」→ Floyd；「连通性 / 成环」→ 并查集。',
+        lang: {
+          c: 'const int INF = 0x3f3f3f3f; 相加不会溢出 int。',
+          cpp: 'priority_queue<pair<int,int>, vector<...>, greater<...>> pq;',
+          python: 'heapq 做 Dijkstra；并查集用数组 + 迭代路径压缩。'
+        },
+        code: { cpp: 'while (!pq.empty()) {\n  auto [d, u] = pq.top(); pq.pop();\n  if (vis[u]) continue; vis[u] = 1;\n  for (auto &e : g[u]) if (dist[e.to] > d + e.w) pq.push({dist[e.to] = d + e.w, e.to});\n}' }
+      },
+      {
+        id: 'k-num', t: '数论与组合',
+        pts: ['gcd / lcm（欧几里得）、扩展欧几里得求逆元', '素数筛：埃氏筛 O(n log log n)、线性筛 O(n)', '快速幂与模运算：a^b mod p、逆元 a^(p-2)', '组合数：杨辉三角递推 / 阶乘 + 逆元，注意 1e9+7'],
+        traps: ['负数取模要先 (x % p + p) % p', '乘法中间结果溢出（用 long long / Python 无所谓）', '筛法数组开小了'],
+        exam: '「求第 k 个素数 / 判断素数个数」→ 筛；「大指数取模」→ 快速幂；「方案数取模」→ 组合数。',
+        lang: {
+          c: 'long long 乘法前先转 ll；pow 是浮点，取模要自己写快速幂。',
+          cpp: 'std::gcd / std::lcm（C++17）；__int128 可防溢出。',
+          python: 'pow(a, b, mod) 内置快速幂，math.gcd 内置。'
+        }
+      },
+      {
+        id: 'k-ds', t: '数据结构',
+        pts: ['栈 / 队列 / 优先队列的适用场景', '单调栈（下一个更大元素）、单调队列（滑动窗口最值）', '树状数组：单点加 + 前缀和 O(log n)；线段树：区间加 / 区间和', '哈希表（unordered_map / dict）与离散化'],
+        traps: ['树状数组的 lowbit 与下标从 1 开始', '线段树懒标记下推时机写错', 'unordered_map 被卡哈希（比赛可用 chrono 随机种子）'],
+        exam: '「动态区间和 / 单点修改」→ 树状数组；「区间加 / 区间查询」→ 线段树或差分。',
+        lang: {
+          c: '手写 int bit[N]; 加 inline int lowbit(int x){return x & -x;}',
+          cpp: 'priority_queue 默认大根堆，小根堆用 greater<int> 或存负数。',
+          python: 'heapq 是小根堆；bisect 做有序数组维护。'
+        },
+        code: { c: 'void add(int i, int v) { for (; i <= n; i += i & -i) c[i] += v; }\nint sum(int i) { int s = 0; for (; i > 0; i -= i & -i) s += c[i]; return s; }' }
+      },
+      {
+        id: 'k-str', t: '字符串算法',
+        pts: ['字符串哈希：前缀哈希 + 取模相减，O(1) 判等 / 判回文', 'KMP：next 数组求最小循环节、模式匹配 O(n+m)', '字典树 Trie：前缀统计、异或最大值', '双哈希（两个模数）降低冲突概率'],
+        traps: ['哈希被构造数据卡掉（用双哈希或随机基数）', 'KMP 的 next 数组下标含义混淆', 'base 与 mod 选择过小导致冲突'],
+        exam: '「判两个子串是否相等」→ 哈希；「求模式串出现位置」→ KMP。',
+        lang: {
+          c: 'unsigned long long 自然溢出的单哈希写法最快。',
+          cpp: 'string::find / substr 在小数据下够用（O(n·m)）。',
+          python: '切片 s[i:j] 判等本身就是 O(len)，长串要用哈希。'
+        }
+      },
+      {
+        id: 'k-tactics', t: '竞赛工程与拿分策略',
+        pts: ['结果填空题：先用暴力 / 打表算出答案，再反推规律，最后只填数字', '编程题按测试点给分：优先写能过小数据与边界的暴力，再优化中大数据', '对拍：把「暴力」和「优化」跑同一批随机数据比对，快速验证正确性', '时限与内存估算：1s ≈ 10^8 次运算，256MB ≈ 6×10^7 个 int'],
+        traps: ['为了拿满分而死磕大数据，结果简单部分分没拿到', '提交前不做样例自测与边界自测', '输出格式或文件名/多测处理错误（部分比赛要求文件输入输出）'],
+        exam: '蓝桥杯国赛的拿分节奏：先扫一遍题目 → 填空先暴力算 → 编程题先写暴力拿部分分 → 再回头优化。',
+        lang: {
+          c: 'freopen 做文件输入输出（按赛事要求）；注意 return 0。',
+          cpp: '对拍脚本：循环生成随机数据，分别跑两次并逐字节比对。',
+          python: '不适合做大常数题；可用来快速写暴力 / 打表验证结果。'
+        }
+      }
+    ]
+  }
+};
+
+/** 当前在看的档位、展开的模块、已掌握记录 */
+let kbLevel = 'basic';
+const kbOpen = { 'basic:types': true };
+let kbDone = {};
+const KB_KEY = 'codetutor.kb.v1';
+
+function kbLoad() {
+  try {
+    const raw = localStorage.getItem(KB_KEY);
+    const j = raw ? JSON.parse(raw) : null;
+    if (j && Array.isArray(j.done)) {
+      const o = {};
+      j.done.forEach(function (k) { if (typeof k === 'string' && k.length < 60) o[k] = 1; });
+      return o;
+    }
+  } catch (e) { /* 隐私模式 / 脏数据 */ }
+  return {};
+}
+function kbSave() {
+  try {
+    const list = Object.keys(kbDone).filter(function (k) { return kbDone[k]; });
+    localStorage.setItem(KB_KEY, JSON.stringify({ done: list.slice(0, 200), ts: Date.now() }));
+  } catch (e) { toast('本地存储写入失败（可能是隐私模式）', 'err'); }
+}
+function kbKey(id) { return kbLevel + ':' + id; }
+
+function renderKnowledge() {
+  const data = KB[kbLevel];
+  const L = langOf(state.lang);
+  const lid = L.id;
+  if (!data) return;
+  const total = data.modules.length;
+  const done = data.modules.filter(function (m) { return kbDone[kbKey(m.id)]; }).length;
+
+  $('#kbGoal').textContent = data.goal;
+  $('#kbLevelBadge').textContent = LEVEL_SPEC[kbLevel] ? LEVEL_SPEC[kbLevel].name : kbLevel;
+  $('#kbProgressTxt').textContent = '已掌握 ' + done + ' / ' + total + ' 个知识模块';
+  $('#kbProgressFill').style.width = Math.round(done / total * 100) + '%';
+
+  $('#kbList').innerHTML = data.modules.map(function (m) {
+    const k = kbKey(m.id);
+    const open = !!kbOpen[k];
+    const ok = !!kbDone[k];
+    const pts = (m.pts || []).map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('');
+    const traps = (m.traps || []).map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('');
+    const langTip = m.lang && m.lang[lid] ? m.lang[lid] : '';
+    const code = m.code && m.code[lid] ? m.code[lid] : '';
+    return '<div class="kb-card' + (open ? ' open' : '') + '">' +
+      '<button class="kb-head" type="button" data-kb-toggle="' + esc(m.id) + '" aria-expanded="' + open + '">' +
+        '<span class="kb-arrow" aria-hidden="true">&#9656;</span>' +
+        '<span class="kb-title">' + esc(m.t) + '</span>' +
+        '<span class="kb-pts-count">' + (m.pts || []).length + ' 要点</span>' +
+        (ok ? '<span class="kb-done-badge">已掌握</span>' : '') +
+      '</button>' +
+      '<div class="kb-body">' +
+        '<div class="kb-sec"><div class="kb-sec-t">要点</div><ul class="kb-list">' + pts + '</ul></div>' +
+        (traps ? '<div class="kb-sec kb-traps"><div class="kb-sec-t">易错点</div><ul class="kb-list">' + traps + '</ul></div>' : '') +
+        (m.exam ? '<div class="kb-sec"><div class="kb-sec-t">典型考法</div><div class="kb-text">' + esc(m.exam) + '</div></div>' : '') +
+        (langTip ? '<div class="kb-sec"><div class="kb-sec-t">' + esc(L.name) + ' 提示</div><div class="kb-text">' + esc(langTip) + '</div></div>' : '') +
+        (code ? '<div class="code-block"><div class="code-head"><span class="code-lang">' + esc(L.fence) + '</span>' +
+          '<div class="spacer"></div><button class="copy-btn" type="button" data-copy="' + esc(code) + '">复制</button></div>' +
+          '<pre><code>' + esc(code) + '</code></pre></div>' : '') +
+        '<div class="kb-foot">' +
+          '<button class="btn sm ' + (ok ? '' : 'primary') + '" type="button" data-kb-done="' + esc(m.id) + '">' +
+            (ok ? '&#10003; 已掌握（点一下取消）' : '&#10003; 标记为已掌握') + '</button>' +
+          '<button class="btn sm ghost" type="button" data-kb-practice="' + esc(m.id) + '">&#127919; 练这个知识点</button>' +
+        '</div>' +
+      '</div></div>';
+  }).join('');
+}
+
+function bindKnowledgePanel() {
+  $('#kbLevel').addEventListener('change', function () {
+    kbLevel = $('#kbLevel').value;
+    renderKnowledge();
+  });
+
+  $('#kbList').addEventListener('click', function (e) {
+    const t = e.target.closest('[data-kb-toggle]');
+    if (t) {
+      const id = t.dataset.kbToggle;
+      const k = kbKey(id);
+      kbOpen[k] = !kbOpen[k];
+      renderKnowledge();
+      return;
+    }
+    const c = e.target.closest('[data-copy]');
+    if (c) {
+      copyText(c.dataset.copy).then(function (ok) { flashCopyDone(c, ok); });
+      return;
+    }
+    const d = e.target.closest('[data-kb-done]');
+    if (d) {
+      const k = kbKey(d.dataset.kbDone);
+      if (kbDone[k]) delete kbDone[k]; else kbDone[k] = 1;
+      kbSave();
+      renderKnowledge();
+      const data = KB[kbLevel];
+      const done = data.modules.filter(function (m) { return kbDone[kbKey(m.id)]; }).length;
+      if (done === data.modules.length) toast('这一档的知识点全部掌握了，去练一套吧 🎉', 'ok');
+      return;
+    }
+    const p = e.target.closest('[data-kb-practice]');
+    if (p) {
+      const mod = KB[kbLevel].modules.filter(function (m) { return m.id === p.dataset.kbPractice; })[0];
+      if (!mod) return;
+      expectQuiz = { level: kbLevel, topic: mod.t, mix: kbLevel === 'mid' || kbLevel === 'king' };
+      switchTab('practice');
+      applyQuizPreset();
+    }
+  });
+
+  // 顶部「按本档去练一套」
+  $('#kbToPracticeBtn').addEventListener('click', function () {
+    expectQuiz = { level: kbLevel, topic: '', mix: kbLevel === 'mid' || kbLevel === 'king' };
+    switchTab('practice');
+    applyQuizPreset();
+  });
+
+  renderKnowledge();
+}
+
+/** 把「学习知识」里的意图应用到【练习】表单，实现 学 → 练 闭环 */
+let expectQuiz = null;
+function applyQuizPreset() {
+  if (!expectQuiz) return;
+  if ($('#quizLevel')) { $('#quizLevel').value = expectQuiz.level; $('#quizLevel').dispatchEvent(new Event('change', { bubbles: true })); }
+  if ($('#quizType') && expectQuiz.mix) { $('#quizType').value = 'mix'; $('#quizType').dispatchEvent(new Event('change', { bubbles: true })); }
+  if ($('#quizTopic')) $('#quizTopic').value = expectQuiz.topic || '';
+  toast('已按「' + (LEVEL_SPEC[expectQuiz.level] ? LEVEL_SPEC[expectQuiz.level].name : expectQuiz.level) + '」' +
+    (expectQuiz.topic ? ' · ' + expectQuiz.topic : '') + ' 预设好，点「按规范生成」即可', 'ok');
+  expectQuiz = null;
+}
+
+/* ==========================================================================
+ * 11.9 本地存储层：历史对话 + 学习进度
  *     · 数据全部存在用户自己的浏览器 localStorage，绝不上传（apiKey 依然只在内存）
  *     · 带容量保护：写入失败（QuotaExceededError）时自动裁剪最旧数据后重试
  *     · 读取时做结构自检，手工改坏 / 旧版本数据也不会让页面崩溃
@@ -4414,6 +4939,7 @@ function onLangChanged() {
     const s = activeSession();
     if (s && !s.messages.length) { s.lang = L.id; persist(LS_KEY.chat, store.chat); }
     if (s && !s.messages.length) renderChatMessages();   // 刷新快捷提问
+  renderKnowledge();                                   // 知识点里的"当前语言提示"也要跟着换
   }
   saveSettings(true);
 }
@@ -4487,6 +5013,7 @@ function init() {
   bindApiPanel();
   bindAssistantPanel();
   bindPracticePanel();
+  bindKnowledgePanel();
   bindChatPanel();
   bindProgressPanel();
 
@@ -4516,6 +5043,7 @@ function init() {
   enhanceSelect('quizLevel', '习题难度');
   enhanceSelect('quizType', '习题题型');
   enhanceSelect('quizCount', '题目数量');
+  enhanceSelect('kbLevel', '知识难度档位');
   // 趋势图显示范围
   if ($('#trendRangeSeg')) {
     $('#trendRangeSeg').addEventListener('click', function (e) {
@@ -4536,7 +5064,7 @@ function init() {
   renderProgress();
 
   // 从 URL hash 打开指定标签页（没有则默认落在「对话」）
-  const TABS = ['chat', 'assistant', 'practice', 'progress', 'api'];
+  const TABS = ['chat', 'assistant', 'practice', 'knowledge', 'progress', 'api'];
   const hash = (location.hash || '').replace('#', '');
   switchTab(TABS.indexOf(hash) >= 0 ? hash : 'chat');
 
@@ -4557,7 +5085,7 @@ function init() {
   // 键盘：Alt+1~6 切标签；? 打开帮助；Esc 关闭弹窗
   document.addEventListener('keydown', function (e) {
     if (e.altKey && !e.ctrlKey && !e.metaKey) {
-      const map = { '1': 'chat', '2': 'assistant', '3': 'practice', '4': 'progress', '5': 'api' };
+      const map = { '1': 'chat', '2': 'assistant', '3': 'practice', '4': 'knowledge', '5': 'progress', '6': 'api' };
       if (map[e.key]) { e.preventDefault(); switchTab(map[e.key]); }
       return;
     }
