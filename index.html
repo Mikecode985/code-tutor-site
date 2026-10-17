@@ -1303,6 +1303,28 @@ main{padding:22px 0 56px}
   .step-item{padding:5px 12px 5px 6px;font-size:12.5px}
   .step-line{flex:0 0 10px}
 }
+
+/* ==========================================================================
+ * 16. 对话滚动链修复（重要）
+ *   症状：桌面端长对话无法向下滚动，超出部分是直接被裁掉。
+ *   原因：grid 子项与 flex 子项默认 min-height:auto，内容会把 .chat-main 撑高
+ *        （实测 666px 的容器里 .chat-main 变成 2723px），#chatBody 的
+ *        scrollHeight == clientHeight，于是内部永远没有滚动条。
+ *   修法：让整条链都能收缩（grid-template-rows:minmax(0,1fr) + 逐层 min-height:0
+ *        + 只在 #chatBody 这一层允许滚动）。
+ * ========================================================================== */
+.chat-shell{grid-template-rows:minmax(0,1fr)}
+.chat-main{display:flex;flex-direction:column;min-height:0;overflow:hidden}
+.chat-side{min-height:0;overflow:hidden}
+.chat-side .chat-list{min-height:0;overflow-y:auto}
+.chat-body-wrap{min-height:0;overflow:hidden}
+.chat-body{min-height:0;overflow-y:auto;overscroll-behavior:contain}
+/* 手机端卡片高度改为跟随内容，但对话区仍给一个可视高度并内部滚动 */
+@media (max-width:760px){
+  .chat-shell{height:auto;min-height:0}
+  .chat-main{overflow:visible}
+  .chat-body{max-height:none}
+}
 </style>
 </head>
 <body>
@@ -3025,6 +3047,7 @@ function bindAssistantPanel() {
         }
       });
       paint(out, finalText, false);
+      scrollBottom(out);            // 终稿会重排高度，再贴一次底
       conv.assistant.push({ role: 'assistant', content: finalText });
       recordAssist();
     } catch (e) {
@@ -3473,6 +3496,7 @@ async function runGrading() {
       onDelta: function (chunk, full) { acc = full; paint(out, full, true); scrollBottom(out); }
     });
     paint(out, finalText, false);
+    scrollBottom(out);            // 终稿会重排高度，再贴一次底
     const parsed = parseGradeJson(finalText);
     if (parsed && !parsed._partial) paint(out, stripGradeJson(finalText), false);
     scoreArea.innerHTML = renderScoreCard(parsed);
@@ -4691,6 +4715,7 @@ async function chatRun() {
   const btn = $('#chatSendBtn');
   if (btn) btn.disabled = true;
   let acc = '';
+  let stickNow = chatNearBottom();         // 收尾时是否还应该贴着底部
   try {
     const finalText = await callAI({
       messages: buildChatMessages(),
@@ -4700,9 +4725,9 @@ async function chatRun() {
       onDelta: function (chunk, full) {
         acc = full;
         holder.content = full;
-        const stick = chatNearBottom();      // 用户本来就贴着底部才自动跟随
+        stickNow = chatNearBottom();         // 用户本来就贴着底部才自动跟随
         renderChatMessages();
-        if (stick) scrollChatBottom(); else updateScrollBtn();
+        if (stickNow) scrollChatBottom(); else updateScrollBtn();
       }
     });
     holder.content = finalText;
@@ -4721,6 +4746,9 @@ async function chatRun() {
     s.updatedAt = Date.now();
     persist(LS_KEY.chat, store.chat);
     renderChatAll();
+    // 关键：整段对话重新渲染后，DOM 高度变了，必须再贴一次底，
+    // 否则最后一条消息的底部（含「复制/重新生成/删除」）会被裁掉。
+    if (stickNow) scrollChatBottom(); else updateScrollBtn();
     endRunUI('chat');
     if (btn) btn.disabled = false;
   }

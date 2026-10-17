@@ -505,19 +505,36 @@ Worker 的 `ALLOWED_ORIGINS` 没写上当前站点域名。把它改成实际域
 
 ---
 
-## 十二、自动化验证（7 套 · 314 项断言）
+## 十二、自动化验证（7 套 · 316 项断言）
 
 | 套件 | 运行方式 | 断言 | 覆盖 |
 | --- | --- | --- | --- |
 | `worker.test.mjs` | `node` | 22 | Worker 代理：身份标识、CORS、密钥来源、错误包装 |
 | `alt-deploy.test.mjs` | `node` | 20 | Pages Function / 本机代理两条备选部署路径 |
 | `e2e.mjs` | `node`（需 `jsdom`） | 116 | 前端全流程（含练习三步、对话、进度、皮肤、彩蛋栏、持久化、容量保护） |
-| `browser.mjs` | headless Chrome | 17 | 真实 CodeMirror、真实排版与像素、移动端、预览图 |
+| `browser.mjs` | headless Chrome | 18 | 真实 CodeMirror、真实排版与像素、移动端、预览图 |
 | `failure-repro.mjs` | headless Chrome | 6 | 复现「Worker 装错脚本」故障，验证自检提示是否指得准 |
 | `live-verify.mjs` | headless Chrome + 线上域名 | 29 | 对生产域名跑完整链路：零配置、两步自检、对话、练习、皮肤、彩蛋栏 |
-| **`feature-audit.mjs`** | headless Chrome + 线上域名 | **104** | **全功能完整性审计**：A 阶段真实链路 + B 阶段注入 AI 桩，逐项覆盖全部用户功能 |
+| **`feature-audit.mjs`** | headless Chrome + 线上域名 | **105** | **全功能完整性审计**：A 阶段真实链路 + B 阶段注入 AI 桩，逐项覆盖全部用户功能 |
 
-**最近一次全量结果：314 / 314 通过 ✅**（含 96 项全功能审计，逐区域全绿：结构导航 7、语言联动 4、外观皮肤 6、帮助 4、彩蛋栏 4、进度空态 5、API 两步自检 7、安全 3、布局 4、对话 10、代码助手 7、练习出题 10、练习批改 10、内置题库 2、进度有数据 7、持久化 5）。
+**最近一次全量结果：316 / 316 通过 ✅**（含 96 项全功能审计，逐区域全绿：结构导航 7、语言联动 4、外观皮肤 6、帮助 4、彩蛋栏 4、进度空态 5、API 两步自检 7、安全 3、布局 4、对话 10、代码助手 7、练习出题 10、练习批改 10、内置题库 2、进度有数据 7、持久化 5）。
 
 > 审计过程中发现并修复的真实缺陷：**地址栏 hash 变化不响应**（浏览器前进/后退不切页）——
 > 已补 `hashchange` 监听，并由 `feature-audit.mjs` 的 A1 用例长期守住。
+
+---
+
+## 十三、踩过的坑：桌面端对话滚不动（已修）
+
+**症状**：桌面端长对话无法向下滚动，超出的内容直接被裁掉。
+
+**根因**：`.chat-shell` 是固定高度（`min(74vh, 780px)`）的 grid 容器，但 grid 子项 `.chat-main`
+默认 `min-height:auto`，内容把它撑到 2723px（容器只有 666px）——于是 `#chatBody` 的
+`scrollHeight === clientHeight`，内部滚动条永远不会出现，多出来的部分被 `overflow:hidden` 裁掉。
+
+**修复**：`grid-template-rows:minmax(0,1fr)` + 从 `.chat-main` 到 `#chatBody` 逐层 `min-height:0`，
+只让最内层滚动；同时收尾时按"用户是否贴着底部"再滚一次（流式结束会重排 DOM 高度）。
+
+**沿用至今的两道防线**：`feature-audit.mjs` 的几何断言（`.chat-main` 高度必须 ≤ `.chat-shell`）+
+`browser.mjs` 的真实滚动断言（追加 14 条消息后 `scrollTop` 能到底）；排障工具 `tests/scroll-diag.mjs`
+会直接打印整条滚动链的尺寸与"能不能滚"。
