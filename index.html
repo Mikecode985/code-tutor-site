@@ -1432,6 +1432,8 @@ main{padding:22px 0 56px}
   .fr-sel #frSelInfo{margin-left:0;flex:1 1 100%}
   .fr-exp-opts{margin-left:0;flex:1 1 100%}
 }
+.fr-ocr-lang{width:auto;padding:5px 8px;font-size:12px;max-width:170px}
+@media (max-width:760px){ .fr-ocr-lang{max-width:140px} }
 </style>
 </head>
 <body>
@@ -2042,7 +2044,19 @@ main{padding:22px 0 56px}
       <div class="fr-ocr" id="frOcrBar" style="display:none">
         <svg class="ico" aria-hidden="true"><use href="#i-sparkles"/></svg>
         <b>扫描版 PDF？</b>
-        <span class="hint">用视觉模型逐页识别文字（识别<b>当前选中的页</b>，结果并入正文）</span>
+        <span class="hint">识别<b>当前选中的页</b>，结果并入正文</span>
+        <div class="seg" id="frOcrEngine" role="group" aria-label="识别引擎">
+          <button type="button" data-eng="auto">自动</button>
+          <button type="button" data-eng="ai">AI 视觉</button>
+          <button type="button" data-eng="local">本地 OCR</button>
+        </div>
+        <select id="frOcrLang" class="fr-ocr-lang" title="本地 OCR 的语言包">
+          <option value="chi_sim+eng" selected>简体中文 + English</option>
+          <option value="chi_tra+eng">繁體中文 + English</option>
+          <option value="jpn+eng">日本語 + English</option>
+          <option value="kor+eng">한국어 + English</option>
+          <option value="eng">English only</option>
+        </select>
         <button class="btn primary sm" id="frOcrBtn" type="button">识别选中页</button>
         <button class="btn sm" id="frOcrStopBtn" type="button" disabled>停止</button>
         <span class="hint fr-ocr-tip" id="frOcrTip"></span>
@@ -4438,7 +4452,9 @@ const FR = {
   view: 'doc',      // doc | ai
   ai: '',           // AI 提炼结果（Markdown）
   aiFor: -1,        // 结果对应的文件下标
-  fs: 15            // 正文字号
+  fs: 15,           // 正文字号
+  ocrEng: 'auto',   // auto | ai | local
+  ocrLang: 'chi_sim+eng'
 };
 
 const FR_ACCEPT = ['.md', '.markdown', '.txt', '.log', '.csv', '.json', '.html', '.xml',
@@ -4767,7 +4783,7 @@ function frSelectedText(f) {
     const sel = frSelUnits(f);
     return sel.map(function (i) {
       const pg = f.pages[i - 1];
-      return pg ? '### 第 ' + pg.no + ' 页' + (pg.ocr ? '（AI 识别）' : '') + '\n\n' + pg.text : '';
+      return pg ? '### 第 ' + pg.no + ' 页' + (pg.ocr ? '（' + (pg.ocSrc === 'local' ? '本地识别' : 'AI 识别') + '）' : '') + '\n\n' + pg.text : '';
     }).filter(Boolean).join('\n\n');
   }
   return f.text || '';
@@ -4859,9 +4875,18 @@ function frRenderAll() {
     ocrBar.style.display = isPdf ? '' : 'none';
     if (isPdf) {
       const vm = frVisionModel();
-      $('#frOcrTip').textContent = vm
-        ? '将使用视觉模型 ' + vm + ' 逐页识别（图片不出本机，只发给该模型）'
-        : '当前服务商没有视觉模型：请切到「通义千问」并选 qwen-vl-max';
+      const eng = frOcrEngineResolved();
+      $$('#frOcrEngine button').forEach(function (b) {
+        b.setAttribute('aria-pressed', String(b.dataset.eng === (FR.ocrEng || 'auto')));
+      });
+      if ($('#frOcrLang')) {
+        $('#frOcrLang').value = FR.ocrLang || 'chi_sim+eng';
+        $('#frOcrLang').style.display = (eng === 'local') ? '' : 'none';
+      }
+      $('#frOcrTip').textContent = (eng === 'ai')
+        ? ('AI 视觉：将用 ' + vm + ' 逐页识别（图片不出本机，只发给该模型）')
+        : ('本地 OCR（' + (FR.ocrLang || 'chi_sim+eng') + '）：在浏览器里跑，不联网、不消耗 API' +
+            (vm ? '；也可以切到「AI 视觉」' : '；当前服务商没有视觉模型，已自动改用本地'));
     }
   }
   $('#frMdBtn').disabled = !f;
@@ -4869,7 +4894,12 @@ function frRenderAll() {
   $('#frCopyBtn').disabled = !f;
   if (FR.files.length === 0) $('#frNotice').innerHTML = '还没有文件。把 Markdown / TXT / PDF / EPUB / DOCX 拖进上面的框即可，<b>文件不会离开你的电脑</b>。';
   else if (f && f.kind === 'pdf' && (f.text || '').replace(/### 第 \d+ 页/g, '').trim().length < 40) {
-    $('#frNotice').innerHTML = '这份 PDF <b>几乎没有文字层</b>，很可能是扫描件 —— 用下方「开始识别」调视觉模型做 OCR，识别结果会并入正文，之后可以「AI 提炼」或导出 Markdown。';
+    const vm = frVisionModel();
+    $('#frNotice').innerHTML = '这份 PDF <b>几乎没有文字层</b>，很可能是扫描件。点下方「识别选中页」做 OCR：' +
+      (vm
+        ? '默认用 <b>AI 视觉</b>（' + vm + '）识别，也可以切到 <b>本地 OCR</b>（不消耗 API）。'
+        : '<b>你当前没有可用的视觉模型（DeepSeek 不支持图片）</b>，会自动用 <b>本地 OCR</b>（在浏览器里跑，不需要 Key）。') +
+      '识别结果会并入正文，之后可以「AI 提炼」或导出 Markdown。';
   }
   else if (f) {
     $('#frNotice').innerHTML = '正在阅读 <b>' + esc(f.title || f.name) + '</b>。文件内容只在内存里，不会上传；只有点「AI 提炼」时才会把节选发给你配置的模型。';
@@ -4894,7 +4924,7 @@ function frRenderDoc() {
   if (f.pages) {
     box.innerHTML = f.pages.map(function (p, i) {
       return '<section class="fr-sec' + offCls(p.no) + '" id="fr-sec-' + i + '"><h3 class="fr-sec-h">第 ' + p.no + ' 页' +
-        (p.ocr ? ' <span class="fr-ocr-tag">AI 识别</span>' : '') + '</h3>' +
+        (p.ocr ? ' <span class="fr-ocr-tag">' + (p.ocSrc === 'local' ? '本地识别' : 'AI 识别') + '</span>' : '') + '</h3>' +
         '<pre class="fr-pre">' + esc(p.text || '（本页没有文字）') + '</pre></section>';
     }).join('');
     return;
@@ -4988,8 +5018,8 @@ function frVisionModel() {
   return list[0] || '';
 }
 
-/** 把 PDF 的某一页渲染成 JPEG data URL（纯前端 canvas） */
-async function frRenderPageDataUrl(pdfDoc, no, maxWidth) {
+/** 把 PDF 的某一页渲染成 canvas */
+async function frRenderPageCanvas(pdfDoc, no, maxWidth) {
   const page = await pdfDoc.getPage(no);
   let vp = page.getViewport({ scale: 1 });
   const scale = Math.min(2.4, (maxWidth || 1400) / vp.width);
@@ -5001,7 +5031,71 @@ async function frRenderPageDataUrl(pdfDoc, no, maxWidth) {
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   await page.render({ canvasContext: ctx, viewport: vp }).promise;
+  return canvas;
+}
+async function frRenderPageDataUrl(pdfDoc, no, maxWidth) {
+  const canvas = await frRenderPageCanvas(pdfDoc, no, maxWidth);
   return canvas.toDataURL('image/jpeg', 0.82);
+}
+
+/* ---------------- 本地 OCR（Tesseract.js WASM，无需任何 API） ---------------- */
+const FR_TESS_CDNS = [
+  'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/',
+  'https://unpkg.com/tesseract.js@5.1.1/dist/',
+  'https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.1.1/'
+];
+/** 本地 OCR 可用的语言包（与通用阅读器同款组合） */
+const FR_TESS_LANGS = [
+  { v: 'chi_sim+eng', t: '简体中文 + English' },
+  { v: 'chi_tra+eng', t: '繁體中文 + English' },
+  { v: 'jpn+eng', t: '日本語 + English' },
+  { v: 'kor+eng', t: '한국어 + English' },
+  { v: 'eng', t: 'English only' }
+];
+function frLoadTesseract() {
+  if (window.Tesseract) return Promise.resolve(window.Tesseract);
+  return new Promise(function (resolve, reject) {
+    let i = 0;
+    function next() {
+      if (i >= FR_TESS_CDNS.length) {
+        reject(new Error('无法加载本地 OCR 引擎（Tesseract.js，已尝试 ' + FR_TESS_CDNS.length +
+          ' 个 CDN）。这是网络受限导致的，可以换网络后重试，或改用 AI 视觉识别。'));
+        return;
+      }
+      const src = FR_TESS_CDNS[i++] + 'tesseract.min.js';
+      const sc = document.createElement('script');
+      sc.src = src;
+      sc.async = true;
+      sc.onload = function () { window.Tesseract ? resolve(window.Tesseract) : next(); };
+      sc.onerror = next;
+      document.head.appendChild(sc);
+    }
+    next();
+  });
+}
+/** 用本地引擎识别一张 canvas，返回纯文本 */
+async function frLocalOcr(canvas, lang, onProgress) {
+  const T = await frLoadTesseract();
+  let worker = window.__frTessWorker;
+  if (!worker || window.__frTessLang !== lang) {
+    if (worker) { try { await worker.terminate(); } catch (e) { /* 忽略 */ } }
+    worker = await T.createWorker(lang, 1, {
+      logger: function (m) {
+        if (onProgress && m) onProgress(m);
+      }
+    });
+    window.__frTessWorker = worker;
+    window.__frTessLang = lang;
+  }
+  const res = await worker.recognize(canvas);
+  const txt = res && res.data && res.data.text ? String(res.data.text) : '';
+  return txt.replace(/\n{3,}/g, '\n\n').trim();
+}
+/** 当前该用哪个 OCR 引擎：有视觉模型用 AI，否则自动退回本地 */
+function frOcrEngineResolved() {
+  if (FR.ocrEng === 'ai') return frVisionModel() ? 'ai' : 'local';
+  if (FR.ocrEng === 'local') return 'local';
+  return frVisionModel() ? 'ai' : 'local';
 }
 
 /** 把一张图片交给视觉模型做 OCR（OpenAI 兼容的多模态 content 数组） */
@@ -5023,27 +5117,37 @@ async function frOcrRequest(dataUrl, model) {
 }
 
 /** 把 OCR 文本合并进文件名下的第 no 页，并重建全文 */
-function frMergeOcr(f, no, text) {
+function frMergeOcr(f, no, text, src) {
   if (!f.pages) return;
   const page = f.pages.filter(function (p) { return p.no === no; })[0];
   if (!page) return;
   page.text = String(text || '').trim();
   page.ocr = true;
+  page.ocSrc = (src === 'local') ? 'local' : 'ai';
   f.ocrUsed = true;
-  f.text = f.pages.map(function (p) { return '### 第 ' + p.no + ' 页' + (p.ocr ? '（AI 识别）' : '') + '\n\n' + p.text; }).join('\n\n');
+  f.text = f.pages.map(function (p) {
+    return '### 第 ' + p.no + ' 页' + (p.ocr ? '（' + (p.ocSrc === 'local' ? '本地识别' : 'AI 识别') + '）' : '') + '\n\n' + p.text;
+  }).join('\n\n');
 }
 
 async function frOcrRun() {
   const f = frActiveFile();
   if (!f) { toast('先打开一个 PDF', 'err'); return; }
   if (f.kind !== 'pdf' || !f.pdfDoc) { toast('只有 PDF 可以做文字识别', 'err'); return; }
+  const engine = frOcrEngineResolved();
   const model = frVisionModel();
-  if (!model) {
-    toast('当前服务商没有视觉模型。请到【API 设置】把服务商切到「通义千问」并选 qwen-vl-max（DeepSeek 暂不提供图片识别）', 'err');
-    return;
+  const lang = FR.ocrLang || 'chi_sim+eng';
+  if (engine === 'ai') {
+    if (!model) {
+      toast('当前服务商没有视觉模型：请切到「通义千问」并选 qwen-vl-max，或改用「本地 OCR」', 'err');
+      return;
+    }
+    const cfgErr = configError();
+    if (cfgErr) { toast(cfgErr, 'err'); switchTab('api'); return; }
+  } else {
+    // 本地 OCR 不需要 API Key：没配 Key / 用 DeepSeek 时就走这条路
+    $('#frOcrTip').textContent = '本地 OCR（' + lang + '）：首次使用要下载语言包（约 10~15MB，之后缓存），不消耗 API';
   }
-  const cfgErr = configError();
-  if (cfgErr) { toast(cfgErr, 'err'); switchTab('api'); return; }
 
   const total = f.pages.length;
   // 识别「选择页」里勾选的页；没筛选就默认识别没有文字层的页（扫描页）
@@ -5057,7 +5161,7 @@ async function frOcrRun() {
   if (targets.length > 30) { targets = targets.slice(0, 30); toast('一次最多识别 30 页，已截到前 30 页'); }
 
   frOcrStop = false;
-  startRunUI('tools', '正在识别第 ' + targets[0] + ' 页…');
+  startRunUI('tools', (engine === 'local' ? '本地 OCR' : 'AI 识别') + '：第 ' + targets[0] + ' 页…');
   $('#frOcrTip').textContent = '准备中…';
   const oldModel = state.model;
   state.model = model;
@@ -5069,9 +5173,21 @@ async function frOcrRun() {
       if (frOcrStop) break;
       $('#frOcrTip').textContent = '识别中 ' + (k + 1) + ' / ' + targets.length + ' 页（第 ' + no + ' 页）…';
       try {
-        const url = await frRenderPageDataUrl(f.pdfDoc, no);
-        const text = await frOcrRequest(url, model);
-        frMergeOcr(f, no, text);
+        let text;
+        if (engine === 'local') {
+          const canvas = await frRenderPageCanvas(f.pdfDoc, no, 1800);
+          text = await frLocalOcr(canvas, lang, function (m) {
+            if (m && typeof m.progress === 'number') {
+              $('#frOcrTip').textContent = '本地识别第 ' + no + ' 页：' +
+                String(m.status || '') + ' ' + Math.round(m.progress * 100) + '%';
+            }
+          });
+          if (!text) text = '（本页无文字）';
+        } else {
+          const url = await frRenderPageDataUrl(f.pdfDoc, no);
+          text = await frOcrRequest(url, model);
+        }
+        frMergeOcr(f, no, text, engine);
         okCount++;
         FR.view = 'doc';
         frRenderAll();
@@ -5091,7 +5207,7 @@ async function frOcrRun() {
     frRenderAll();   // 先重渲染（会重置提示），再写最终提示，保证信息留在界面上
     $('#frOcrTip').textContent = frOcrStop
       ? '已停止：已完成 ' + okCount + ' 页，结果已保留' + (lastErr ? '（' + lastErr + '）' : '')
-      : '识别完成：第 ' + frRangeStr(targets) + ' 页已并入正文（' + okCount + ' / ' + targets.length + ' 页成功' +
+      : (engine === 'local' ? '本地 OCR' : 'AI 识别') + '完成：第 ' + frRangeStr(targets) + ' 页已并入正文（' + okCount + ' / ' + targets.length + ' 页成功' +
         (lastErr ? '；' + lastErr : '') + '），可继续「AI 提炼」或导出 Markdown';
     if (okCount && !frOcrStop) toast('OCR 完成：' + okCount + ' 页已并入正文', 'ok');
   }
@@ -5112,7 +5228,7 @@ function frExportMd() {
     '> 由 **CodeTutor 文档阅读器**生成 · ' + stamp + '  \n' +
     '> 原文件：`' + f.name + '` · 格式：' + (FR_KIND_LABEL[f.kind] || f.kind) + ' · 大小：' + frSize(f.size) +
     ' · 范围：' + selNote + ' · 提取字数：' + frSelectedText(f).length +
-    (f.ocrUsed ? ' · **部分页面由 AI 识别（OCR）**' : '') + '\n\n';
+    (f.ocrUsed ? ' · **部分页面由 OCR 识别（AI 视觉 / 本地引擎）**' : '') + '\n\n';
   const parts = [];
   if (withAi && FR.ai) parts.push('## AI 提炼\n\n' + FR.ai);
   if (withBody) parts.push('## 原文（' + selNote + '）\n\n' + frSelectedText(f));
@@ -5224,6 +5340,16 @@ function frBind() {
     if (i >= 0) cur.splice(i, 1); else cur.push(no);
     cur.sort(function (x, y) { return x - y; });
     f.sel = (cur.length >= n) ? null : cur;
+    frRenderAll();
+  });
+  $('#frOcrEngine').addEventListener('click', function (e) {
+    const b = e.target.closest('button[data-eng]');
+    if (!b) return;
+    FR.ocrEng = b.dataset.eng;
+    frRenderAll();
+  });
+  $('#frOcrLang').addEventListener('change', function () {
+    FR.ocrLang = $('#frOcrLang').value;
     frRenderAll();
   });
   $('#frOcrBtn').addEventListener('click', frOcrRun);
