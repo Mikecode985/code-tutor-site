@@ -1269,7 +1269,7 @@ main{padding:22px 0 56px}
     -webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px)
   }
   .tabs{
-    display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:0;width:100%;max-width:none;
+    display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:0;width:100%;max-width:none;
     padding:6px 4px calc(6px + env(safe-area-inset-bottom));border-radius:0;background:transparent;overflow:visible
   }
   .tab{
@@ -1333,6 +1333,63 @@ main{padding:22px 0 56px}
   .chat-shell{height:auto;min-height:0}
   .chat-main{overflow:visible}
   .chat-body{max-height:none}
+}
+
+/* ============================================================
+ * 18. 实用工具 · 文档阅读器
+ * ============================================================ */
+.drop-zone{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;padding:26px 20px;
+  border:1.5px dashed var(--line);border-radius:18px;background:var(--card-2);text-align:center;cursor:pointer;
+  transition:border-color .2s var(--ease),background .2s var(--ease),transform .2s var(--ease)
+}
+.drop-zone:hover{border-color:var(--brand-line);background:var(--brand-soft)}
+.drop-zone.over{border-color:var(--brand);background:var(--brand-soft);transform:scale(.993)}
+.drop-zone .dz-ico{width:30px;height:30px;color:var(--brand)}
+.drop-zone b{font-size:15px;font-weight:600}
+.drop-zone span{font-size:13px;color:var(--text-2)}
+.drop-zone small{font-size:11.5px;color:var(--muted);line-height:1.55;max-width:540px}
+.fr-shell{
+  display:grid;grid-template-columns:232px minmax(0,1fr);border:1px solid var(--line-2);
+  border-radius:18px;overflow:hidden;min-height:520px
+}
+.fr-side{background:color-mix(in srgb,var(--muted) 7%,transparent);border-right:1px solid var(--line-2);
+  padding:10px;overflow:auto;max-height:70vh;min-height:0}
+.fr-files{display:flex;flex-direction:column;gap:3px}
+.fr-file{display:flex;flex-direction:column;gap:2px;text-align:left;border:1px solid transparent;
+  background:transparent;border-radius:10px;padding:8px 10px;cursor:pointer;font:inherit;
+  transition:background .18s var(--ease)}
+.fr-file:hover{background:color-mix(in srgb,var(--muted) 10%,transparent)}
+.fr-file.on{background:var(--brand-soft);border-color:var(--brand-line)}
+.fr-file-name{font-size:13px;font-weight:500;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fr-file-meta{font-size:11px;color:var(--muted)}
+.fr-none{font-size:12.5px;color:var(--muted);padding:10px}
+.fr-toc{margin-top:10px;border-top:1px solid var(--line-2);padding-top:8px}
+.fr-toc-t{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:4px 6px}
+.fr-toc-item{display:block;width:100%;text-align:left;border:0;background:transparent;color:var(--text-2);
+  font:inherit;font-size:12.5px;padding:5px 8px;border-radius:8px;cursor:pointer;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;transition:background .18s var(--ease)}
+.fr-toc-item:hover{background:color-mix(in srgb,var(--muted) 10%,transparent);color:var(--text)}
+.fr-main{display:flex;flex-direction:column;min-width:0;min-height:0}
+.fr-bar{display:flex;align-items:center;gap:8px;padding:9px 14px;border-bottom:1px solid var(--line-2);
+  background:var(--card);flex-wrap:wrap}
+.fr-name{font-size:14px;font-weight:600;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fr-body{flex:1;min-height:0;overflow:auto;padding:20px 26px;font-size:15px;line-height:1.78;max-height:70vh}
+.fr-body .md{font-size:inherit}
+.fr-pre{font-family:var(--mono);font-size:13px;line-height:1.72;white-space:pre-wrap;word-break:break-word;
+  margin:0;color:var(--text)}
+.fr-sec{margin-bottom:22px}
+.fr-sec-h{font-size:15px;font-weight:600;margin:0 0 8px;color:var(--brand);letter-spacing:-.01em}
+.fr-empty{padding:56px 20px;text-align:center;color:var(--muted);font-size:13.5px}
+.fr-ai{padding:18px 22px;max-height:70vh;overflow:auto}
+.fr-ai .output{border:0;background:transparent;padding:0}
+@media (max-width:760px){
+  .fr-shell{grid-template-columns:1fr;min-height:0}
+  .fr-side{max-height:170px;border-right:0;border-bottom:1px solid var(--line-2)}
+  .fr-body,.fr-ai{max-height:none}
+  .fr-bar{padding:8px 12px;gap:6px}
+  .fr-name{max-width:none;flex:1 1 100%}
+  .fr-body{padding:14px 16px}
 }
 </style>
 </head>
@@ -1403,6 +1460,14 @@ main{padding:22px 0 56px}
   <symbol id="i-square" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
     <rect x="6.4" y="6.4" width="11.2" height="11.2" rx="2.2"/>
   </symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M3.4 7.6A2.2 2.2 0 0 1 5.6 5.4h3.2l2 2.4h7.6a2.2 2.2 0 0 1 2.2 2.2v8.4a2.2 2.2 0 0 1-2.2 2.2H5.6a2.2 2.2 0 0 1-2.2-2.2z"/>
+    <path d="M3.4 11.4h17.2"/>
+  </symbol>
+  <symbol id="i-doc" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M7 3.4h7l4.4 4.4v12.8a1.4 1.4 0 0 1-1.4 1.4H7a1.4 1.4 0 0 1-1.4-1.4V4.8A1.4 1.4 0 0 1 7 3.4z"/>
+    <path d="M13.8 3.4v4.6h4.6M9 12h6M9 15.4h6M9 18.4h3.6"/>
+  </symbol>
   <symbol id="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
     <circle cx="12" cy="12" r="4.1"/>
     <path d="M12 2.8v2.4M12 18.8v2.4M2.8 12h2.4M18.8 12h2.4M5.5 5.5l1.7 1.7M16.8 16.8l1.7 1.7M18.5 5.5l-1.7 1.7M7.2 16.8l-1.7 1.7"/>
@@ -1471,6 +1536,7 @@ main{padding:22px 0 56px}
       <button class="tab" role="tab" data-panel="assistant" aria-selected="false"><svg class="ico" aria-hidden="true"><use href="#i-code"/></svg> 代码助手</button>
       <button class="tab" role="tab" data-panel="practice" aria-selected="false"><svg class="ico" aria-hidden="true"><use href="#i-target"/></svg> 练习</button>
       <button class="tab" role="tab" data-panel="knowledge" aria-selected="false"><svg class="ico" aria-hidden="true"><use href="#i-book"/></svg> 学习知识</button>
+      <button class="tab" role="tab" data-panel="tools" aria-selected="false"><svg class="ico" aria-hidden="true"><use href="#i-folder"/></svg> 实用工具</button>
       <button class="tab" role="tab" data-panel="progress" aria-selected="false"><svg class="ico" aria-hidden="true"><use href="#i-chart"/></svg> 学习进度</button>
       <button class="tab" role="tab" data-panel="api"      aria-selected="false"><svg class="ico" aria-hidden="true"><use href="#i-gear"/></svg> API 设置</button>
     </nav>
@@ -1882,6 +1948,64 @@ main{padding:22px 0 56px}
     </div>
 
     <div id="kbList"></div>
+  </section>
+
+  <!-- ============================================================
+       面板 6：实用工具（第一个工具：纯前端文档阅读器）
+       ============================================================ -->
+  <section class="panel" id="panel-tools" role="tabpanel" aria-labelledby="tab-tools">
+    <div class="card">
+      <h2><svg class="ico" aria-hidden="true"><use href="#i-folder"/></svg> 文档阅读器 <span class="badge gray" id="frCount">0 个文件</span></h2>
+      <p class="sub">
+        把 <b>Markdown / TXT / PDF / EPUB / DOCX</b>（以及代码、CSV、JSON）拖进来，直接在浏览器里读。
+        <b>文件只在你的电脑上解析，不会上传到任何服务器</b>；只有点「AI 提炼」时，才会把<b>节选文本</b>发给你自己配置的模型。
+      </p>
+
+      <div class="drop-zone" id="frDrop" tabindex="0" role="button" aria-label="拖入或选择文件">
+        <svg class="ico dz-ico" aria-hidden="true"><use href="#i-folder"/></svg>
+        <b>把文件拖到这里</b>
+        <span>或点 <button class="btn sm" id="frPickBtn" type="button">选择文件</button>（可多选）</span>
+        <small>.md .markdown .txt .log .csv .json .html .xml .pdf .epub .docx 以及常见代码后缀 · 单个文件 ≤ 60MB</small>
+      </div>
+      <input type="file" id="frFile" multiple class="hidden"
+             accept=".md,.markdown,.txt,.log,.csv,.json,.html,.xml,.py,.c,.cpp,.h,.js,.ts,.java,.sql,.yml,.yaml,.ini,.conf,.sh,.go,.rs,.pdf,.epub,.docx">
+
+      <div class="btn-row" style="margin-top:14px">
+        <button class="btn primary" id="frAiBtn" disabled><svg class="ico" aria-hidden="true"><use href="#i-sparkles"/></svg> AI 提炼</button>
+        <button class="btn" id="frAiStopBtn" disabled>停止</button>
+        <button class="btn" id="frMdBtn" disabled><svg class="ico" aria-hidden="true"><use href="#i-doc"/></svg> 导出 Markdown</button>
+        <button class="btn ghost" id="frCopyBtn" disabled>复制全文</button>
+        <button class="btn ghost" id="frClearBtn">清空文件</button>
+      </div>
+      <div class="note info" id="frNotice" style="margin-top:12px"></div>
+    </div>
+
+    <div class="card">
+      <div class="fr-shell">
+        <aside class="fr-side">
+          <div class="fr-files" id="frFiles"></div>
+          <div class="fr-toc" id="frToc"></div>
+        </aside>
+        <div class="fr-main">
+          <div class="fr-bar">
+            <span class="badge lang" id="frKind">—</span>
+            <b class="fr-name" id="frName">还没有打开文件</b>
+            <div class="spacer"></div>
+            <span class="hint" id="frStats"></span>
+            <div class="seg" id="frViewSeg" role="group" aria-label="切换视图">
+              <button type="button" data-fr-view="doc" aria-pressed="true">原文</button>
+              <button type="button" data-fr-view="ai" aria-pressed="false">AI 提炼</button>
+            </div>
+            <button class="btn sm ghost" id="frMinus" type="button" title="缩小字号">A&#8722;</button>
+            <button class="btn sm ghost" id="frPlus" type="button" title="放大字号">A+</button>
+          </div>
+          <div class="fr-body" id="frBody"><div class="fr-empty">拖入文件后这里显示内容</div></div>
+          <div class="fr-ai" id="frAiOutWrap" style="display:none">
+            <div class="output" id="frAiOut"></div>
+          </div>
+        </div>
+      </div>
+    </div>
   </section>
 
 </main>
@@ -4235,6 +4359,484 @@ function applyQuizPreset() {
 }
 
 /* ==========================================================================
+ * 17. 实用工具 · 文档阅读器（纯前端，多格式）
+ *   · 支持：Markdown / TXT / 代码 / CSV / JSON（直读）、PDF、EPUB、DOCX
+ *   · PDF 用 pdf.js（懒加载，CDN 不可用时给出明确提示）
+ *   · EPUB / DOCX 用自研的最小 ZIP 解析器 + 浏览器原生 DecompressionStream('deflate-raw')
+ *   · 文件内容只在内存里，**绝不写入 localStorage / 不上传**
+ *   · 「AI 提炼」只发节选文本；结果可导出为 Markdown
+ * ========================================================================== */
+const FR = {
+  files: [],        // [{ name, size, kind, text, pages?, chapters? }]
+  active: -1,
+  view: 'doc',      // doc | ai
+  ai: '',           // AI 提炼结果（Markdown）
+  aiFor: -1,        // 结果对应的文件下标
+  fs: 15            // 正文字号
+};
+
+const FR_ACCEPT = ['.md', '.markdown', '.txt', '.log', '.csv', '.json', '.html', '.xml',
+  '.py', '.c', '.cpp', '.h', '.js', '.ts', '.java', '.sql', '.yml', '.yaml', '.ini', '.conf', '.sh', '.go', '.rs',
+  '.pdf', '.epub', '.docx'];
+
+function frKindOf(name) {
+  const ext = (String(name).split('.').pop() || '').toLowerCase();
+  if (ext === 'md' || ext === 'markdown') return 'md';
+  if (ext === 'pdf') return 'pdf';
+  if (ext === 'epub') return 'epub';
+  if (ext === 'docx') return 'docx';
+  if (FR_ACCEPT.indexOf('.' + ext) >= 0) return 'text';
+  return 'other';
+}
+function frSize(n) {
+  if (n < 1024) return n + ' B';
+  if (n < 1024 * 1024) return (n / 1024).toFixed(1) + ' KB';
+  return (n / 1024 / 1024).toFixed(1) + ' MB';
+}
+const FR_KIND_LABEL = { md: 'Markdown', text: '文本', pdf: 'PDF', epub: 'EPUB', docx: 'Word', other: '未知' };
+
+/* ---------------- 最小 ZIP 解析（EPUB / DOCX 都是 ZIP） ---------------- */
+function frZip(buf) {
+  const u8 = new Uint8Array(buf);
+  const dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
+  let eocd = -1;
+  for (let i = u8.length - 22; i >= Math.max(0, u8.length - 66000); i--) {
+    if (dv.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+  }
+  if (eocd < 0) throw new Error('不是有效的 ZIP / EPUB / DOCX 文件');
+  const count = dv.getUint16(eocd + 10, true);
+  let off = dv.getUint32(eocd + 16, true);
+  const entries = {};
+  for (let i = 0; i < count; i++) {
+    if (dv.getUint32(off, true) !== 0x02014b50) break;
+    const method = dv.getUint16(off + 10, true);
+    const csize = dv.getUint32(off + 20, true);
+    const nameLen = dv.getUint16(off + 28, true);
+    const extraLen = dv.getUint16(off + 30, true);
+    const commentLen = dv.getUint16(off + 32, true);
+    const localOff = dv.getUint32(off + 42, true);
+    const name = new TextDecoder('utf-8').decode(u8.subarray(off + 46, off + 46 + nameLen));
+    entries[name] = { method: method, csize: csize, localOff: localOff };
+    off += 46 + nameLen + extraLen + commentLen;
+  }
+  return { entries: entries, u8: u8, dv: dv };
+}
+async function frZipRead(zip, name) {
+  const e = zip.entries[name];
+  if (!e) return null;
+  const dv = zip.dv;
+  const nameLen = dv.getUint16(e.localOff + 26, true);
+  const extraLen = dv.getUint16(e.localOff + 28, true);
+  const start = e.localOff + 30 + nameLen + extraLen;
+  const data = zip.u8.subarray(start, start + e.csize);
+  if (e.method === 0) return new TextDecoder('utf-8').decode(data);
+  if (e.method === 8) {
+    if (typeof DecompressionStream === 'undefined') {
+      throw new Error('当前浏览器不支持解压（需要 Chrome 103+ / Edge 103+ / Safari 16.4+）');
+    }
+    const stream = new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+    return await new Response(stream).text();
+  }
+  throw new Error('不支持的压缩方式（method=' + e.method + '）');
+}
+
+/* ---------------- 把 HTML 变成可读文本 ---------------- */
+function frHtmlToText(html) {
+  let h = String(html || '')
+    .replace(/<script[\s\S]*?<\/script>/gi, '')
+    .replace(/<style[\s\S]*?<\/style>/gi, '')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/(p|div|h[1-6]|li|tr|blockquote|section|article)>/gi, '\n')
+    .replace(/<\/td>|<\/th>/gi, '\t')
+    .replace(/<[^>]+>/g, '');
+  const doc = new DOMParser().parseFromString('<body>' + h + '</body>', 'text/html');
+  const text = doc.body ? doc.body.textContent : h;
+  return text.replace(/\r\n?/g, '\n').replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+}
+function frNormPath(p) {
+  const out = [];
+  String(p).split('/').forEach(function (seg) {
+    if (!seg || seg === '.') return;
+    if (seg === '..') out.pop(); else out.push(seg);
+  });
+  return out.join('/');
+}
+
+/* ---------------- EPUB ---------------- */
+async function frParseEpub(buf, name) {
+  const zip = frZip(buf);
+  const container = await frZipRead(zip, 'META-INF/container.xml');
+  let opfPath = null;
+  if (container) {
+    const m = /full-path="([^"]+)"/i.exec(container);
+    if (m) opfPath = m[1];
+  }
+  if (!opfPath) {
+    opfPath = Object.keys(zip.entries).filter(function (n) { return /\.opf$/i.test(n); })[0];
+  }
+  if (!opfPath) throw new Error('EPUB 里找不到 OPF 清单');
+  const opf = await frZipRead(zip, opfPath);
+  const base = opfPath.indexOf('/') >= 0 ? opfPath.slice(0, opfPath.lastIndexOf('/') + 1) : '';
+  const doc = new DOMParser().parseFromString(opf || '', 'application/xml');
+
+  const items = {};
+  Array.prototype.forEach.call(doc.getElementsByTagName('item'), function (it) {
+    items[it.getAttribute('id')] = { href: it.getAttribute('href'), type: it.getAttribute('media-type') };
+  });
+  const order = [];
+  Array.prototype.forEach.call(doc.getElementsByTagName('itemref'), function (r) {
+    const it = items[r.getAttribute('idref')];
+    if (it && it.href) order.push(it);
+  });
+  const chapters = [];
+  for (let i = 0; i < order.length && chapters.length < 300; i++) {
+    const path = frNormPath(base + order[i].href);
+    let html = null;
+    try { html = await frZipRead(zip, path); } catch (e) { html = null; }
+    if (!html) continue;
+    const text = frHtmlToText(html);
+    if (text.length < 2) continue;
+    let title = '';
+    const mt = /<title[^>]*>([\s\S]*?)<\/title>/i.exec(html) || /<h[1-3][^>]*>([\s\S]*?)<\/h[1-3]>/i.exec(html);
+    if (mt) title = frHtmlToText(mt[1]).slice(0, 60);
+    chapters.push({ title: title || ('第 ' + (chapters.length + 1) + ' 节'), text: text });
+  }
+  if (!chapters.length) throw new Error('EPUB 里没有解析出可读的章节');
+  let bookTitle = '';
+  const te = doc.getElementsByTagName('dc:title')[0] || doc.getElementsByTagNameNS('http://purl.org/dc/elements/1.1/', 'title')[0];
+  if (te) bookTitle = (te.textContent || '').trim();
+  return {
+    kind: 'epub',
+    title: bookTitle || name,
+    chapters: chapters,
+    text: chapters.map(function (c) { return '## ' + c.title + '\n\n' + c.text; }).join('\n\n')
+  };
+}
+
+/* ---------------- DOCX ---------------- */
+async function frParseDocx(buf) {
+  const zip = frZip(buf);
+  let xml = await frZipRead(zip, 'word/document.xml');
+  if (!xml) throw new Error('DOCX 里找不到 word/document.xml');
+  const text = frHtmlToText(
+    xml.replace(/<w:tab\/>/g, '\t')
+       .replace(/<w:br\/>/g, '\n')
+       .replace(/<\/w:p>/g, '</p>')
+  );
+  return { kind: 'docx', text: text };
+}
+
+/* ---------------- PDF（pdf.js 懒加载） ---------------- */
+const FR_PDF_CDN = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.7.76/build/';
+async function frLoadPdfjs() {
+  if (window.__frPdfjs) return window.__frPdfjs;
+  const mod = await import(FR_PDF_CDN + 'pdf.min.mjs');
+  mod.GlobalWorkerOptions.workerSrc = FR_PDF_CDN + 'pdf.worker.min.mjs';
+  window.__frPdfjs = mod;
+  return mod;
+}
+async function frParsePdf(buf, onProgress) {
+  const pdfjs = await frLoadPdfjs();
+  const doc = await pdfjs.getDocument({ data: new Uint8Array(buf), isEvalSupported: false }).promise;
+  const total = Math.min(doc.numPages, 300);
+  const pages = [];
+  for (let i = 1; i <= total; i++) {
+    const page = await doc.getPage(i);
+    const tc = await page.getTextContent();
+    let out = '';
+    let lastY = null;
+    tc.items.forEach(function (it) {
+      const y = it.transform ? it.transform[5] : null;
+      if (lastY !== null && y !== null && Math.abs(y - lastY) > 4) out += '\n';
+      out += it.str;
+      if (it.hasEOL) out += '\n';
+      lastY = y;
+    });
+    pages.push({ no: i, text: out.replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim() });
+    if (onProgress) onProgress(i, total);
+  }
+  return {
+    kind: 'pdf',
+    pages: pages,
+    text: pages.map(function (p) { return '### 第 ' + p.no + ' 页\n\n' + p.text; }).join('\n\n')
+  };
+}
+
+/* ---------------- 打开文件 ---------------- */
+async function frParseFile(file, onProgress) {
+  const kind = frKindOf(file.name);
+  if (kind === 'other') throw new Error('暂不支持该格式（可用：Markdown / TXT / 代码 / CSV / JSON / PDF / EPUB / DOCX）');
+  if (kind === 'text' || kind === 'md') {
+    const text = await file.text();
+    return { kind: kind, text: text.replace(/\r\n?/g, '\n') };
+  }
+  const buf = await file.arrayBuffer();
+  if (kind === 'pdf') return await frParsePdf(buf, onProgress);
+  if (kind === 'epub') return await frParseEpub(buf, file.name);
+  if (kind === 'docx') return await frParseDocx(buf);
+  throw new Error('未知格式');
+}
+
+async function frAddFiles(fileList) {
+  const list = Array.prototype.slice.call(fileList || []);
+  if (!list.length) return;
+  for (let i = 0; i < list.length; i++) {
+    const f = list[i];
+    const name = f.name || '未命名';
+    if (f.size > 60 * 1024 * 1024) { toast('「' + name + '」超过 60MB，先跳过', 'err'); continue; }
+    $('#frNotice').innerHTML = '正在解析 <b>' + esc(name) + '</b> …';
+    try {
+      const parsed = await frParseFile(f, function (i2, n2) {
+        $('#frNotice').innerHTML = '正在解析 <b>' + esc(name) + '</b> … 第 ' + i2 + ' / ' + n2 + ' 页';
+      });
+      FR.files.push({
+        name: name, size: f.size, kind: parsed.kind, title: parsed.title || name,
+        text: parsed.text || '', pages: parsed.pages || null, chapters: parsed.chapters || null
+      });
+      FR.active = FR.files.length - 1;
+      FR.ai = ''; FR.aiFor = -1; FR.view = 'doc';
+      frRenderAll();
+      toast('已打开：' + name, 'ok');
+    } catch (e) {
+      toast('「' + name + '」解析失败：' + (e && e.message ? e.message : e), 'err');
+    }
+  }
+  frRenderAll();
+}
+
+/* ---------------- 渲染 ---------------- */
+function frActiveFile() { return FR.files[FR.active] || null; }
+
+function frRenderAll() {
+  const f = frActiveFile();
+  $('#frCount').textContent = FR.files.length + ' 个文件';
+  $('#frFiles').innerHTML = FR.files.length
+    ? FR.files.map(function (x, i) {
+        return '<button class="fr-file' + (i === FR.active ? ' on' : '') + '" type="button" data-fr-pick="' + i + '">' +
+          '<span class="fr-file-name">' + esc(x.name) + '</span>' +
+          '<span class="fr-file-meta">' + FR_KIND_LABEL[x.kind] + ' · ' + frSize(x.size) + '</span></button>';
+      }).join('')
+    : '<div class="fr-none">还没有文件</div>';
+
+  // 章节（EPUB）或页面（PDF）
+  let toc = '';
+  if (f && f.chapters) {
+    toc = '<div class="fr-toc-t">目录 · ' + f.chapters.length + ' 节</div>' +
+      f.chapters.map(function (c, i) {
+        return '<button class="fr-toc-item" type="button" data-fr-sec="' + i + '">' + (i + 1) + '. ' + esc(c.title) + '</button>';
+      }).join('');
+  } else if (f && f.pages) {
+    toc = '<div class="fr-toc-t">页 · ' + f.pages.length + ' 页</div>' +
+      f.pages.map(function (p, i) {
+        return '<button class="fr-toc-item" type="button" data-fr-sec="' + i + '">第 ' + p.no + ' 页</button>';
+      }).join('');
+  }
+  $('#frToc').innerHTML = toc;
+
+  $('#frKind').textContent = f ? (FR_KIND_LABEL[f.kind] || f.kind) : '—';
+  $('#frName').textContent = f ? (f.title || f.name) : '还没有打开文件';
+  $('#frStats').textContent = f ? (frSize(f.size) + ' · ' + (f.text || '').length.toLocaleString('zh-CN') + ' 字' +
+    (f.chapters ? ' · ' + f.chapters.length + ' 节' : '') + (f.pages ? ' · ' + f.pages.length + ' 页' : '')) : '';
+
+  // 视图切换按钮
+  $$('#frViewSeg button').forEach(function (b) {
+    b.setAttribute('aria-pressed', String(b.dataset.frView === FR.view));
+  });
+  $('#frAiOutWrap').style.display = (FR.view === 'ai') ? '' : 'none';
+  $('#frBody').style.display = (FR.view === 'ai') ? 'none' : '';
+
+  // 正文
+  frRenderDoc();
+  // AI 结果
+  $('#frAiOut').innerHTML = FR.ai ? renderMarkdown(FR.ai) : '<div class="fr-empty">还没有提炼结果。点上方「AI 提炼」把节选文本交给模型，生成摘要、大纲与术语表。</div>';
+  $('#frMdBtn').disabled = !f;
+  $('#frAiBtn').disabled = !f;
+  $('#frCopyBtn').disabled = !f;
+  if (FR.files.length === 0) $('#frNotice').innerHTML = '还没有文件。把 Markdown / TXT / PDF / EPUB / DOCX 拖进上面的框即可，<b>文件不会离开你的电脑</b>。';
+}
+
+function frRenderDoc() {
+  const f = frActiveFile();
+  const box = $('#frBody');
+  box.style.fontSize = FR.fs + 'px';
+  if (!f) { box.innerHTML = '<div class="fr-empty">拖入文件后这里显示内容</div>'; return; }
+  if (!(f.text || '').trim()) { box.innerHTML = '<div class="fr-empty">这个文件没有解析出文字（可能是扫描版 PDF 或纯图片 EPUB）。</div>'; return; }
+  if (f.kind === 'md') { box.innerHTML = '<div class="md">' + renderMarkdown(f.text) + '</div>'; return; }
+  if (f.chapters) {
+    box.innerHTML = f.chapters.map(function (c, i) {
+      return '<section class="fr-sec" id="fr-sec-' + i + '"><h3 class="fr-sec-h">' + esc(c.title) + '</h3>' +
+        '<pre class="fr-pre">' + esc(c.text) + '</pre></section>';
+    }).join('');
+    return;
+  }
+  if (f.pages) {
+    box.innerHTML = f.pages.map(function (p, i) {
+      return '<section class="fr-sec" id="fr-sec-' + i + '"><h3 class="fr-sec-h">第 ' + p.no + ' 页</h3>' +
+        '<pre class="fr-pre">' + esc(p.text || '（本页没有文字）') + '</pre></section>';
+    }).join('');
+    return;
+  }
+  box.innerHTML = '<pre class="fr-pre">' + esc(f.text) + '</pre>';
+}
+
+/* ---------------- AI 提炼 ---------------- */
+function frBuildAiPrompt() {
+  const f = frActiveFile();
+  if (!f) return '';
+  const LIMIT = 12000;
+  const raw = f.text || '';
+  const cut = raw.length > LIMIT;
+  const body = cut ? raw.slice(0, LIMIT) : raw;
+  return '下面是一份文档' + (cut ? '的**节选**（原文 ' + raw.length + ' 字，这里只给了前 ' + LIMIT + ' 字）' : '') + '。\n' +
+    '文件名：' + f.name + '\n格式：' + (FR_KIND_LABEL[f.kind] || f.kind) + '\n总字数：' + raw.length + '\n\n' +
+    '请用**中文 Markdown**输出，严格按下面五节，不要用代码块包裹整篇，不要寒暄：\n' +
+    '## 一句话概要\n（一句话说清这份文档在讲什么）\n\n' +
+    '## 详细摘要\n（3~6 条要点，每条一行，- 开头）\n\n' +
+    '## 结构大纲\n（按原文层次列出章节/要点，两级缩进即可）\n\n' +
+    '## 关键概念\n（3~8 个术语 + 一句话解释）\n\n' +
+    '## 可延伸的问题\n（3 条，帮助读者继续思考或复习）\n\n' +
+    '【正文' + (cut ? '节选' : '') + '开始】\n' + body + '\n【正文结束】';
+}
+
+async function frAnalyze() {
+  const f = frActiveFile();
+  if (!f) { toast('先打开一个文件', 'err'); return; }
+  const cfgErr = configError();
+  if (cfgErr) { toast(cfgErr, 'err'); switchTab('api'); return; }
+  FR.view = 'ai';
+  FR.ai = '';
+  FR.aiFor = FR.active;
+  $('#frAiOut').innerHTML = '<div class="skeleton"><div class="sk-line"></div><div class="sk-line"></div><div class="sk-line"></div></div>';
+  frRenderAll();
+  const out = $('#frAiOut');
+  startRunUI('tools', 'AI 正在提炼…');
+  let acc = '';
+  try {
+    const finalText = await callAI({
+      messages: [
+        { role: 'system', content: buildSystemPrompt('你是一位文档编辑，负责把长文档提炼成结构化的 Markdown 笔记。') },
+        { role: 'user', content: frBuildAiPrompt() }
+      ],
+      which: 'tools',
+      temperature: 0.3,
+      maxTokens: 4000,
+      onDelta: function (chunk, full) { acc = full; out.innerHTML = renderMarkdown(full); }
+    });
+    FR.ai = finalText;
+    out.innerHTML = renderMarkdown(finalText);
+    toast('提炼完成，可导出为 Markdown', 'ok');
+  } catch (e) {
+    if (e && e.name === 'AbortError') {
+      FR.ai = acc || '';
+      out.innerHTML = renderMarkdown(acc || '_已停止_');
+      if (acc) toast('已停止（保留已生成内容）');
+    } else {
+      FR.ai = '';
+      out.innerHTML = '<div class="note warn">提炼失败：' + esc(e && e.message ? e.message : String(e)) + '</div>';
+    }
+  } finally {
+    endRunUI('tools');
+  }
+}
+
+/* ---------------- 导出 / 复制 / 清空 ---------------- */
+function frExportMd() {
+  const f = frActiveFile();
+  if (!f) { toast('先打开一个文件', 'err'); return; }
+  const stamp = new Date().toLocaleString('zh-CN', { hour12: false });
+  const head = '# ' + (f.title || f.name) + '\n\n' +
+    '> 由 **CodeTutor 文档阅读器**生成 · ' + stamp + '  \n' +
+    '> 原文件：`' + f.name + '` · 格式：' + (FR_KIND_LABEL[f.kind] || f.kind) + ' · 大小：' + frSize(f.size) +
+    ' · 提取字数：' + (f.text || '').length + '\n\n';
+  const body = (FR.ai
+    ? '## AI 提炼\n\n' + FR.ai + '\n\n---\n\n## 原文\n\n' + f.text
+    : f.text);
+  const blob = new Blob([head + body], { type: 'text/markdown;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = (f.name || 'document').replace(/\.[^.]+$/, '') + '.md';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(function () { URL.revokeObjectURL(url); }, 3000);
+  toast('已导出 Markdown（含' + (FR.ai ? ' AI 提炼与原文' : '原文') + '）', 'ok');
+}
+
+function frBind() {
+  const drop = $('#frDrop');
+  const input = $('#frFile');
+
+  $('#frPickBtn').addEventListener('click', function () { input.click(); });
+  drop.addEventListener('click', function (e) {
+    if (e.target.closest('#frPickBtn')) return;
+    input.click();
+  });
+  input.addEventListener('change', function () {
+    frAddFiles(input.files);
+    input.value = '';
+  });
+  ['dragenter', 'dragover'].forEach(function (ev) {
+    drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.add('over'); });
+  });
+  ['dragleave', 'drop'].forEach(function (ev) {
+    drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.remove('over'); });
+  });
+  drop.addEventListener('drop', function (e) {
+    const dt = e.dataTransfer;
+    if (dt && dt.files && dt.files.length) { frAddFiles(dt.files); return; }
+    // 有些浏览器拖入的是 URL/文本
+    const t = dt && dt.getData ? dt.getData('text') : '';
+    if (t) {
+      FR.files.push({ name: '未命名.txt', size: t.length, kind: 'text', title: '拖入的文本', text: t });
+      FR.active = FR.files.length - 1; FR.view = 'doc'; FR.ai = '';
+      frRenderAll();
+    }
+  });
+
+  $('#frFiles').addEventListener('click', function (e) {
+    const b = e.target.closest('[data-fr-pick]');
+    if (!b) return;
+    FR.active = Number(b.dataset.frPick);
+    FR.view = (FR.aiFor === FR.active && FR.ai) ? 'ai' : 'doc';
+    frRenderAll();
+  });
+  $('#frToc').addEventListener('click', function (e) {
+    const b = e.target.closest('[data-fr-sec]');
+    if (!b) return;
+    FR.view = 'doc';
+    frRenderAll();
+    const el = document.getElementById('fr-sec-' + b.dataset.frSec);
+    if (el) el.scrollIntoView({ block: 'start', behavior: 'smooth' });
+  });
+
+  $$('#frViewSeg button').forEach(function (b) {
+    b.addEventListener('click', function () { FR.view = b.dataset.frView; frRenderAll(); });
+  });
+  $('#frMinus').addEventListener('click', function () { FR.fs = Math.max(12, FR.fs - 1); frRenderDoc(); });
+  $('#frPlus').addEventListener('click', function () { FR.fs = Math.min(24, FR.fs + 1); frRenderDoc(); });
+
+  $('#frAiBtn').addEventListener('click', frAnalyze);
+  $('#frAiStopBtn').addEventListener('click', function () { stopRun('tools'); });
+  $('#frMdBtn').addEventListener('click', frExportMd);
+  $('#frCopyBtn').addEventListener('click', function () {
+    const f = frActiveFile();
+    if (!f) return;
+    copyText(FR.view === 'ai' && FR.ai ? FR.ai : f.text).then(function (ok) {
+      toast(ok ? '已复制' + (FR.view === 'ai' && FR.ai ? ' AI 提炼结果' : '全文') : '复制失败', ok ? 'ok' : 'err');
+    });
+  });
+  $('#frClearBtn').addEventListener('click', function () {
+    if (!FR.files.length) return;
+    FR.files = []; FR.active = -1; FR.ai = ''; FR.aiFor = -1; FR.view = 'doc';
+    frRenderAll();
+    toast('已清空（文件从未离开过你的浏览器）', 'ok');
+  });
+
+  frRenderAll();
+}
+
+/* ==========================================================================
  * 11.9 本地存储层：历史对话 + 学习进度
  *     · 数据全部存在用户自己的浏览器 localStorage，绝不上传（apiKey 依然只在内存）
  *     · 带容量保护：写入失败（QuotaExceededError）时自动裁剪最旧数据后重试
@@ -5226,18 +5828,18 @@ function bindProgressPanel() {
  * 14. 运行状态控制 / 标签页 / 语言切换 / 初始化
  * ========================================================================== */
 function startRunUI(which, text) {
-  const map = { assistant: 'assistantStopBtn', quiz: 'quizStopBtn', grade: 'gradeStopBtn', chat: 'chatStopBtn' };
-  const submitMap = { assistant: 'assistantAskBtn', quiz: 'quizGenBtn', grade: 'submitAnswerBtn', chat: 'chatSendBtn' };
+  const map = { assistant: 'assistantStopBtn', quiz: 'quizStopBtn', grade: 'gradeStopBtn', chat: 'chatStopBtn', tools: 'frAiStopBtn' };
+  const submitMap = { assistant: 'assistantAskBtn', quiz: 'quizGenBtn', grade: 'submitAnswerBtn', chat: 'chatSendBtn', tools: 'frAiBtn' };
   const stopBtn = document.getElementById(map[which]);
   const submitBtn = document.getElementById(submitMap[which]);
-  if (stopBtn) { stopBtn.disabled = false; stopBtn.textContent = '■ 停止生成'; }
+  if (stopBtn) { stopBtn.disabled = false; stopBtn.textContent = '■ 停止'; }
   if (submitBtn) submitBtn.disabled = true;
   if (text) toast(text);
   document.querySelectorAll('#assistantActions .btn').forEach(function (b) { b.disabled = true; });
 }
 function endRunUI(which) {
-  const map = { assistant: 'assistantStopBtn', quiz: 'quizStopBtn', grade: 'gradeStopBtn', chat: 'chatStopBtn' };
-  const submitMap = { assistant: 'assistantAskBtn', quiz: 'quizGenBtn', grade: 'submitAnswerBtn', chat: 'chatSendBtn' };
+  const map = { assistant: 'assistantStopBtn', quiz: 'quizStopBtn', grade: 'gradeStopBtn', chat: 'chatStopBtn', tools: 'frAiStopBtn' };
+  const submitMap = { assistant: 'assistantAskBtn', quiz: 'quizGenBtn', grade: 'submitAnswerBtn', chat: 'chatSendBtn', tools: 'frAiBtn' };
   const stopBtn = document.getElementById(map[which]);
   const submitBtn = document.getElementById(submitMap[which]);
   if (stopBtn) { stopBtn.disabled = true; }
@@ -5342,6 +5944,7 @@ function init() {
   bindAssistantPanel();
   bindPracticePanel();
   bindKnowledgePanel();
+  frBind();
   bindChatPanel();
   bindProgressPanel();
 
@@ -5392,7 +5995,7 @@ function init() {
   renderProgress();
 
   // 从 URL hash 打开指定标签页（没有则默认落在「对话」）
-  const TABS = ['chat', 'assistant', 'practice', 'knowledge', 'progress', 'api'];
+  const TABS = ['chat', 'assistant', 'practice', 'knowledge', 'tools', 'progress', 'api'];
   const hash = (location.hash || '').replace('#', '');
   switchTab(TABS.indexOf(hash) >= 0 ? hash : 'chat');
 
@@ -5413,7 +6016,7 @@ function init() {
   // 键盘：Alt+1~6 切标签；? 打开帮助；Esc 关闭弹窗
   document.addEventListener('keydown', function (e) {
     if (e.altKey && !e.ctrlKey && !e.metaKey) {
-      const map = { '1': 'chat', '2': 'assistant', '3': 'practice', '4': 'knowledge', '5': 'progress', '6': 'api' };
+      const map = { '1': 'chat', '2': 'assistant', '3': 'practice', '4': 'knowledge', '5': 'tools', '6': 'progress', '7': 'api' };
       if (map[e.key]) { e.preventDefault(); switchTab(map[e.key]); }
       return;
     }
