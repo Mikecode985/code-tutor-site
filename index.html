@@ -1654,7 +1654,23 @@ main{padding:22px 0 56px}
           <span>模型名称</span>
           <input id="modelInput" list="modelList" placeholder="deepseek-chat" autocomplete="off" spellcheck="false">
           <datalist id="modelList"></datalist>
-          <div class="hint">可直接输入任意兼容 OpenAI 协议的模型名；不确定就用默认值。</div>
+          <div class="hint">可直接输入任意兼容 OpenAI 协议的模型名；不确定就用默认值。<b>文本任务（出题 / 批改 / 对话）请用 qwen-plus 这类通用模型</b>。</div>
+        </div>
+
+        <div class="field">
+          <span>视觉模型（只给图片识别 OCR 用，可留空）</span>
+          <input id="visionModelInput" list="visionModelList" placeholder="留空自动用 qwen-vl-max" autocomplete="off" spellcheck="false">
+          <datalist id="visionModelList">
+            <option value="qwen-vl-max"></option>
+            <option value="qwen-vl-plus"></option>
+            <option value="qwen2.5-vl-72b-instruct"></option>
+          </datalist>
+          <div class="hint">
+            ⚠️ <b>别把上面的「模型名称」设成 VL 模型</b>：VL 模型的<b>输出上限很小</b>（约 1500 tokens），
+            出题 / 批改要输出 6000+，会被上游 400 拒掉 —— 这正是"出题失败"的常见原因。
+            图片识别请只在这里填视觉模型，文本任务继续用 qwen-plus。<br>
+            DeepSeek 没有视觉接口，这一项留空即可（OCR 会自动改用本地 OCR）。
+          </div>
         </div>
 
         <div class="field" style="grid-column:1/-1">
@@ -2346,6 +2362,7 @@ const STORE_KEY = 'codetutor.settings.v1';
 const state = {
   proxyMode: 'proxy',          // proxy | direct
   directEndpoint: '',          // 直连模式下的端点（可自定义，例如千问国际站）
+  visionModel: '',             // 视觉模型（只用于 OCR；留空则自动挑）
   lang: 'python',
   provider: 'deepseek',
   model: PROVIDERS.deepseek.defaultModel,
@@ -2708,6 +2725,18 @@ function directEndpoint() {
   return DIRECT_ENDPOINTS[state.provider] || '';
 }
 
+/** 各模型的输出上限（VL 模型上限明显更小，发 7000 会被上游 400 拒掉） */
+function safeMaxTokens(model, want) {
+  const m = String(model || '').toLowerCase();
+  let cap = 8000;
+  if (/qwen-vl|qwen2(\.5)?-vl|omni/.test(m)) cap = 1500;
+  else if (/qwen/.test(m)) cap = 6000;
+  else if (/deepseek-reasoner/.test(m)) cap = 8000;
+  else if (/deepseek/.test(m)) cap = 8000;
+  const n = parseInt(want, 10);
+  return Math.max(64, Math.min(isNaN(n) ? 4096 : n, cap));
+}
+
 function proxyTarget() {
   const p = (state.proxyUrl || '').trim();
   if (/^https?:\/\//i.test(p)) return p;
@@ -2875,7 +2904,7 @@ async function callAI(opt) {
       model: useModel,
       messages: opt.messages,
       temperature: typeof opt.temperature === 'number' ? opt.temperature : 0.3,
-      max_tokens: opt.maxTokens || 4096,
+      max_tokens: safeMaxTokens(useModel, opt.maxTokens),
       stream: useStream
     };
   } else {
@@ -2887,7 +2916,7 @@ async function callAI(opt) {
       apiKey: state.apiKey,              // 经 Worker 转发，Worker 不会记录
       messages: opt.messages,
       temperature: typeof opt.temperature === 'number' ? opt.temperature : 0.3,
-      max_tokens: opt.maxTokens || 4096,
+      max_tokens: safeMaxTokens(useModel, opt.maxTokens),
       stream: useStream
     };
   }
@@ -2900,6 +2929,20 @@ async function callAI(opt) {
       body: JSON.stringify(payload),
       signal: controller.signal
     });
+    // 参数类错误（比如 max_tokens 超过该模型上限 / 参数不被支持）：把 max_tokens 调小重试一次
+    if (!res.ok && (res.status === 400 || res.status === 422) && !opt.__smallerTokens) {
+      let peek = '';
+      try { peek = await res.clone().text(); } catch (e0) { peek = ''; }
+      if (/max_tokens|max_completion_tokens|range of|invalid.?parameter|parameter/i.test(peek)) {
+        const retryPayload = Object.assign({}, payload, { max_tokens: Math.min(1500, payload.max_tokens || 1500) });
+        res = await fetch(reqUrl, {
+          method: 'POST',
+          headers: reqHeaders,
+          body: JSON.stringify(retryPayload),
+          signal: controller.signal
+        });
+      }
+    }
   } catch (e) {
     if (e && e.name === 'AbortError') throw e;
     // 用 no-cors 探一次，把"网络不通"和"CORS 被拦"分开报，不再只丢一句 Failed to fetch
@@ -3015,6 +3058,7 @@ function loadSettings() {
     if (s.proxyUrl) state.proxyUrl = s.proxyUrl;
     if (s.proxyMode === 'direct' || s.proxyMode === 'proxy') state.proxyMode = s.proxyMode;
     if (s.directEndpoint) state.directEndpoint = s.directEndpoint;
+    if (s.visionModel) state.visionModel = s.visionModel;
   } catch (e) { /* 忽略损坏的本地数据 */ }
 }
 
@@ -3022,7 +3066,7 @@ function saveSettings(silent) {
   try {
     localStorage.setItem(STORE_KEY, JSON.stringify({
       lang: state.lang, provider: state.provider, model: state.model, proxyUrl: state.proxyUrl,
-      proxyMode: state.proxyMode, directEndpoint: state.directEndpoint
+      proxyMode: state.proxyMode, directEndpoint: state.directEndpoint, visionModel: state.visionModel
       // 注意：绝不包含 apiKey
     }));
     if (!silent) toast('设置已保存（不含 API Key）', 'ok');
@@ -3098,6 +3142,16 @@ function bindApiPanel() {
       modelInput.value = p.defaultModel;
     }
     modelInput.placeholder = p.defaultModel;
+  }
+
+  const visionInput = $('#visionModelInput');
+  if (visionInput) {
+    visionInput.value = state.visionModel || '';
+    visionInput.addEventListener('input', function () {
+      state.visionModel = visionInput.value.trim();
+      if (document.getElementById('frOcrBar')) { try { frRenderAll(); } catch (e) { /* 忽略 */ } }
+    });
+    visionInput.addEventListener('change', function () { saveSettings(true); });
   }
 
   providerSel.value = state.provider;
@@ -3247,7 +3301,20 @@ function bindApiPanel() {
           ' · 耗时 ' + esc(state.__upMs || '-') + ' ms · 尝试 ' + esc(state.__upAttempts || '-') + ' 次' +
           (state.__upImages ? ' · 含图 ' + esc(state.__upImages) + ' 张' : '') + '</div>'
         : '';
-      parts.push('<div class="note err"><b>&#10008; 第 2 步 · 模型调用失败</b><br>' + esc(e.message) + diag + '</div>');
+      const report = [
+        '服务商: ' + state.provider + ' | 模型: ' + state.model + ' | 视觉模型: ' + (state.visionModel || '(自动)'),
+        '连接方式: ' + (isDirectMode() ? '直连 ' + directEndpoint() : '代理 ' + proxyTarget()),
+        '上游状态: ' + (state.__upStatus || '-') + ' | 尝试: ' + (state.__upAttempts || '-') + ' 次 | 耗时: ' + (state.__upMs || '-') + 'ms',
+        '错误: ' + e.message
+      ].join('\n');
+      parts.push('<div class="note err"><b>&#10008; 第 2 步 · 模型调用失败</b><br>' + esc(e.message) + diag +
+        '<div style="margin-top:10px"><button class="btn sm" id="copyDiagBtn" type="button">复制诊断信息</button></div></div>');
+      setTimeout(function () {
+        const cb = document.getElementById('copyDiagBtn');
+        if (cb) cb.addEventListener('click', function () {
+          copyText(report).then(function (ok) { toast(ok ? '诊断信息已复制，可直接发给开发者' : '复制失败', ok ? 'ok' : 'err'); });
+        });
+      }, 0);
     }
     out.innerHTML = parts.join('');
     btn.disabled = false;
@@ -5059,7 +5126,7 @@ function frRenderAll() {
         $('#frOcrLang').style.display = (eng === 'local') ? '' : 'none';
       }
       $('#frOcrTip').textContent = (eng === 'ai')
-        ? ('AI 视觉：将用 ' + vm + ' 逐页识别（图片不出本机，只发给该模型）')
+        ? ('AI 视觉：将用 ' + vm + ' 逐页识别（图片不出本机；失败会自动改用本地 OCR）')
         : ('本地 OCR（' + (FR.ocrLang || 'chi_sim+eng') + '）：在浏览器里跑，不联网、不消耗 API' +
             (vm ? '；也可以切到「AI 视觉」' : '；当前服务商没有视觉模型，已自动改用本地'));
     }
@@ -5187,9 +5254,10 @@ let frOcrStop = false;
 /** 当前可用的视觉模型（用户手动填了 vl/vision 之类也认） */
 function frVisionModel() {
   const list = FR_VISION_MODELS[state.provider] || [];
+  const vm = String(state.visionModel || '').trim();
+  if (vm && /vl|vision|omni|glm-4v/i.test(vm)) return vm;   // 用户单独指定的视觉模型
   const cur = String(state.model || '');
-  if (list.indexOf(cur) >= 0) return cur;
-  if (/vl|vision|omni|glm-4v/i.test(cur)) return cur;
+  if (/vl|vision|omni|glm-4v/i.test(cur)) return cur;       // 全局模型本身就是 VL 也能用
   return list[0] || '';
 }
 
@@ -5338,9 +5406,8 @@ async function frOcrRun() {
   frOcrStop = false;
   startRunUI('tools', (engine === 'local' ? '本地 OCR' : 'AI 识别') + '：第 ' + targets[0] + ' 页…');
   $('#frOcrTip').textContent = '准备中…';
-  const oldModel = state.model;
-  state.model = model;
   let okCount = 0;
+  let fellBack = 0;
   let lastErr = '';
   try {
     for (let k = 0; k < targets.length; k++) {
@@ -5372,17 +5439,30 @@ async function frOcrRun() {
         }
       } catch (e) {
         if (e && e.name === 'AbortError') { frOcrStop = true; break; }
+        // AI 视觉失败（模型不支持图片 / 额度 / 限流）→ 该页自动改用本地 OCR，保证有产出
+        if (engine === 'ai') {
+          try {
+            $('#frOcrTip').textContent = '第 ' + no + ' 页 AI 识别失败，改用本地 OCR…';
+            const canvas = await frRenderPageCanvas(f.pdfDoc, no, 1800);
+            const txt2 = await frLocalOcr(canvas, lang, null);
+            frMergeOcr(f, no, txt2 || '（本页无文字）', 'local');
+            okCount++; fellBack++;
+            FR.view = 'doc';
+            frRenderAll();
+            continue;
+          } catch (e3) { /* 本地也失败，走下面的错误处理 */ }
+        }
         lastErr = '第 ' + no + ' 页失败：' + (e && e.message ? String(e.message).slice(0, 80) : e);
         toast(lastErr, 'err');
       }
     }
   } finally {
-    state.model = oldModel;
     endRunUI('tools');
     frRenderAll();   // 先重渲染（会重置提示），再写最终提示，保证信息留在界面上
     $('#frOcrTip').textContent = frOcrStop
       ? '已停止：已完成 ' + okCount + ' 页，结果已保留' + (lastErr ? '（' + lastErr + '）' : '')
       : (engine === 'local' ? '本地 OCR' : 'AI 识别') + '完成：第 ' + frRangeStr(targets) + ' 页已并入正文（' + okCount + ' / ' + targets.length + ' 页成功' +
+        (fellBack ? '，其中 ' + fellBack + ' 页因 AI 失败已自动改用本地 OCR' : '') +
         (lastErr ? '；' + lastErr : '') + '），可继续「AI 提炼」或导出 Markdown';
     if (okCount && !frOcrStop) toast('OCR 完成：' + okCount + ' 页已并入正文', 'ok');
   }
