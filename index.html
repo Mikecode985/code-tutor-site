@@ -3910,6 +3910,13 @@ function buildGradePrompt() {
       (q.constraints ? '\n数据范围：' + q.constraints : '') +
       (q.samples.length ? '\n样例：' + q.samples.map(function (s, k) { return '样例' + (k + 1) + ' 输入[' + s.input.replace(/\n/g, ' ⏎ ') + '] 输出[' + s.expected + ']'; }).join('；') : '') +
       (q.stemCode ? '\n题面给出的原始代码：\n```' + L.fence + '\n' + q.stemCode + '\n```' : '') +
+      // 选择题必须把选项原文发给模型，否则它会因为"没有选项"而拒评（这就是"评分依赖选项核验，因选项缺失无法完成"的原因）
+      (q.choices && q.choices.length
+        ? ('\n选项：\n' + q.choices.map(function (c) { return '  ' + c.key + '. ' + (c.text || '（选项文本缺失）'); }).join('\n'))
+        : (q.type === 'choice' ? '\n选项：（本题没有提供选项文本，只能按学生所选的字母评估）' : '')) +
+      (q.blanks && q.blanks.length
+        ? ('\n填空位置：' + q.blanks.map(function (b) { return '第 ' + (b.no || '?') + ' 空' + (b.hint ? '（' + b.hint + '）' : ''); }).join('；'))
+        : '') +
       (q.scorePoints.length ? '\n评分点：' + q.scorePoints.join('；') : ''));
   });
   parts.push('\n【学生作答】');
@@ -3919,17 +3926,27 @@ function buildGradePrompt() {
     else parts.push('第 ' + (i + 1) + ' 题（' + TYPE_LABEL[q.type] + '）代码：\n```' + L.fence + '\n' + ((a.code || '').trim() || '（未作答）') + '\n```');
   });
   if (note) parts.push('\n【学生补充说明】\n' + note);
+  const hasCode = practice.problems.some(function (q) { return q.type !== 'choice'; });
+  const hasChoice = practice.problems.some(function (q) { return q.type === 'choice'; });
   parts.push('\n【批改要求】\n' +
-    (strict ? '严格模式：逐项扣分，每个扣分点必须引用具体行号或原代码片段，不允许含糊。\n' : '') +
+    (strict ? '严格模式：逐项扣分，每个扣分点必须引用具体行号、选项字母或原代码片段，不允许含糊。\n' : '') +
     '1. 先逐题判分（第 N 题：得分 / 该题分值 / 依据），再给总分（把各题得分折算到 100 分制）。\n' +
-    '2. 选择题要说明正确选项与其余选项错在哪；程序填空题逐空判对错；程序改错题要指出「学生是否改对了这几处」。\n' +
-    '3. 给出参考标准代码（完整可编译运行）。\n' +
-    '4. 最后必须附一个 ```json 代码块，格式严格如下（不要注释、不要多余字段；multiple 题时 items 用「第 N 题 · 评分项」命名，items 的 max 之和为 100）：\n' +
+    (hasChoice
+      ? '2. 选择题：**先根据题目与选项自行判断正确项**（选项原文已在上面给出），再核验学生所选；逐项说明其它选项错在哪。' +
+        '选择题**本来就没有输入输出与样例**，所以**绝不能**以「题目无输入输出」「无样例可比对」「选项缺失」为由拒评或判 0 分；' +
+        '学生已给出选项字母就按选项核验正常判分。\n'
+      : '') +
+    (hasCode
+      ? '3. 程序填空题逐空判对错；程序改错题要指出「学生是否改对了这几处」；编程题做样例演算（样例对错要写清楚）。\n'
+      : '') +
+    (hasCode ? '4. 给出参考标准代码（完整可编译运行）。\n' : '') +
+    '5. 最后必须附一个 ```json 代码块，格式严格如下（不要注释、不要多余字段；multiple 题时 items 用「第 N 题 · 评分项」命名，items 的 max 之和为 100）：\n' +
     '```json\n' +
     '{"score":85,"verdict":"通过","items":[{"name":"第 1 题 · 语法与编译","max":20,"got":18,"reason":"第 3 行缺少分号"}],' +
     '"samplesPassed":true,"sampleNote":"样例 2/2 通过","bugs":["第 2 题边界未处理"],"summary":"基础扎实，注意边界与格式"}\n' +
     '```\n' +
-    '章节结构：一、总分　二、逐题得分表　三、样例演算　四、漏洞清单　五、参考标准代码　六、学习总结与易错点。');
+    '章节结构：一、总分　二、逐题得分表　三、' + (hasChoice ? '选项核验（逐题给出正确项与干扰项分析）' : '样例演算') +
+    '　四、漏洞清单　' + (hasCode ? '五、参考标准代码　' : '') + '六、学习总结与易错点。');
   return parts.join('\n');
 }
 
@@ -3947,7 +3964,8 @@ async function runGrading() {
   try {
     const finalText = await callAI({
       messages: [
-        { role: 'system', content: buildSystemPrompt('你正在批改练习。必须按我给出的结构输出，并在最后附上规定格式的 JSON 评分块。') },
+        { role: 'system', content: buildSystemPrompt('你正在批改练习。必须按我给出的结构输出，并在最后附上规定格式的 JSON 评分块。' +
+          '注意：选择题按「选项核验」判分，选项原文会随题目给出；选择题没有输入输出与样例，禁止以「无样例」「选项缺失」为由拒评或判 0 分。') },
         { role: 'user', content: buildGradePrompt() }
       ],
       which: 'grade',
@@ -3971,7 +3989,11 @@ async function runGrading() {
         problem: practice.problems.map(function (q, i) { return '第 ' + (i + 1) + ' 题：' + (q.title || '') + '　' + q.statement; }).join('\n').slice(0, 2000),
         code: practice.problems.map(function (q, i) {
           const a = practice.answers[i] || {};
-          return '【第 ' + (i + 1) + ' 题】' + (q.type === 'choice' ? ('选择 ' + (a.choice || '—')) : ((a.code || '').trim()));
+          if (q.type === 'choice') {
+            const sel = (q.choices || []).filter(function (c) { return c.key === a.choice; })[0];
+            return '【第 ' + (i + 1) + ' 题】选择 ' + (a.choice || '—') + (sel ? '（' + sel.text + '）' : '');
+          }
+          return '【第 ' + (i + 1) + ' 题】' + ((a.code || '').trim());
         }).join('\n\n').slice(0, LS_LIMIT.codeChars),
         score: s,
         grade: String(parsed.verdict || '').slice(0, 20),
