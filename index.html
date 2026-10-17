@@ -1391,6 +1391,20 @@ main{padding:22px 0 56px}
   .fr-name{max-width:none;flex:1 1 100%}
   .fr-body{padding:14px 16px}
 }
+.fr-ocr{
+  display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 14px;margin-bottom:12px;
+  border:1px solid var(--brand-line);background:var(--brand-soft);border-radius:14px;font-size:13px
+}
+.fr-ocr b{font-size:13.5px}
+.fr-ocr .ico{color:var(--brand)}
+.fr-ocr-range{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;color:var(--text-2)}
+.fr-ocr-range input{width:62px;padding:5px 8px;font-size:12.5px}
+.fr-ocr-tip{margin-left:auto;font-size:12px;color:var(--muted);max-width:100%}
+.fr-ocr-tag{
+  display:inline-block;margin-left:6px;padding:1px 7px;border-radius:999px;font-size:10.5px;font-weight:500;
+  letter-spacing:0;background:var(--brand-soft);color:var(--brand);border:1px solid var(--brand-line);vertical-align:1px
+}
+@media (max-width:760px){ .fr-ocr{padding:9px 12px} .fr-ocr-tip{margin-left:0;flex:1 1 100%} }
 </style>
 </head>
 <body>
@@ -1981,6 +1995,15 @@ main{padding:22px 0 56px}
     </div>
 
     <div class="card">
+      <div class="fr-ocr" id="frOcrBar" style="display:none">
+        <svg class="ico" aria-hidden="true"><use href="#i-sparkles"/></svg>
+        <b>扫描版 PDF？</b>
+        <span class="hint">用视觉模型逐页识别文字（结果并入正文，可再提炼 / 导出）</span>
+        <span class="fr-ocr-range">第 <input id="frOcrFrom" type="number" min="1" value="1"> – <input id="frOcrTo" type="number" min="1" value="3"> 页</span>
+        <button class="btn primary sm" id="frOcrBtn" type="button">开始识别</button>
+        <button class="btn sm" id="frOcrStopBtn" type="button" disabled>停止</button>
+        <span class="hint fr-ocr-tip" id="frOcrTip"></span>
+      </div>
       <div class="fr-shell">
         <aside class="fr-side">
           <div class="fr-files" id="frFiles"></div>
@@ -2212,7 +2235,7 @@ const PROVIDERS = {
   qwen: {
     name: '通义千问',
     defaultModel: 'qwen-plus',
-    models: ['qwen-plus', 'qwen-turbo', 'qwen-max', 'qwen2.5-coder-32b-instruct'],
+    models: ['qwen-plus', 'qwen-turbo', 'qwen-max', 'qwen2.5-coder-32b-instruct', 'qwen-vl-max', 'qwen-vl-plus'],
     hint: '在阿里云百炼（bailian.console.aliyun.com）创建 API Key，形如 sk-xxxxxxxx。qwen-plus 性价比高；qwen2.5-coder-32b-instruct 更擅长代码。'
   }
 };
@@ -2731,7 +2754,7 @@ async function callAI(opt) {
 
   const payload = {
     provider: state.provider,
-    model: state.model,
+    model: opt.model || state.model,     // OCR 会临时指定视觉模型
     apiKey: state.apiKey,              // 经 Worker 转发，Worker 不会记录
     messages: opt.messages,
     temperature: typeof opt.temperature === 'number' ? opt.temperature : 0.3,
@@ -4527,13 +4550,30 @@ async function frParseDocx(buf) {
 }
 
 /* ---------------- PDF（pdf.js 懒加载） ---------------- */
-const FR_PDF_CDN = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.7.76/build/';
+/** pdf.js 的多路 CDN：国内 jsdelivr 偶尔被 reset，按顺序回退 */
+const FR_PDF_CDNS = [
+  'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.7.76/build/',
+  'https://unpkg.com/pdfjs-dist@4.7.76/build/',
+  'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.7.76/'
+];
 async function frLoadPdfjs() {
-  if (window.__frPdfjs) return window.__frPdfjs;
-  const mod = await import(FR_PDF_CDN + 'pdf.min.mjs');
-  mod.GlobalWorkerOptions.workerSrc = FR_PDF_CDN + 'pdf.worker.min.mjs';
-  window.__frPdfjs = mod;
-  return mod;
+  if (window.__frPdfjs) return window.__frPdfjs;   // 已加载过 / 测试可预先注入
+  let lastErr = null;
+  for (let i = 0; i < FR_PDF_CDNS.length; i++) {
+    const base = FR_PDF_CDNS[i];
+    try {
+      const mod = await import(base + 'pdf.min.mjs');
+      mod.GlobalWorkerOptions.workerSrc = base + 'pdf.worker.min.mjs';
+      window.__frPdfjs = mod;
+      window.__frPdfCdn = base;
+      return mod;
+    } catch (e) {
+      lastErr = e;
+    }
+  }
+  throw new Error('无法加载 pdf.js（已尝试 ' + FR_PDF_CDNS.length + ' 个 CDN，最后一次错误：' +
+    (lastErr && lastErr.message ? lastErr.message : lastErr) + '）。' +
+    '这是网络受限导致的：可以换用手机热点 / 代理后重试，或先读 TXT / Markdown / EPUB 格式。');
 }
 async function frParsePdf(buf, onProgress) {
   const pdfjs = await frLoadPdfjs();
@@ -4558,6 +4598,7 @@ async function frParsePdf(buf, onProgress) {
   return {
     kind: 'pdf',
     pages: pages,
+    pdfDoc: doc,      // 保留文档句柄，扫描版 PDF 要逐页渲染成图片做 OCR
     text: pages.map(function (p) { return '### 第 ' + p.no + ' 页\n\n' + p.text; }).join('\n\n')
   };
 }
@@ -4591,7 +4632,8 @@ async function frAddFiles(fileList) {
       });
       FR.files.push({
         name: name, size: f.size, kind: parsed.kind, title: parsed.title || name,
-        text: parsed.text || '', pages: parsed.pages || null, chapters: parsed.chapters || null
+        text: parsed.text || '', pages: parsed.pages || null, chapters: parsed.chapters || null,
+        pdfDoc: parsed.pdfDoc || null, ocrUsed: false
       });
       FR.active = FR.files.length - 1;
       FR.ai = ''; FR.aiFor = -1; FR.view = 'doc';
@@ -4606,6 +4648,8 @@ async function frAddFiles(fileList) {
 
 /* ---------------- 渲染 ---------------- */
 function frActiveFile() { return FR.files[FR.active] || null; }
+// 只读调试句柄：文件内容仍只在内存，测试与排障时读取状态用
+window.__fr = FR;
 
 function frRenderAll() {
   const f = frActiveFile();
@@ -4649,10 +4693,32 @@ function frRenderAll() {
   frRenderDoc();
   // AI 结果
   $('#frAiOut').innerHTML = FR.ai ? renderMarkdown(FR.ai) : '<div class="fr-empty">还没有提炼结果。点上方「AI 提炼」把节选文本交给模型，生成摘要、大纲与术语表。</div>';
+  // 扫描版 PDF：显示 OCR 条
+  const ocrBar = $('#frOcrBar');
+  if (ocrBar) {
+    const isPdf = !!(f && f.kind === 'pdf' && f.pdfDoc);
+    ocrBar.style.display = isPdf ? '' : 'none';
+    if (isPdf) {
+      const total = f.pages.length;
+      $('#frOcrTo').max = String(total);
+      $('#frOcrFrom').max = String(total);
+      if (parseInt($('#frOcrTo').value, 10) > total) $('#frOcrTo').value = String(Math.min(3, total));
+      const vm = frVisionModel();
+      $('#frOcrTip').textContent = vm
+        ? '将使用视觉模型 ' + vm + ' 逐页识别（图片不出本机，只发给该模型）'
+        : '当前服务商没有视觉模型：请切到「通义千问」并选 qwen-vl-max';
+    }
+  }
   $('#frMdBtn').disabled = !f;
   $('#frAiBtn').disabled = !f;
   $('#frCopyBtn').disabled = !f;
   if (FR.files.length === 0) $('#frNotice').innerHTML = '还没有文件。把 Markdown / TXT / PDF / EPUB / DOCX 拖进上面的框即可，<b>文件不会离开你的电脑</b>。';
+  else if (f && f.kind === 'pdf' && (f.text || '').replace(/### 第 \d+ 页/g, '').trim().length < 40) {
+    $('#frNotice').innerHTML = '这份 PDF <b>几乎没有文字层</b>，很可能是扫描件 —— 用下方「开始识别」调视觉模型做 OCR，识别结果会并入正文，之后可以「AI 提炼」或导出 Markdown。';
+  }
+  else if (f) {
+    $('#frNotice').innerHTML = '正在阅读 <b>' + esc(f.title || f.name) + '</b>。文件内容只在内存里，不会上传；只有点「AI 提炼」时才会把节选发给你配置的模型。';
+  }
 }
 
 function frRenderDoc() {
@@ -4671,7 +4737,8 @@ function frRenderDoc() {
   }
   if (f.pages) {
     box.innerHTML = f.pages.map(function (p, i) {
-      return '<section class="fr-sec" id="fr-sec-' + i + '"><h3 class="fr-sec-h">第 ' + p.no + ' 页</h3>' +
+      return '<section class="fr-sec" id="fr-sec-' + i + '"><h3 class="fr-sec-h">第 ' + p.no + ' 页' +
+        (p.ocr ? ' <span class="fr-ocr-tag">AI 识别</span>' : '') + '</h3>' +
         '<pre class="fr-pre">' + esc(p.text || '（本页没有文字）') + '</pre></section>';
     }).join('');
     return;
@@ -4739,6 +4806,135 @@ async function frAnalyze() {
   }
 }
 
+
+/* ---------------- 扫描版 PDF：用视觉模型 OCR ---------------- */
+/** 各服务商可用的视觉（多模态）模型；DeepSeek 目前没有视觉接口 */
+const FR_VISION_MODELS = {
+  qwen: ['qwen-vl-max', 'qwen-vl-plus'],
+  deepseek: []
+};
+const FR_OCR_PROMPT =
+  '请把这张图片里的文字**逐字转写**出来（OCR）。要求：\n' +
+  '1) 保留原始段落与换行；\n' +
+  '2) 表格用 Markdown 表格表示；\n' +
+  '3) 公式尽量用纯文本近似表示；\n' +
+  '4) 不要总结、不要解释、不要加任何说明性文字；\n' +
+  '5) 如果这一页没有文字，只输出「（本页无文字）」。';
+
+let frOcrStop = false;
+
+/** 当前可用的视觉模型（用户手动填了 vl/vision 之类也认） */
+function frVisionModel() {
+  const list = FR_VISION_MODELS[state.provider] || [];
+  const cur = String(state.model || '');
+  if (list.indexOf(cur) >= 0) return cur;
+  if (/vl|vision|omni|glm-4v/i.test(cur)) return cur;
+  return list[0] || '';
+}
+
+/** 把 PDF 的某一页渲染成 JPEG data URL（纯前端 canvas） */
+async function frRenderPageDataUrl(pdfDoc, no, maxWidth) {
+  const page = await pdfDoc.getPage(no);
+  let vp = page.getViewport({ scale: 1 });
+  const scale = Math.min(2.4, (maxWidth || 1400) / vp.width);
+  vp = page.getViewport({ scale: scale });
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.max(1, Math.round(vp.width));
+  canvas.height = Math.max(1, Math.round(vp.height));
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  await page.render({ canvasContext: ctx, viewport: vp }).promise;
+  return canvas.toDataURL('image/jpeg', 0.82);
+}
+
+/** 把一张图片交给视觉模型做 OCR（OpenAI 兼容的多模态 content 数组） */
+async function frOcrRequest(dataUrl, model) {
+  return await callAI({
+    model: model,
+    messages: [
+      { role: 'system', content: '你是一个精确的 OCR 引擎，只输出转写出的文字，不要任何解释。' },
+      { role: 'user', content: [
+        { type: 'text', text: FR_OCR_PROMPT },
+        { type: 'image_url', image_url: { url: dataUrl } }
+      ] }
+    ],
+    which: 'tools',
+    stream: false,
+    temperature: 0,
+    maxTokens: 3000
+  });
+}
+
+/** 把 OCR 文本合并进文件名下的第 no 页，并重建全文 */
+function frMergeOcr(f, no, text) {
+  if (!f.pages) return;
+  const page = f.pages.filter(function (p) { return p.no === no; })[0];
+  if (!page) return;
+  page.text = String(text || '').trim();
+  page.ocr = true;
+  f.ocrUsed = true;
+  f.text = f.pages.map(function (p) { return '### 第 ' + p.no + ' 页' + (p.ocr ? '（AI 识别）' : '') + '\n\n' + p.text; }).join('\n\n');
+}
+
+async function frOcrRun() {
+  const f = frActiveFile();
+  if (!f) { toast('先打开一个 PDF', 'err'); return; }
+  if (f.kind !== 'pdf' || !f.pdfDoc) { toast('只有 PDF 可以做文字识别', 'err'); return; }
+  const model = frVisionModel();
+  if (!model) {
+    toast('当前服务商没有视觉模型。请到【API 设置】把服务商切到「通义千问」并选 qwen-vl-max（DeepSeek 暂不提供图片识别）', 'err');
+    return;
+  }
+  const cfgErr = configError();
+  if (cfgErr) { toast(cfgErr, 'err'); switchTab('api'); return; }
+
+  const total = f.pages.length;
+  let from = Math.max(1, parseInt($('#frOcrFrom').value, 10) || 1);
+  let to = Math.min(total, parseInt($('#frOcrTo').value, 10) || Math.min(3, total));
+  if (to < from) { toast('页范围不对：结束页要 ≥ 开始页', 'err'); return; }
+  if (to - from + 1 > 30) { to = from + 29; toast('一次最多识别 30 页，已自动截到第 ' + to + ' 页'); }
+
+  frOcrStop = false;
+  startRunUI('tools', '正在识别第 ' + from + ' 页…');
+  $('#frOcrTip').textContent = '准备中…';
+  const oldModel = state.model;
+  state.model = model;
+  let okCount = 0;
+  let lastErr = '';
+  try {
+    for (let no = from; no <= to; no++) {
+      if (frOcrStop) break;
+      $('#frOcrTip').textContent = '识别中 ' + (no - from + 1) + ' / ' + (to - from + 1) + ' 页（第 ' + no + ' 页）…';
+      try {
+        const url = await frRenderPageDataUrl(f.pdfDoc, no);
+        const text = await frOcrRequest(url, model);
+        frMergeOcr(f, no, text);
+        okCount++;
+        FR.view = 'doc';
+        frRenderAll();
+        if (f.pages[no - 1]) {
+          const el = document.getElementById('fr-sec-' + (no - 1));
+          if (el && el.scrollIntoView) el.scrollIntoView({ block: 'start' });
+        }
+      } catch (e) {
+        if (e && e.name === 'AbortError') { frOcrStop = true; break; }
+        lastErr = '第 ' + no + ' 页失败：' + (e && e.message ? String(e.message).slice(0, 80) : e);
+        toast(lastErr, 'err');
+      }
+    }
+  } finally {
+    state.model = oldModel;
+    endRunUI('tools');
+    frRenderAll();   // 先重渲染（会重置提示），再写最终提示，保证信息留在界面上
+    $('#frOcrTip').textContent = frOcrStop
+      ? '已停止：已完成 ' + okCount + ' 页，结果已保留' + (lastErr ? '（' + lastErr + '）' : '')
+      : '识别完成：第 ' + from + '–' + to + ' 页已并入正文（' + okCount + ' 页成功' +
+        (lastErr ? '；' + lastErr : '') + '），可继续「AI 提炼」或导出 Markdown';
+    if (okCount && !frOcrStop) toast('OCR 完成：' + okCount + ' 页已并入正文', 'ok');
+  }
+}
+
 /* ---------------- 导出 / 复制 / 清空 ---------------- */
 function frExportMd() {
   const f = frActiveFile();
@@ -4747,7 +4943,7 @@ function frExportMd() {
   const head = '# ' + (f.title || f.name) + '\n\n' +
     '> 由 **CodeTutor 文档阅读器**生成 · ' + stamp + '  \n' +
     '> 原文件：`' + f.name + '` · 格式：' + (FR_KIND_LABEL[f.kind] || f.kind) + ' · 大小：' + frSize(f.size) +
-    ' · 提取字数：' + (f.text || '').length + '\n\n';
+    ' · 提取字数：' + (f.text || '').length + (f.ocrUsed ? ' · **部分页面由 AI 识别（OCR）**' : '') + '\n\n';
   const body = (FR.ai
     ? '## AI 提炼\n\n' + FR.ai + '\n\n---\n\n## 原文\n\n' + f.text
     : f.text);
@@ -4816,6 +5012,8 @@ function frBind() {
   $('#frMinus').addEventListener('click', function () { FR.fs = Math.max(12, FR.fs - 1); frRenderDoc(); });
   $('#frPlus').addEventListener('click', function () { FR.fs = Math.min(24, FR.fs + 1); frRenderDoc(); });
 
+  $('#frOcrBtn').addEventListener('click', frOcrRun);
+  $('#frOcrStopBtn').addEventListener('click', function () { frOcrStop = true; stopRun('tools'); toast('正在停止识别…'); });
   $('#frAiBtn').addEventListener('click', frAnalyze);
   $('#frAiStopBtn').addEventListener('click', function () { stopRun('tools'); });
   $('#frMdBtn').addEventListener('click', frExportMd);
