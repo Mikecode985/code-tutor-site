@@ -1405,6 +1405,33 @@ main{padding:22px 0 56px}
   letter-spacing:0;background:var(--brand-soft);color:var(--brand);border:1px solid var(--brand-line);vertical-align:1px
 }
 @media (max-width:760px){ .fr-ocr{padding:9px 12px} .fr-ocr-tip{margin-left:0;flex:1 1 100%} }
+.fr-sel{
+  display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 14px;margin-bottom:10px;
+  border:1px solid var(--line-2);background:var(--card-2);border-radius:14px;font-size:13px
+}
+.fr-sel b{font-size:13.5px}
+.fr-sel .ico{color:var(--brand)}
+.fr-sel-input{width:190px;padding:6px 10px;font-size:12.5px}
+.fr-sel #frSelInfo{margin-left:auto;font-size:12px;color:var(--muted)}
+.fr-pages{
+  display:flex;flex-wrap:wrap;gap:5px;padding:10px 12px;margin-bottom:10px;max-height:168px;overflow:auto;
+  border:1px solid var(--line-2);border-radius:14px;background:var(--card)
+}
+.fr-page{
+  min-width:34px;padding:5px 8px;border:1px solid var(--line);background:transparent;border-radius:8px;
+  font:inherit;font-size:12px;color:var(--muted);cursor:pointer;transition:.16s var(--ease)
+}
+.fr-page.on{background:var(--brand-soft);border-color:var(--brand-line);color:var(--brand);font-weight:600}
+.fr-page:hover{border-color:var(--brand-line);color:var(--brand)}
+.fr-sec.off{opacity:.42}
+.fr-exp-opts{display:inline-flex;gap:12px;align-items:center;margin-left:auto;font-size:12.5px;color:var(--text-2)}
+.fr-exp-opts .chk{display:inline-flex;gap:6px;align-items:center}
+@media (max-width:760px){
+  .fr-sel{padding:9px 12px;gap:6px}
+  .fr-sel-input{width:100%}
+  .fr-sel #frSelInfo{margin-left:0;flex:1 1 100%}
+  .fr-exp-opts{margin-left:0;flex:1 1 100%}
+}
 </style>
 </head>
 <body>
@@ -1988,19 +2015,35 @@ main{padding:22px 0 56px}
         <button class="btn primary" id="frAiBtn" disabled><svg class="ico" aria-hidden="true"><use href="#i-sparkles"/></svg> AI 提炼</button>
         <button class="btn" id="frAiStopBtn" disabled>停止</button>
         <button class="btn" id="frMdBtn" disabled><svg class="ico" aria-hidden="true"><use href="#i-doc"/></svg> 导出 Markdown</button>
-        <button class="btn ghost" id="frCopyBtn" disabled>复制全文</button>
+        <button class="btn ghost" id="frCopyBtn" disabled>复制所选</button>
         <button class="btn ghost" id="frClearBtn">清空文件</button>
+        <span class="fr-exp-opts">
+          <label class="chk"><input type="checkbox" id="frExpAi" checked> 含 AI 提炼</label>
+          <label class="chk"><input type="checkbox" id="frExpBody" checked> 含原文</label>
+        </span>
       </div>
       <div class="note info" id="frNotice" style="margin-top:12px"></div>
     </div>
 
     <div class="card">
+      <div class="fr-sel" id="frSelBar" style="display:none">
+        <svg class="ico" aria-hidden="true"><use href="#i-list"/></svg>
+        <b>选择<span id="frSelUnit">页</span></b>
+        <input class="fr-sel-input" id="frSelInput" type="text" placeholder="如 1-3,5,8-10">
+        <button class="btn sm" id="frSelApply" type="button">应用</button>
+        <button class="btn sm ghost" id="frSelAll" type="button">全选</button>
+        <button class="btn sm ghost" id="frSelNone" type="button">全不选</button>
+        <button class="btn sm ghost" id="frSelInv" type="button">反选</button>
+        <button class="btn sm ghost" id="frSelToggle" type="button" aria-expanded="false">展开<span id="frSelUnit2">页</span>格</button>
+        <span class="hint" id="frSelInfo"></span>
+      </div>
+      <div class="fr-pages" id="frPages" style="display:none"></div>
+
       <div class="fr-ocr" id="frOcrBar" style="display:none">
         <svg class="ico" aria-hidden="true"><use href="#i-sparkles"/></svg>
         <b>扫描版 PDF？</b>
-        <span class="hint">用视觉模型逐页识别文字（结果并入正文，可再提炼 / 导出）</span>
-        <span class="fr-ocr-range">第 <input id="frOcrFrom" type="number" min="1" value="1"> – <input id="frOcrTo" type="number" min="1" value="3"> 页</span>
-        <button class="btn primary sm" id="frOcrBtn" type="button">开始识别</button>
+        <span class="hint">用视觉模型逐页识别文字（识别<b>当前选中的页</b>，结果并入正文）</span>
+        <button class="btn primary sm" id="frOcrBtn" type="button">识别选中页</button>
         <button class="btn sm" id="frOcrStopBtn" type="button" disabled>停止</button>
         <span class="hint fr-ocr-tip" id="frOcrTip"></span>
       </div>
@@ -4635,6 +4678,12 @@ async function frAddFiles(fileList) {
         text: parsed.text || '', pages: parsed.pages || null, chapters: parsed.chapters || null,
         pdfDoc: parsed.pdfDoc || null, ocrUsed: false
       });
+      // 扫描件：默认把"没有文字层"的页选中，方便一键 OCR
+      const justAdded = FR.files[FR.files.length - 1];
+      if (justAdded && justAdded.kind === 'pdf' && justAdded.pages) {
+        const empty = justAdded.pages.filter(function (pg) { return !(pg.text || '').trim(); }).map(function (pg) { return pg.no; });
+        if (empty.length) justAdded.sel = empty;   // 有空白页就默认选中它们，方便一键 OCR
+      }
       FR.active = FR.files.length - 1;
       FR.ai = ''; FR.aiFor = -1; FR.view = 'doc';
       frRenderAll();
@@ -4650,6 +4699,79 @@ async function frAddFiles(fileList) {
 function frActiveFile() { return FR.files[FR.active] || null; }
 // 只读调试句柄：文件内容仍只在内存，测试与排障时读取状态用
 window.__fr = FR;
+
+/* ---------------- 页 / 章节选择 ---------------- */
+/** 解析 "1-3,5,8-10" 这样的页范围表达式 */
+function frParseRange(str, max) {
+  const out = [];
+  String(str || '').split(/[,，;；\s]+/).forEach(function (seg) {
+    if (!seg) return;
+    const m = /^(\d+)\s*(?:[-–—~至]\s*(\d+))?$/.exec(seg);
+    if (!m) return;
+    let a = parseInt(m[1], 10);
+    let b = m[2] ? parseInt(m[2], 10) : a;
+    if (a > b) { const t = a; a = b; b = t; }
+    for (let i = Math.max(1, a); i <= Math.min(max, b); i++) out.push(i);
+  });
+  const uniq = [];
+  out.forEach(function (n) { if (uniq.indexOf(n) < 0) uniq.push(n); });
+  return uniq.sort(function (x, y) { return x - y; });
+}
+/** 把 [1,2,3,5,8,9] 压成 "1-3,5,8-9" */
+function frRangeStr(list) {
+  if (!list || !list.length) return '';
+  const out = [];
+  let start = list[0], prev = list[0];
+  for (let i = 1; i <= list.length; i++) {
+    const cur = list[i];
+    if (cur !== prev + 1) {
+      out.push(start === prev ? String(start) : start + '-' + prev);
+      start = cur;
+    }
+    prev = cur;
+  }
+  return out.join(',');
+}
+/** 当前文件的单位总数（PDF 是页数，EPUB 是章节数） */
+function frUnitCount(f) {
+  if (!f) return 0;
+  if (f.pages) return f.pages.length;
+  if (f.chapters) return f.chapters.length;
+  return 0;
+}
+function frUnitLabel(f) {
+  if (!f) return '页';
+  if (f.pages) return '页';
+  if (f.chapters) return '章';
+  return '段';
+}
+/** 已选单位（1 起）；null 表示"全部" */
+function frSelUnits(f) {
+  const n = frUnitCount(f);
+  if (!n) return [];
+  if (!f || !f.sel) { const all = []; for (let i = 1; i <= n; i++) all.push(i); return all; }
+  return f.sel.filter(function (x) { return x >= 1 && x <= n; });
+}
+/** 按选择拼出正文 */
+function frSelectedText(f) {
+  if (!f) return '';
+  if (f.chapters) {
+    const sel = frSelUnits(f);
+    if (!f.sel) return f.text || '';
+    return sel.map(function (i) {
+      const c = f.chapters[i - 1];
+      return c ? '## ' + c.title + '\n\n' + c.text : '';
+    }).filter(Boolean).join('\n\n');
+  }
+  if (f.pages) {
+    const sel = frSelUnits(f);
+    return sel.map(function (i) {
+      const pg = f.pages[i - 1];
+      return pg ? '### 第 ' + pg.no + ' 页' + (pg.ocr ? '（AI 识别）' : '') + '\n\n' + pg.text : '';
+    }).filter(Boolean).join('\n\n');
+  }
+  return f.text || '';
+}
 
 function frRenderAll() {
   const f = frActiveFile();
@@ -4693,16 +4815,49 @@ function frRenderAll() {
   frRenderDoc();
   // AI 结果
   $('#frAiOut').innerHTML = FR.ai ? renderMarkdown(FR.ai) : '<div class="fr-empty">还没有提炼结果。点上方「AI 提炼」把节选文本交给模型，生成摘要、大纲与术语表。</div>';
+  // 页 / 章节选择条
+  const selBar = $('#frSelBar');
+  const pagesBox = $('#frPages');
+  if (selBar) {
+    const units = frUnitCount(f);
+    selBar.style.display = units ? '' : 'none';
+    if (units) {
+      const LB = frUnitLabel(f);
+      $('#frSelUnit').textContent = LB;
+      $('#frSelUnit2').textContent = LB;
+      const sel = frSelUnits(f);
+      $('#frSelInfo').textContent = f.sel
+        ? ('已选 ' + sel.length + ' / ' + units + ' ' + LB + (sel.length ? '（' + frRangeStr(sel) + '）' : ''))
+        : ('全部 ' + units + ' ' + LB + '（未筛选）');
+      if (document.activeElement !== $('#frSelInput')) {
+        $('#frSelInput').value = f.sel ? frRangeStr(sel) : '';
+      }
+      let chips = '';
+      const cap = Math.min(units, 400);
+      for (let i = 1; i <= cap; i++) {
+        const on = !f.sel || f.sel.indexOf(i) >= 0;
+        chips += '<button class="fr-page' + (on ? ' on' : '') + '" type="button" data-page="' + i + '"' +
+          ' aria-pressed="' + on + '" title="第 ' + i + ' ' + LB + '">' + i + '</button>';
+      }
+      if (units > cap) chips += '<span class="hint">…共 ' + units + ' ' + LB + '，请用范围表达式选择</span>';
+      if (pagesBox && pagesBox.dataset.open === '1') {
+        pagesBox.innerHTML = chips;
+        pagesBox.style.display = '';
+      } else if (pagesBox) {
+        pagesBox.style.display = 'none';
+      }
+      $('#frSelToggle').setAttribute('aria-expanded', (pagesBox && pagesBox.dataset.open === '1') ? 'true' : 'false');
+    } else if (pagesBox) {
+      pagesBox.style.display = 'none';
+    }
+  }
+
   // 扫描版 PDF：显示 OCR 条
   const ocrBar = $('#frOcrBar');
   if (ocrBar) {
     const isPdf = !!(f && f.kind === 'pdf' && f.pdfDoc);
     ocrBar.style.display = isPdf ? '' : 'none';
     if (isPdf) {
-      const total = f.pages.length;
-      $('#frOcrTo').max = String(total);
-      $('#frOcrFrom').max = String(total);
-      if (parseInt($('#frOcrTo').value, 10) > total) $('#frOcrTo').value = String(Math.min(3, total));
       const vm = frVisionModel();
       $('#frOcrTip').textContent = vm
         ? '将使用视觉模型 ' + vm + ' 逐页识别（图片不出本机，只发给该模型）'
@@ -4728,16 +4883,17 @@ function frRenderDoc() {
   if (!f) { box.innerHTML = '<div class="fr-empty">拖入文件后这里显示内容</div>'; return; }
   if (!(f.text || '').trim()) { box.innerHTML = '<div class="fr-empty">这个文件没有解析出文字（可能是扫描版 PDF 或纯图片 EPUB）。</div>'; return; }
   if (f.kind === 'md') { box.innerHTML = '<div class="md">' + renderMarkdown(f.text) + '</div>'; return; }
+  const offCls = function (n) { return (f.sel && f.sel.indexOf(n) < 0) ? ' off' : ''; };
   if (f.chapters) {
     box.innerHTML = f.chapters.map(function (c, i) {
-      return '<section class="fr-sec" id="fr-sec-' + i + '"><h3 class="fr-sec-h">' + esc(c.title) + '</h3>' +
+      return '<section class="fr-sec' + offCls(i + 1) + '" id="fr-sec-' + i + '"><h3 class="fr-sec-h">' + esc(c.title) + '</h3>' +
         '<pre class="fr-pre">' + esc(c.text) + '</pre></section>';
     }).join('');
     return;
   }
   if (f.pages) {
     box.innerHTML = f.pages.map(function (p, i) {
-      return '<section class="fr-sec" id="fr-sec-' + i + '"><h3 class="fr-sec-h">第 ' + p.no + ' 页' +
+      return '<section class="fr-sec' + offCls(p.no) + '" id="fr-sec-' + i + '"><h3 class="fr-sec-h">第 ' + p.no + ' 页' +
         (p.ocr ? ' <span class="fr-ocr-tag">AI 识别</span>' : '') + '</h3>' +
         '<pre class="fr-pre">' + esc(p.text || '（本页没有文字）') + '</pre></section>';
     }).join('');
@@ -4890,22 +5046,28 @@ async function frOcrRun() {
   if (cfgErr) { toast(cfgErr, 'err'); switchTab('api'); return; }
 
   const total = f.pages.length;
-  let from = Math.max(1, parseInt($('#frOcrFrom').value, 10) || 1);
-  let to = Math.min(total, parseInt($('#frOcrTo').value, 10) || Math.min(3, total));
-  if (to < from) { toast('页范围不对：结束页要 ≥ 开始页', 'err'); return; }
-  if (to - from + 1 > 30) { to = from + 29; toast('一次最多识别 30 页，已自动截到第 ' + to + ' 页'); }
+  // 识别「选择页」里勾选的页；没筛选就默认识别没有文字层的页（扫描页）
+  let targets = frSelUnits(f).filter(function (n) { return n >= 1 && n <= total; });
+  if (!f.sel) {
+    const empty = f.pages.filter(function (pg) { return !(pg.text || '').trim(); }).map(function (pg) { return pg.no; });
+    if (empty.length && empty.length < total) targets = empty;
+    else targets = targets.slice(0, 3);
+  }
+  if (!targets.length) { toast('先在「选择页」里勾选要识别的页', 'err'); return; }
+  if (targets.length > 30) { targets = targets.slice(0, 30); toast('一次最多识别 30 页，已截到前 30 页'); }
 
   frOcrStop = false;
-  startRunUI('tools', '正在识别第 ' + from + ' 页…');
+  startRunUI('tools', '正在识别第 ' + targets[0] + ' 页…');
   $('#frOcrTip').textContent = '准备中…';
   const oldModel = state.model;
   state.model = model;
   let okCount = 0;
   let lastErr = '';
   try {
-    for (let no = from; no <= to; no++) {
+    for (let k = 0; k < targets.length; k++) {
+      const no = targets[k];
       if (frOcrStop) break;
-      $('#frOcrTip').textContent = '识别中 ' + (no - from + 1) + ' / ' + (to - from + 1) + ' 页（第 ' + no + ' 页）…';
+      $('#frOcrTip').textContent = '识别中 ' + (k + 1) + ' / ' + targets.length + ' 页（第 ' + no + ' 页）…';
       try {
         const url = await frRenderPageDataUrl(f.pdfDoc, no);
         const text = await frOcrRequest(url, model);
@@ -4929,7 +5091,7 @@ async function frOcrRun() {
     frRenderAll();   // 先重渲染（会重置提示），再写最终提示，保证信息留在界面上
     $('#frOcrTip').textContent = frOcrStop
       ? '已停止：已完成 ' + okCount + ' 页，结果已保留' + (lastErr ? '（' + lastErr + '）' : '')
-      : '识别完成：第 ' + from + '–' + to + ' 页已并入正文（' + okCount + ' 页成功' +
+      : '识别完成：第 ' + frRangeStr(targets) + ' 页已并入正文（' + okCount + ' / ' + targets.length + ' 页成功' +
         (lastErr ? '；' + lastErr : '') + '），可继续「AI 提炼」或导出 Markdown';
     if (okCount && !frOcrStop) toast('OCR 完成：' + okCount + ' 页已并入正文', 'ok');
   }
@@ -4939,14 +5101,23 @@ async function frOcrRun() {
 function frExportMd() {
   const f = frActiveFile();
   if (!f) { toast('先打开一个文件', 'err'); return; }
+  const withAi = !$('#frExpAi') || $('#frExpAi').checked;
+  const withBody = !$('#frExpBody') || $('#frExpBody').checked;
+  if (!withAi && !withBody) { toast('「含 AI 提炼」和「含原文」都不勾选，就没有内容可导出了', 'err'); return; }
+  const sel = frSelUnits(f);
+  const units = frUnitCount(f);
+  const selNote = f.sel ? ('仅 ' + frRangeStr(sel) + ' ' + frUnitLabel(f) + '（共 ' + units + '）') : ('全部 ' + units + ' ' + frUnitLabel(f));
   const stamp = new Date().toLocaleString('zh-CN', { hour12: false });
   const head = '# ' + (f.title || f.name) + '\n\n' +
     '> 由 **CodeTutor 文档阅读器**生成 · ' + stamp + '  \n' +
     '> 原文件：`' + f.name + '` · 格式：' + (FR_KIND_LABEL[f.kind] || f.kind) + ' · 大小：' + frSize(f.size) +
-    ' · 提取字数：' + (f.text || '').length + (f.ocrUsed ? ' · **部分页面由 AI 识别（OCR）**' : '') + '\n\n';
-  const body = (FR.ai
-    ? '## AI 提炼\n\n' + FR.ai + '\n\n---\n\n## 原文\n\n' + f.text
-    : f.text);
+    ' · 范围：' + selNote + ' · 提取字数：' + frSelectedText(f).length +
+    (f.ocrUsed ? ' · **部分页面由 AI 识别（OCR）**' : '') + '\n\n';
+  const parts = [];
+  if (withAi && FR.ai) parts.push('## AI 提炼\n\n' + FR.ai);
+  if (withBody) parts.push('## 原文（' + selNote + '）\n\n' + frSelectedText(f));
+  if (!parts.length) { toast('还没有可导出的内容（先点「AI 提炼」或勾选原文）', 'err'); return; }
+  const body = parts.join('\n\n---\n\n');
   const blob = new Blob([head + body], { type: 'text/markdown;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -5012,6 +5183,49 @@ function frBind() {
   $('#frMinus').addEventListener('click', function () { FR.fs = Math.max(12, FR.fs - 1); frRenderDoc(); });
   $('#frPlus').addEventListener('click', function () { FR.fs = Math.min(24, FR.fs + 1); frRenderDoc(); });
 
+  $('#frSelApply').addEventListener('click', function () {
+    const f = frActiveFile(); if (!f) return;
+    const n = frUnitCount(f);
+    const list = frParseRange($('#frSelInput').value, n);
+    if (!list.length) { toast('没解析出有效范围，试试 1-3,5,8-10', 'err'); return; }
+    f.sel = (list.length >= n) ? null : list;
+    frRenderAll();
+    toast('已选 ' + frSelUnits(f).length + ' / ' + n + ' ' + frUnitLabel(f) + '：' + frRangeStr(frSelUnits(f)), 'ok');
+  });
+  $('#frSelAll').addEventListener('click', function () {
+    const f = frActiveFile(); if (!f) return;
+    f.sel = null; frRenderAll();
+    toast('已全选：' + frUnitCount(f) + ' ' + frUnitLabel(f), 'ok');
+  });
+  $('#frSelNone').addEventListener('click', function () {
+    const f = frActiveFile(); if (!f) return;
+    f.sel = []; frRenderAll();
+    toast('已清空选择（导出与识别将没有内容）', 'ok');
+  });
+  $('#frSelInv').addEventListener('click', function () {
+    const f = frActiveFile(); if (!f) return;
+    const n = frUnitCount(f), cur = frSelUnits(f), out = [];
+    for (let i = 1; i <= n; i++) if (cur.indexOf(i) < 0) out.push(i);
+    f.sel = out; frRenderAll();
+    toast('反选后已选 ' + out.length + ' / ' + n + ' ' + frUnitLabel(f), 'ok');
+  });
+  $('#frSelToggle').addEventListener('click', function () {
+    const box = $('#frPages');
+    box.dataset.open = box.dataset.open === '1' ? '0' : '1';
+    frRenderAll();
+  });
+  $('#frPages').addEventListener('click', function (e) {
+    const b = e.target.closest('[data-page]');
+    if (!b) return;
+    const f = frActiveFile(); if (!f) return;
+    const n = frUnitCount(f), no = Number(b.dataset.page);
+    const cur = frSelUnits(f).slice();
+    const i = cur.indexOf(no);
+    if (i >= 0) cur.splice(i, 1); else cur.push(no);
+    cur.sort(function (x, y) { return x - y; });
+    f.sel = (cur.length >= n) ? null : cur;
+    frRenderAll();
+  });
   $('#frOcrBtn').addEventListener('click', frOcrRun);
   $('#frOcrStopBtn').addEventListener('click', function () { frOcrStop = true; stopRun('tools'); toast('正在停止识别…'); });
   $('#frAiBtn').addEventListener('click', frAnalyze);
@@ -5020,8 +5234,11 @@ function frBind() {
   $('#frCopyBtn').addEventListener('click', function () {
     const f = frActiveFile();
     if (!f) return;
-    copyText(FR.view === 'ai' && FR.ai ? FR.ai : f.text).then(function (ok) {
-      toast(ok ? '已复制' + (FR.view === 'ai' && FR.ai ? ' AI 提炼结果' : '全文') : '复制失败', ok ? 'ok' : 'err');
+    const txt = (FR.view === 'ai' && FR.ai) ? FR.ai : frSelectedText(f);
+    copyText(txt).then(function (ok) {
+      const what = (FR.view === 'ai' && FR.ai) ? ' AI 提炼结果'
+        : (f.sel ? ('已选 ' + frSelUnits(f).length + ' ' + frUnitLabel(f)) : '全文');
+      toast(ok ? '已复制' + what : '复制失败', ok ? 'ok' : 'err');
     });
   });
   $('#frClearBtn').addEventListener('click', function () {
@@ -6073,6 +6290,10 @@ function onLangChanged() {
 }
 
 function switchTab(name) {
+  // 回到实用工具时刷新一次：模型/服务商可能在 API 页被改过，OCR 提示要跟着更新
+  if (name === 'tools' && typeof frRenderAll === 'function' && document.getElementById('frBody')) {
+    try { frRenderAll(); } catch (e) { /* 忽略 */ }
+  }
   $$('.tab').forEach(function (t) {
     const on = t.dataset.panel === name;
     t.classList.toggle('active', on);
