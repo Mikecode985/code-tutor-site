@@ -1667,7 +1667,16 @@ main{padding:22px 0 56px}
         </div>
 
         <div class="field" style="grid-column:1/-1">
-          <span>代理地址（三选一，遇到网络问题优先用前两种）</span>
+          <span>连接方式</span>
+          <div class="seg" id="proxyModeSeg" role="group" aria-label="连接方式">
+            <button type="button" data-mode="proxy" aria-pressed="true">经代理</button>
+            <button type="button" data-mode="direct" aria-pressed="false">直连服务商（最快）</button>
+          </div>
+          <div class="hint" id="proxyModeHint"></div>
+        </div>
+
+        <div class="field" style="grid-column:1/-1">
+          <span id="proxyLabel">代理地址（三选一，遇到网络问题优先用前两种）</span>
           <input id="proxyInput" type="text" placeholder="推荐 /api/chat（同源 Pages Functions）｜或 https://api.你的域名.com｜或 http://127.0.0.1:8787" autocomplete="off" spellcheck="false">
           <div class="hint">
             <b>① 同源 <code>/api/chat</code></b>（最稳，推荐）：把 <code>functions/api/chat.js</code> 放进 Pages 项目，用 <code>wrangler pages deploy</code> 或 Git 集成部署 ——
@@ -2282,6 +2291,13 @@ const LANGS = {
 function langOf(id) { return LANGS[id] || LANGS.python; }
 
 /** AI 服务商元数据（前端只用名字与默认模型，真实接口地址在 Worker 里配置） */
+/** 直连端点（浏览器直接打服务商，不经过代理；两家都返回了 CORS 头，实测可用） */
+const DIRECT_ENDPOINTS = {
+  deepseek: 'https://api.deepseek.com/v1/chat/completions',
+  qwen: 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions'
+};
+const DIRECT_ENDPOINT_INTL = 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions';
+
 const PROVIDERS = {
   deepseek: {
     name: 'DeepSeek',
@@ -2328,6 +2344,8 @@ const STORE_KEY = 'codetutor.settings.v1';
  * 2. 状态（apiKey 只在这里，永不写盘）
  * ========================================================================== */
 const state = {
+  proxyMode: 'proxy',          // proxy | direct
+  directEndpoint: '',          // 直连模式下的端点（可自定义，例如千问国际站）
   lang: 'python',
   provider: 'deepseek',
   model: PROVIDERS.deepseek.defaultModel,
@@ -2681,6 +2699,15 @@ function createEditor(textareaId, counterIds) {
  *   ② /api/chat                       同源路径 → Pages Functions（最稳：同域，无 CORS、无 workers.dev DNS 依赖）
  *   ③ http://127.0.0.1:8787           本机 local-proxy.mjs（浏览器允许 https 页面访问 localhost）
  */
+/** 是否使用直连模式（浏览器直接请求服务商） */
+function isDirectMode() { return state.proxyMode === 'direct'; }
+/** 直连模式下实际使用的端点（可被用户改成国际站等） */
+function directEndpoint() {
+  const custom = (state.directEndpoint || '').trim();
+  if (/^https?:\/\//i.test(custom)) return custom;
+  return DIRECT_ENDPOINTS[state.provider] || '';
+}
+
 function proxyTarget() {
   const p = (state.proxyUrl || '').trim();
   if (/^https?:\/\//i.test(p)) return p;
@@ -2696,6 +2723,11 @@ function isSameOriginProxy() {
 /** 校验配置是否完整，返回错误文案或 null */
 function configError() {
   if (!state.apiKey) return '还没有填写 API Key，请先到【API 设置】页填写。';
+  if (isDirectMode()) {
+    // 直连：只需要 Key，不需要代理地址
+    if (!directEndpoint()) return '直连端点为空，请在【API 设置】里填写服务商的接口地址。';
+    return null;
+  }
   if (!state.proxyUrl) return '还没有配置代理地址，请先到【API 设置】页填写：Cloudflare Worker 的完整地址，或同源路径 /api/chat，或本机 http://127.0.0.1:8787。';
   if (/your[-_]?worker|你的worker|xxxx|example\.com/i.test(state.proxyUrl)) return '代理地址看起来还是示例占位符，请替换成你真实的地址。';
   if (!/^https?:\/\//i.test(state.proxyUrl) && state.proxyUrl.charAt(0) !== '/') {
@@ -2755,6 +2787,28 @@ function friendlyHttpError(status, bodyText) {
  * GET 代理地址，确认返回的 JSON 里 service === 'codelearn-proxy'。
  * 这一步能一次性区分「Key 有问题」与「地址上跑的不是我们的 Worker」。
  */
+/** 直连模式：用 CORS 预检（OPTIONS）确认浏览器能不能直接打服务商 */
+async function checkDirectPreflight() {
+  const url = directEndpoint();
+  const t0 = Date.now();
+  try {
+    const r = await fetch(url, {
+      method: 'OPTIONS',
+      headers: {
+        'Origin': location.origin,
+        'Access-Control-Request-Method': 'POST',
+        'Access-Control-Request-Headers': 'content-type,authorization'
+      }
+    });
+    const acao = r.headers.get('access-control-allow-origin') || '';
+    if (!r.ok) return { ok: false, detail: '预检返回 HTTP ' + r.status + '（' + url + '）', ms: Date.now() - t0 };
+    if (!acao) return { ok: false, detail: '预检通过但没有 Access-Control-Allow-Origin，浏览器会拦下真正的 POST', ms: Date.now() - t0 };
+    return { ok: true, ms: Date.now() - t0, acao: acao };
+  } catch (e) {
+    return { ok: false, detail: '网络不通或 CORS 预检失败：' + ((e && e.message) || e), ms: Date.now() - t0 };
+  }
+}
+
 async function checkProxyIdentity() {
   let res;
   try {
@@ -2809,21 +2863,40 @@ async function callAI(opt) {
     running[opt.which] = controller;
   }
 
-  const payload = {
-    provider: state.provider,
-    model: opt.model || state.model,     // OCR 会临时指定视觉模型
-    apiKey: state.apiKey,              // 经 Worker 转发，Worker 不会记录
-    messages: opt.messages,
-    temperature: typeof opt.temperature === 'number' ? opt.temperature : 0.3,
-    max_tokens: opt.maxTokens || 4096,
-    stream: useStream
-  };
+  const useModel = opt.model || state.model;   // OCR 会临时指定视觉模型
+  let payload;
+  let reqHeaders;
+  let reqUrl;
+  if (isDirectMode()) {
+    // 直连：请求直接发给服务商，Key 只发给服务商本身（两家都带 CORS 头）
+    reqUrl = directEndpoint();
+    reqHeaders = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + state.apiKey };
+    payload = {
+      model: useModel,
+      messages: opt.messages,
+      temperature: typeof opt.temperature === 'number' ? opt.temperature : 0.3,
+      max_tokens: opt.maxTokens || 4096,
+      stream: useStream
+    };
+  } else {
+    reqUrl = proxyTarget();
+    reqHeaders = { 'Content-Type': 'application/json' };
+    payload = {
+      provider: state.provider,
+      model: useModel,
+      apiKey: state.apiKey,              // 经 Worker 转发，Worker 不会记录
+      messages: opt.messages,
+      temperature: typeof opt.temperature === 'number' ? opt.temperature : 0.3,
+      max_tokens: opt.maxTokens || 4096,
+      stream: useStream
+    };
+  }
 
   let res;
   try {
-    res = await fetch(proxyTarget(), {
+    res = await fetch(reqUrl, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: reqHeaders,
       body: JSON.stringify(payload),
       signal: controller.signal
     });
@@ -2844,6 +2917,14 @@ async function callAI(opt) {
     }
     throw new Error('无法连接代理。原始错误：' + (e && e.message ? e.message : e) + '\n\n' + why);
   }
+
+  // 记录代理回传的上游诊断（用于"测试连接"里显示耗时/重试次数）
+  try {
+    state.__upMs = res.headers.get('x-upstream-ms') || '';
+    state.__upAttempts = res.headers.get('x-upstream-attempts') || '';
+    state.__upStatus = res.headers.get('x-upstream-status') || '';
+    state.__upImages = res.headers.get('x-images') || '';
+  } catch (e) { /* 忽略 */ }
 
   if (!res.ok) {
     const txt = await res.text().catch(function () { return ''; });
@@ -2903,6 +2984,13 @@ async function callAI(opt) {
  * ========================================================================== */
 function refreshApiStatus() {
   const badge = $('#apiStatus');
+  // 直连模式：有 Key 就算就绪（不需要代理地址）
+  if (isDirectMode() && state.apiKey) {
+    badge.className = 'badge ok';
+    badge.textContent = '直连 · ' + PROVIDERS[state.provider].name;
+    badge.title = '浏览器直连服务商：' + directEndpoint();
+    return;
+  }
   if (state.apiKey && state.proxyUrl) {
     badge.className = 'badge ok';
     badge.textContent = 'API 已就绪 · ' + PROVIDERS[state.provider].name;
@@ -2925,13 +3013,16 @@ function loadSettings() {
     if (s.provider && PROVIDERS[s.provider]) state.provider = s.provider;
     if (s.model) state.model = s.model;
     if (s.proxyUrl) state.proxyUrl = s.proxyUrl;
+    if (s.proxyMode === 'direct' || s.proxyMode === 'proxy') state.proxyMode = s.proxyMode;
+    if (s.directEndpoint) state.directEndpoint = s.directEndpoint;
   } catch (e) { /* 忽略损坏的本地数据 */ }
 }
 
 function saveSettings(silent) {
   try {
     localStorage.setItem(STORE_KEY, JSON.stringify({
-      lang: state.lang, provider: state.provider, model: state.model, proxyUrl: state.proxyUrl
+      lang: state.lang, provider: state.provider, model: state.model, proxyUrl: state.proxyUrl,
+      proxyMode: state.proxyMode, directEndpoint: state.directEndpoint
       // 注意：绝不包含 apiKey
     }));
     if (!silent) toast('设置已保存（不含 API Key）', 'ok');
@@ -2940,9 +3031,60 @@ function saveSettings(silent) {
   }
 }
 
+/** 连接方式的界面同步：模式切换时把输入框在「代理地址」与「直连端点」之间换 */
+function syncProxyModeUI() {
+  const direct = isDirectMode();
+  const seg = $('#proxyModeSeg');
+  if (seg) {
+    Array.prototype.forEach.call(seg.children, function (b) {
+      b.setAttribute('aria-pressed', String(b.dataset.mode === (direct ? 'direct' : 'proxy')));
+    });
+  }
+  const lbl = $('#proxyLabel'), inp = $('#proxyInput'), hint = $('#proxyModeHint');
+  if (!inp) return;
+  if (direct) {
+    if (lbl) lbl.textContent = '直连端点（默认就是服务商官方地址，可改成国际站）';
+    inp.value = directEndpoint() || '';
+    inp.placeholder = DIRECT_ENDPOINTS[state.provider] || '';
+    if (hint) {
+      hint.innerHTML = '<b>直连（推荐）</b>：浏览器直接把请求发给 ' + esc(PROVIDERS[state.provider].name) +
+        '，<b>不经过本站代理</b>。实测国内到阿里云约 <b>100ms</b>，而经 Cloudflare 代理通常要 1~3 秒且会抖动 —— ' +
+        '所以通义千问"连接不稳定"时请优先用这个。<br>' +
+        '· Key 只发给服务商本身（比走代理更安全）；<br>' +
+        '· 如果你的 Key 属于<b>国际站</b>，把端点换成 <code>' + DIRECT_ENDPOINT_INTL + '</code>。';
+    }
+    try { state.directEndpoint = inp.value; } catch (e) { /* 忽略 */ }
+  } else {
+    if (lbl) lbl.textContent = '代理地址（三选一，遇到网络问题优先用前两种）';
+    inp.value = state.proxyUrl || '';
+    inp.placeholder = '推荐 /api/chat（同源 Pages Functions）｜或 https://api.你的域名.com｜或 http://127.0.0.1:8787';
+    if (hint) {
+      hint.innerHTML = '经代理：请求先到你自己的 Cloudflare Worker / Pages Function，再由它转发给服务商。' +
+        '需要 <code>ALLOWED_ORIGINS</code> 配置正确；国内访问 Cloudflare 边缘回源可能较慢（实测 1~3 秒），' +
+        '若只想快点用，可切到「直连服务商」。';
+    }
+  }
+}
+
 function bindApiPanel() {
   const providerSel = $('#providerSelect');
   const modelInput = $('#modelInput');
+  if ($('#proxyModeSeg')) {
+    $('#proxyModeSeg').addEventListener('click', function (e) {
+      const b = e.target.closest('button[data-mode]');
+      if (!b) return;
+      // 先把当前输入框的值存回对应字段，再切换
+      const inp = $('#proxyInput');
+      if (inp) {
+        if (isDirectMode()) state.directEndpoint = inp.value.trim();
+        else state.proxyUrl = inp.value.trim();
+      }
+      state.proxyMode = b.dataset.mode === 'direct' ? 'direct' : 'proxy';
+      syncProxyModeUI();
+      refreshApiStatus();
+      saveSettings(true);
+    });
+  }
   const keyInput = $('#apiKeyInput');
   const proxyInput = $('#proxyInput');
 
@@ -2964,7 +3106,14 @@ function bindApiPanel() {
   applyProvider(true);
 
   providerSel.addEventListener('change', function () {
+    // 切服务商时，如果直连端点还是上一家的默认值，就换成新家的默认值
+    (function (prevProvider) {
+      const prevDefault = DIRECT_ENDPOINTS[prevProvider] || '';
+      const cur = (state.directEndpoint || '').trim();
+      if (!cur || cur === prevDefault) state.directEndpoint = DIRECT_ENDPOINTS[providerSel.value] || '';
+    })(state.provider);
     state.provider = providerSel.value;
+    if (isDirectMode()) syncProxyModeUI();
     state.model = PROVIDERS[state.provider].defaultModel;
     applyProvider(false);
     refreshApiStatus();
@@ -3015,7 +3164,8 @@ function bindApiPanel() {
     const btn = this;
     const out = $('#apiTestResult');
     state.apiKey = keyInput.value.trim();
-    state.proxyUrl = proxyInput.value.trim().replace(/\/+$/, '');
+    if (isDirectMode()) state.directEndpoint = proxyInput.value.trim();
+    else state.proxyUrl = proxyInput.value.trim().replace(/\/+$/, '');
     refreshApiStatus();
 
     const cfgErr = configError();
@@ -3026,9 +3176,25 @@ function bindApiPanel() {
     const parts = [];
 
     // ---------- 第 1 步：代理身份自检（能区分「Key 问题」和「Worker 装错」）----------
-    btn.textContent = '第 1/2 步：校验代理…';
-    out.innerHTML = '<div class="loading"><span class="spinner"></span><span>正在校验代理地址（确认它是不是本项目的 Cloudflare Worker）…</span></div>';
-    const idc = await checkProxyIdentity();
+    btn.textContent = '第 1/2 步：校验连接…';
+    out.innerHTML = '<div class="loading"><span class="spinner"></span><span>' +
+      (isDirectMode() ? '正在检查浏览器能否直连 ' + esc(PROVIDERS[state.provider].name) + '（CORS 预检）…'
+                      : '正在校验代理地址（确认它是不是本项目的 Cloudflare Worker）…') + '</span></div>';
+    if (isDirectMode()) {
+      const pre = await checkDirectPreflight();
+      if (pre.ok) {
+        parts.push('<div class="note ok"><b>&#10004; 第 1 步 · 直连可用</b>：浏览器能直连 <code>' +
+          esc(directEndpoint()) + '</code>（CORS 预检通过，' + pre.ms + ' ms）。<br>' +
+          '这条路径不经过任何代理，国内实测通常 100~300 ms。</div>');
+      } else {
+        parts.push('<div class="note err"><b>&#10008; 第 1 步 · 直连不可用</b>：' + esc(pre.detail) + '<br>' +
+          '可以切回「经代理」模式，或检查网络 / 端点是否写错（千问国内站与<b>国际站</b>地址不同）。</div>');
+      }
+      // 直连模式跳过代理自检，直接进第 2 步
+      btn.textContent = '第 2/2 步：测试模型…';
+      out.innerHTML = parts.join('');
+    } else {
+      const idc = await checkProxyIdentity();
     if (idc.ok) {
       parts.push('<div class="note ok"><b>&#10004; 第 1 步 · 代理自检通过</b>：该地址上运行的确实是本项目的代理 ' +
         '（<code>codelearn-proxy</code> v' + esc(idc.version) + ' · ' + esc(idc.deploy) +
@@ -3056,6 +3222,8 @@ function bindApiPanel() {
         '&nbsp;&nbsp;c) 自检方法：浏览器新标签页直接打开该地址，应看到 <code>{"ok":true,"service":"codelearn-proxy",...}</code>。</div>');
     }
 
+    }   // ← 结束「经代理」分支
+
     // ---------- 第 2 步：真实调用一次模型（无论第 1 步成败都跑，便于看到完整错误链）----------
     btn.textContent = '第 2/2 步：测试模型…';
     out.innerHTML = parts.join('') + '<div class="loading"><span class="spinner"></span><span>正在向 ' + esc(PROVIDERS[state.provider].name) + ' 发送一条测试请求…</span></div>';
@@ -3068,11 +3236,18 @@ function bindApiPanel() {
         ],
         stream: false, temperature: 0, maxTokens: 32
       });
-      parts.push('<div class="note ok"><b>&#10004; 第 2 步 · 模型连通性正常</b>（' + (Date.now() - t0) + ' ms，模型：' +
-        esc(state.model) + '）<br>模型回复：' + esc(reply.trim().slice(0, 120)) + '</div>');
+      const upMs = state.__upMs ? ('，上游 ' + esc(state.__upMs) + ' ms') : '';
+      const upTry = (state.__upAttempts && Number(state.__upAttempts) > 1) ? ('（重试后成功，共 ' + esc(state.__upAttempts) + ' 次）') : '';
+      parts.push('<div class="note ok"><b>&#10004; 第 2 步 · 模型连通性正常</b>（总耗时 ' + (Date.now() - t0) + ' ms' + upMs + '，模型：' +
+        esc(state.model) + '）' + upTry + '<br>模型回复：' + esc(reply.trim().slice(0, 120)) + '</div>');
       saveSettings(true);
     } catch (e) {
-      parts.push('<div class="note err"><b>&#10008; 第 2 步 · 模型调用失败</b><br>' + esc(e.message) + '</div>');
+      const diag = (state.__upStatus || state.__upMs || state.__upAttempts)
+        ? '<div class="hint" style="margin-top:8px">代理诊断：上游状态 ' + esc(state.__upStatus || '-') +
+          ' · 耗时 ' + esc(state.__upMs || '-') + ' ms · 尝试 ' + esc(state.__upAttempts || '-') + ' 次' +
+          (state.__upImages ? ' · 含图 ' + esc(state.__upImages) + ' 张' : '') + '</div>'
+        : '';
+      parts.push('<div class="note err"><b>&#10008; 第 2 步 · 模型调用失败</b><br>' + esc(e.message) + diag + '</div>');
     }
     out.innerHTML = parts.join('');
     btn.disabled = false;
@@ -6486,6 +6661,7 @@ function init() {
 
   // 各面板
   bindApiPanel();
+  syncProxyModeUI();   // 连接方式分段 + 输入框标签/值
   bindAssistantPanel();
   bindPracticePanel();
   bindKnowledgePanel();

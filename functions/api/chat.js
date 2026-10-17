@@ -61,6 +61,60 @@ const PROXY_ID = 'codelearn-proxy';
 const VERSION = '1.1.0';
 
 /* 允许透传给上游的参数白名单 */
+/**
+ * 规范化一条消息的 content：
+ *   · 字符串原样保留
+ *   · 数组（多模态）逐项校验后保留 text / image_url，**不能 String() 强转**，
+ *     否则图片会被变成 "[object Object]"（这是通义千问视觉调用失败的根因）
+ */
+function normalizeContent(c) {
+  if (typeof c === 'string') return c;
+  if (!Array.isArray(c)) return c == null ? '' : String(c);
+  const parts = [];
+  let hasImage = false;
+  c.forEach(function (p) {
+    if (!p || typeof p !== 'object') return;
+    if (p.type === 'text') {
+      parts.push({ type: 'text', text: String(p.text == null ? '' : p.text) });
+    } else if (p.type === 'image_url') {
+      const raw = p.image_url;
+      const url = typeof raw === 'string' ? raw : (raw && raw.url);
+      if (!url) return;
+      // 只放行 data:image/* 与 https 图片，避免被当成任意 URL 代理
+      if (!/^(data:image\/|https:\/\/)/i.test(String(url))) return;
+      hasImage = true;
+      parts.push({ type: 'image_url', image_url: { url: String(url) } });
+    }
+  });
+  if (hasImage) parts.push({ __hasImage: true });   // 内部标记，序列化前会删掉
+  return parts.length ? parts : '';
+}
+function stripMarks(list) {
+  return list.map(function (p) {
+    if (p && p.__hasImage) return null;
+    if (p && Array.isArray(p)) return null;
+    return p;
+  });
+}
+function countImages(messages) {
+  let n = 0;
+  (messages || []).forEach(function (m) {
+    if (m && Array.isArray(m.content)) {
+      m.content.forEach(function (p) { if (p && p.type === 'image_url') n++; });
+    }
+  });
+  return n;
+}
+function cleanMessages(list) {
+  return list.map(function (m) {
+    const c = m.content;
+    return {
+      role: m.role,
+      content: Array.isArray(c) ? c.filter(function (p) { return !(p && p.__hasImage); }) : c
+    };
+  });
+}
+
 const PASSTHROUGH_FIELDS = [
   'temperature', 'top_p', 'max_tokens', 'presence_penalty',
   'frequency_penalty', 'stop', 'seed', 'response_format', 'stream'
@@ -121,6 +175,42 @@ export async function onRequest(context) {
 /* ---------------------------------------------------------------------------
  * 主逻辑：POST /api/chat
  * ------------------------------------------------------------------------- */
+/** 上游配置 */
+const UPSTREAM_TIMEOUT_MS = 75000;              // 单次尝试上限（Cloudflare 总时限 100s 内）
+const RETRY_STATUS = [429, 500, 502, 503, 504]; // 这些状态码重试一次
+/**
+ * 带超时与一次重试的上游调用。
+ * 通义千问偶发 429 / 5xx / 握手卡住，不重试就会表现为"连接不稳定"。
+ */
+async function fetchUpstream(url, init, timeoutMs) {
+  const attempts = 2;
+  let lastErr = null;
+  for (let i = 0; i < attempts; i++) {
+    const ctrl = new AbortController();
+    const timer = setTimeout(function () { try { ctrl.abort(); } catch (e) { /* 忽略 */ } }, timeoutMs);
+    try {
+      const res = await fetch(url, Object.assign({}, init, { signal: ctrl.signal }));
+      clearTimeout(timer);
+      if (RETRY_STATUS.indexOf(res.status) >= 0 && i < attempts - 1) {
+        try { await res.text(); } catch (e) { /* 丢弃 */ }
+        await new Promise(function (r) { setTimeout(r, 400 + i * 700); });
+        continue;
+      }
+      return { res: res, attempts: i + 1 };
+    } catch (e) {
+      clearTimeout(timer);
+      lastErr = e;
+      if (i < attempts - 1) {
+        await new Promise(function (r) { setTimeout(r, 400 + i * 700); });
+        continue;
+      }
+      e.__attempts = i + 1;
+      throw e;
+    }
+  }
+  throw lastErr || new Error('上游无响应');
+}
+
 export async function onRequestPost(context) {
   const { request, env } = context;
 
@@ -174,9 +264,14 @@ export async function onRequestPost(context) {
   const upstream = {
     model: String(body.model || provider.defaultModel).trim() || provider.defaultModel,
     messages: body.messages.map(function (m) {
-      return { role: String((m && m.role) || 'user'), content: String((m && m.content) || '') };
+      return {
+        role: String((m && m.role) || 'user'),
+        content: normalizeContent(m && m.content)   // ← 多模态数组必须原样保留
+      };
     })
   };
+  const imageCount = countImages(upstream.messages);
+  upstream.messages = cleanMessages(upstream.messages);
   PASSTHROUGH_FIELDS.forEach(function (k) {
     if (body[k] !== undefined && body[k] !== null) upstream[k] = body[k];
   });
@@ -188,8 +283,10 @@ export async function onRequestPost(context) {
 
   // 5) 转发上游
   let res;
+  let attempts = 0;
+  const t0 = Date.now();
   try {
-    res = await fetch(provider.endpoint, {
+    const r = await fetchUpstream(provider.endpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -197,12 +294,31 @@ export async function onRequestPost(context) {
         'Accept': upstream.stream ? 'text/event-stream' : 'application/json'
       },
       body: JSON.stringify(upstream)
-    });
+    }, parseInt(env.UPSTREAM_TIMEOUT_MS || '', 10) || UPSTREAM_TIMEOUT_MS);
+    res = r.res;
+    attempts = r.attempts;
   } catch (e) {
-    return json({ error: { message: '无法连接上游接口 ' + provider.endpoint + '：' + ((e && e.message) || e) } }, 502, request);
+    const aborted = e && (e.name === 'AbortError' || /abort/i.test(String(e.message || '')));
+    return json({
+      error: {
+        message: aborted
+          ? '上游 ' + provider.label + ' 超过 ' + Math.round(UPSTREAM_TIMEOUT_MS / 1000) + ' 秒没有响应（已重试 ' + (e.__attempts || 1) + ' 次）。'
+          : '无法连接上游接口 ' + provider.endpoint + '：' + ((e && e.message) || e) + '（已重试 ' + (e.__attempts || 1) + ' 次）',
+        stage: 'upstream_network',
+        provider: provider.label,
+        images: imageCount,
+        hint: aborted
+          ? '通义千问在图片/长文本请求上偶尔会卡住。可以：① 改小页面图片（本地 OCR 或降低清晰度）；② 换 qwen-turbo / qwen-plus 处理纯文本；③ 稍后重试。'
+          : '网络到上游不通或握手被重置，稍后重试；国内访问 DashScope 一般可用，若长期失败请检查网络。'
+      }
+    }, aborted ? 504 : 502, request);
   }
 
   const headers = new Headers(corsHeaders(request));
+  headers.set('X-Upstream-Status', String(res.status));
+  headers.set('X-Upstream-Attempts', String(attempts));
+  headers.set('X-Upstream-Ms', String(Date.now() - t0));
+  if (imageCount) headers.set('X-Images', String(imageCount));
 
   // 6) 上游报错：转成 JSON 交给前端，并标注 stage 便于区分"代理坏"还是"Key 被拒"
   if (!res.ok) {
@@ -212,18 +328,40 @@ export async function onRequestPost(context) {
       const j = JSON.parse(text);
       message = (j.error && (j.error.message || j.error.code)) || j.message || message;
     } catch (e2) { /* 保留原文 */ }
-    return json({
+    const errResp = json({
       error: {
         message: message,
         stage: 'upstream',
         provider: provider.label,
         upstream_status: res.status,
         key_source: keySource,
-        hint: res.status === 401
-          ? '上游' + provider.label + '拒绝了这个 Key。请确认：① 服务商与 Key 是否匹配；② Key 是否过期或复制时带空格换行；③ 该模型是否有权限。'
-          : ''
+        images: imageCount,
+        attempts: attempts,
+        hint: (function () {
+          if (res.status === 401 || res.status === 403) {
+            return '上游' + provider.label + '拒绝了这个 Key。请确认：① 服务商与 Key 是否匹配（通义千问要用阿里云百炼的 Key，不是 DeepSeek 的）；' +
+              '② Key 是否过期或复制时带了空格换行；③ 该模型是否有权限；④ 国际站账号请用 dashscope-intl 端点。';
+          }
+          if (imageCount && res.status === 400) {
+            return '这次带了 ' + imageCount + ' 张图片，但 ' + (upstream.model || '该模型') +
+              ' 可能不支持图片输入。请改用 qwen-vl-max / qwen-vl-plus，或改用「本地 OCR」。';
+          }
+          if (res.status === 429) {
+            return '触发了 ' + provider.label + ' 的限流（已自动重试 ' + attempts + ' 次）。稍等几秒再试，或把每页图片调小 / 减少并发。';
+          }
+          if (res.status >= 500) {
+            return '上游 ' + provider.label + ' 服务端错误（已自动重试 ' + attempts + ' 次）。这是对方的问题，稍后再试。';
+          }
+          return '';
+        })()
       }
     }, res.status, request);
+    // 诊断头（错误也用得上：一眼看出耗时、重试次数、是否带图）
+    errResp.headers.set('X-Upstream-Status', String(res.status));
+    errResp.headers.set('X-Upstream-Attempts', String(attempts));
+    errResp.headers.set('X-Upstream-Ms', String(Date.now() - t0));
+    if (imageCount) errResp.headers.set('X-Images', String(imageCount));
+    return errResp;
   }
 
   // 7) 流式：直接透传 ReadableStream（不缓冲、不落盘）
